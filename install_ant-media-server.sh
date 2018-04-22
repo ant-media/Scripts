@@ -44,11 +44,27 @@ if [ $OUT -ne 0 ]; then
   exit $OUT
 fi
 
+if ! [ -d /usr/local/antmedia ]; then
 $SUDO mv ant-media-server /usr/local/antmedia
 OUT=$?
-if [ $OUT -ne 0 ]; then
-  echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
-  exit $OUT
+  if [ $OUT -ne 0 ]; then
+    echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
+    exit $OUT
+  fi
+else
+  foldername=$(date +"%Y-%m-%d_%H-%M-%S")
+  $SUDO mv /usr/local/antmedia /usr/local/antmedia-backup-"$foldername"
+  OUT=$?
+    if [ $OUT -ne 0 ]; then
+      echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
+      exit $OUT
+    fi
+  $SUDO mv ant-media-server /usr/local/antmedia
+  OUT=$?
+    if [ $OUT -ne 0 ]; then
+      echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
+      exit $OUT
+    fi
 fi
 
 $SUDO apt-get install jsvc -y
@@ -93,11 +109,13 @@ if [ $OUT -ne 0 ]; then
   exit $OUT
 fi
 
-$SUDO useradd -d /usr/local/antmedia/ -s /bin/false -r antmedia
-OUT=$?
-if [ $OUT -ne 0 ]; then
-  echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
-  exit $OUT
+if ! [ $(getent passwd | grep antmedia) ] ; then
+  $SUDO useradd -d /usr/local/antmedia/ -s /bin/false -r antmedia
+  OUT=$?
+  if [ $OUT -ne 0 ]; then
+    echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
+    exit $OUT
+  fi
 fi
 
 $SUDO chown -R antmedia:antmedia /usr/local/antmedia/
@@ -107,7 +125,7 @@ if [ $OUT -ne 0 ]; then
   exit $OUT
 fi
 
-$SUDO service antmedia start
+$SUDO service antmedia restart
 OUT=$?
 
 if [ $OUT -eq 0 ]; then
