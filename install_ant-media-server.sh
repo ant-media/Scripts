@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 
+#
 # Download latest ant media server and run this script by giving the zip file
 # ./install_ant-media-server.sh ant-media-server-*.zip
 #
@@ -125,7 +125,8 @@ if [ $OUT -ne 0 ]; then
   exit $OUT
 fi
 
-$SUDO service antmedia restart
+$SUDO service antmedia stop
+$SUDO service antmedia start
 OUT=$?
 
 if [ $OUT -eq 0 ]; then
