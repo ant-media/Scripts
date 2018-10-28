@@ -18,6 +18,9 @@ fi
 LIVEAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/LiveApp/WEB-INF/red5-web.properties
 WEBRTCAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
 CONSOLEAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/ConsoleApp/WEB-INF/red5-web.properties
+RED5_PROPERTIES_FILE=/usr/local/antmedia/conf/red5.properties
+
+sed -i 's/clusterdb.host=.*/clusterdb.host='$MONGO_SERVER_IP'/' $RED5_PROPERTIES_FILE
 
 sed -i 's/db.type=.*/db.type='$DB_TYPE'/' $LIVEAPP_PROPERTIES_FILE
 sed -i 's/db.host=.*/db.host='$MONGO_SERVER_IP'/' $LIVEAPP_PROPERTIES_FILE
