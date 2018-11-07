@@ -35,8 +35,8 @@ LOCAL_IPv4=`ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-
 HOST_NAME=`cat /proc/sys/kernel/hostname`
 HOST_LINE="$LOCAL_IPv4 $HOST_NAME"
 
-sudo sed -i '/'$HOST_NAME'/d' /etc/hosts
-echo  "$HOST_LINE" | sudo tee -a /etc/hosts
+sed -i '/'$HOST_NAME'/d' /etc/hosts
+echo  "$HOST_LINE" | tee -a /etc/hosts
 
 echo "Ant Media Server will be restarted in $MODE mode."
 service antmedia restart
