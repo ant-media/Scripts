@@ -1,0 +1,42 @@
+FROM ubuntu:18.04
+
+#necessary ubuntu installations
+RUN apt-get update
+RUN apt-get install -y software-properties-common
+RUN apt-get install -y unzip
+
+#Java
+RUN add-apt-repository ppa:webupd8team/java
+RUN apt-get update
+RUN echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && apt-get install -y oracle-java8-installer
+
+#QT Libraries for WebRTCTest:
+RUN apt-get install -y qtmultimedia5-dev 
+RUN apt-get install -y libqt5websockets5-dev
+RUN apt-get install -y libqt5multimedia5-plugins
+RUN apt-get install -y qtdeclarative5-dev qml-module-qtquick-controls
+RUN apt-get install -y libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-doc gstreamer1.0-tools
+
+#FFMpeg
+RUN add-apt-repository ppa:jonathonf/ffmpeg-4
+RUN apt-get update
+RUN apt-get install -y ffmpeg
+
+#directory structure
+RUN mkdir -p /home/antmedia/test
+
+#JMeter
+RUN wget http://ftp.itu.edu.tr/Mirror/Apache//jmeter/binaries/apache-jmeter-5.0.tgz -P /home/antmedia/test
+RUN cd /home/antmedia/test/ && tar -xvf apache-jmeter-5.0.tgz && rm apache-jmeter-5.0.tgz
+
+#Test environment
+RUN wget https://github.com/ant-media/TestScriptAndTools/archive/master.zip -O /home/antmedia/test/testenv.zip
+RUN cd /home/antmedia/test/ && unzip testenv.zip && rm testenv.zip
+
+RUN apt-get install -y gnuplot
+RUN apt-get install -y jq
+
+
+
+
+
