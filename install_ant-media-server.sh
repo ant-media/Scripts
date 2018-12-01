@@ -16,12 +16,13 @@ restore_settings() {
   files[1]=/webapps/ConsoleApp/WEB-INF/red5-web.properties
   files[2]=/webapps/WebRTCApp/WEB-INF/red5-web.properties
   files[3]=/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
+  files[4]=/webapps/root/WEB-INF/red5-web.properties
 
   #db files
-  files[4]=/liveapp.db
-  files[5]=/server.db
-  files[6]=/webrtcapp.db
-  files[7]=/webrtcappee.db
+  files[5]=/liveapp.db
+  files[6]=/server.db
+  files[7]=/webrtcapp.db
+  files[8]=/webrtcappee.db
 
   #copy app settings
   for file in ${files[*]}
