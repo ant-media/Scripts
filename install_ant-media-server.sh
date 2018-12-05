@@ -57,10 +57,7 @@ fi
 $SUDO apt-get update -y
 check $?
 
-$SUDO apt-get install openjdk-8-jdk -y
-check $?
-
-$SUDO apt-get install unzip -y
+$SUDO apt-get install openjdk-8-jdk openjfx unzip jsvc -y
 check $?
 
 unzip $1
@@ -75,9 +72,6 @@ else
   $SUDO mv ant-media-server $AMS_BASE
   check $?
 fi
-
-$SUDO apt-get install jsvc -y
-check $?
 
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 check $?
