@@ -60,6 +60,9 @@ check $?
 $SUDO apt-get install openjdk-8-jdk -y
 check $?
 
+$SUDO apt-get install openjfx -y
+check $?
+
 $SUDO apt-get install unzip -y
 check $?
 
