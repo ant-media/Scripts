@@ -10,13 +10,6 @@ AMS_BASE=/usr/local/antmedia
 BACKUP_DIR="/usr/local/antmedia-backup-"$(date +"%Y-%m-%d_%H-%M-%S")
 SAVE_SETTINGS=false
 
-if [ ! -z "$2" ]; then
-  echo "Please give the Ant Media Server zip file as parameter"
-  echo "$0  ant-media-server-....zip"
-  exit 1
-fi
-
-
 
 restore_settings() {
   #app settings
