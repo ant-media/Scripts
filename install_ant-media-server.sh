@@ -62,8 +62,14 @@ fi
 $SUDO apt-get update -y
 check $?
 
-$SUDO apt-get install openjdk-8-jdk openjfx unzip jsvc -y
+$SUDO apt-get install openjdk-8-jdk unzip jsvc -y
 check $?
+
+openjfxExists=`apt-cache search openjfx | wc -l`
+if [ "$openjfxExists" -gt "0" ]; 
+then 
+  $SUDO apt-get install openjfx -y
+fi
 
 unzip $1
 check $?
