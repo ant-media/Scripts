@@ -8,7 +8,8 @@
 
 AMS_BASE=/usr/local/antmedia
 BACKUP_DIR="/usr/local/antmedia-backup-"$(date +"%Y-%m-%d_%H-%M-%S")
-SAVE_SETTINGS=$2
+SAVE_SETTINGS=false
+
 
 restore_settings() {
   #app settings
@@ -49,6 +50,10 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
+if [ ! -z "$2" ]; then
+   SAVE_SETTINGS=$2
+fi
+
 SUDO="sudo"
 if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
@@ -57,11 +62,14 @@ fi
 $SUDO apt-get update -y
 check $?
 
-$SUDO apt-get install openjdk-8-jdk -y
+$SUDO apt-get install openjdk-8-jdk unzip jsvc -y
 check $?
 
-$SUDO apt-get install unzip -y
-check $?
+openjfxExists=`apt-cache search openjfx | wc -l`
+if [ "$openjfxExists" -gt "0" ]; 
+then 
+  $SUDO apt-get install openjfx -y
+fi
 
 unzip $1
 check $?
@@ -75,9 +83,6 @@ else
   $SUDO mv ant-media-server $AMS_BASE
   check $?
 fi
-
-$SUDO apt-get install jsvc -y
-check $?
 
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 check $?
