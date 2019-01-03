@@ -5,19 +5,17 @@ if [ $MODE = "cluster" ]
     echo "Mode: cluster"
     DB_TYPE=mongodb
     MONGO_SERVER_IP=$2
-    mv /usr/local/antmedia/conf/jee-container.xml /usr/local/antmedia/conf/jee-container-standalone.xml
     mv /usr/local/antmedia/conf/jee-container-cluster.xml /usr/local/antmedia/conf/jee-container.xml
   else
     echo "Mode: standalone"
     DB_TYPE=mapdb
     MONGO_SERVER_IP=localhost
-    mv /usr/local/antmedia/conf/jee-container.xml /usr/local/antmedia/conf/jee-container-cluster.xml
     mv /usr/local/antmedia/conf/jee-container-standalone.xml /usr/local/antmedia/conf/jee-container.xml
 fi
 
 LIVEAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/LiveApp/WEB-INF/red5-web.properties
 WEBRTCAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
-CONSOLEAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/ConsoleApp/WEB-INF/red5-web.properties
+CONSOLEAPP_PROPERTIES_FILE=/usr/local/antmedia/webapps/root/WEB-INF/red5-web.properties
 RED5_PROPERTIES_FILE=/usr/local/antmedia/conf/red5.properties
 
 sed -i 's/clusterdb.host=.*/clusterdb.host='$MONGO_SERVER_IP'/' $RED5_PROPERTIES_FILE
