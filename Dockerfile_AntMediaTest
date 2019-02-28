@@ -24,8 +24,11 @@ RUN apt-get install -y ffmpeg
 #directory structure
 RUN mkdir -p /home/antmedia/test
 
+#wget
+RUN apt-get install -y wget
+
 #JMeter
-RUN wget http://ftp.itu.edu.tr/Mirror/Apache//jmeter/binaries/apache-jmeter-5.0.tgz -P /home/antmedia/test
+RUN wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.0.tgz -P /home/antmedia/test
 RUN cd /home/antmedia/test/ && tar -xvf apache-jmeter-5.0.tgz && rm apache-jmeter-5.0.tgz
 
 #Test environment
