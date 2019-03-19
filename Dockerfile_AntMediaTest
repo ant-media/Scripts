@@ -9,13 +9,6 @@ RUN apt-get install -y unzip
 RUN apt-get update
 RUN apt-get install -y openjdk-8-jdk
 
-#QT Libraries for WebRTCTest:
-RUN apt-get install -y qtmultimedia5-dev 
-RUN apt-get install -y libqt5websockets5-dev
-RUN apt-get install -y libqt5multimedia5-plugins
-RUN apt-get install -y qtdeclarative5-dev qml-module-qtquick-controls
-RUN apt-get install -y libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-doc gstreamer1.0-tools
-
 #FFMpeg
 RUN add-apt-repository ppa:jonathonf/ffmpeg-4
 RUN apt-get update
@@ -27,18 +20,6 @@ RUN mkdir -p /home/antmedia/test
 #wget
 RUN apt-get install -y wget
 
-#JMeter
-RUN wget https://archive.apache.org/dist/jmeter/binaries/apache-jmeter-5.0.tgz -P /home/antmedia/test
-RUN cd /home/antmedia/test/ && tar -xvf apache-jmeter-5.0.tgz && rm apache-jmeter-5.0.tgz
-
 #Test environment
 RUN wget https://github.com/ant-media/TestScriptAndTools/archive/master.zip -O /home/antmedia/test/testenv.zip
 RUN cd /home/antmedia/test/ && unzip testenv.zip && rm testenv.zip
-
-RUN apt-get install -y gnuplot
-RUN apt-get install -y jq
-
-
-
-
-
