@@ -109,7 +109,7 @@ if [ $OUT -ne 0 ]; then
   exit $OUT
 fi
 
-if ! [ $(getent passwd | grep antmedia) ] ; then
+if ! [ $(getent passwd | grep antmedia.*/usr/local/antmedia) ] ; then
   $SUDO useradd -d /usr/local/antmedia/ -s /bin/false -r antmedia
   OUT=$?
   if [ $OUT -ne 0 ]; then
