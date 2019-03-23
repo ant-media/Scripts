@@ -66,8 +66,8 @@ $SUDO apt-get install openjdk-8-jdk unzip jsvc -y
 check $?
 
 openjfxExists=`apt-cache search openjfx | wc -l`
-if [ "$openjfxExists" -gt "0" ]; 
-then 
+if [ "$openjfxExists" -gt "0" ];
+then
   $SUDO apt-get install openjfx -y
 fi
 
@@ -99,7 +99,7 @@ check $?
 $SUDO mkdir $AMS_BASE/log
 check $?
 
-if ! [ $(getent passwd | grep antmedia) ] ; then
+if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   $SUDO useradd -d $AMS_BASE/ -s /bin/false -r antmedia
   check $?
 fi
