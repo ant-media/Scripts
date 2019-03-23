@@ -1,0 +1,24 @@
+FROM ubuntu:18.04
+
+#necessary ubuntu installations
+RUN apt-get update
+RUN apt-get install -y software-properties-common
+RUN apt-get install -y unzip
+RUN apt-get install -y wget
+RUN apt-get install -y openjdk-8-jdk
+RUN apt-get install -y ffmpeg
+
+#directory structure
+RUN mkdir -p /home/antmedia/test
+
+#Download Test App
+RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Tools/loadtester.jar -O /home/antmedia/test/loadtester.jar
+
+#Download Test Media
+RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Media/Test.mp4 -O /home/antmedia/test/Test.mp4
+
+#Download WebRTC Test
+RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Tools/webrtctest-release.zip -O /home/antmedia/test/webrtctest-release.zip
+
+#Unzip WebRTC Test
+RUN cd /home/antmedia/test && unzip webrtctest-release.zip && rm webrtctest-release.zip
