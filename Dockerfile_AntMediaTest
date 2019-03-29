@@ -9,16 +9,16 @@ RUN apt-get install -y openjdk-8-jdk
 RUN apt-get install -y ffmpeg
 
 #directory structure
-RUN mkdir -p /home/antmedia/test
+RUN mkdir -p /usr/local/test
 
 #Download Test App
-RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Tools/loadtester.jar -O /home/antmedia/test/loadtester.jar
+RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Tools/loadtester.jar -O /usr/local/test/loadtester.jar
 
 #Download Test Media
-RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Media/Test.mp4 -O /home/antmedia/test/Test.mp4
+RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Media/Test.mp4 -O /usr/local/test/Test.mp4
 
 #Download WebRTC Test
-RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Tools/webrtctest-release.zip -O /home/antmedia/test/webrtctest-release.zip
+RUN wget https://github.com/ant-media/TestScriptAndTools/raw/master/Tools/webrtctest-release.zip -O /usr/local/test/webrtctest-release.zip
 
 #Unzip WebRTC Test
-RUN cd /home/antmedia/test && unzip webrtctest-release.zip && rm webrtctest-release.zip
+RUN cd /usr/local/test && unzip webrtctest-release.zip && rm webrtctest-release.zip
