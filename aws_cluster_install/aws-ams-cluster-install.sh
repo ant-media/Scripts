@@ -1,24 +1,45 @@
 
 #!/bin/bash
 #Pre-requests
-#1. Install jq for json parsing
-#  Ubuntu install
-#  sudo apt-get install jq 
-#  Mac install
-#  brew install jq
-#2. Learn Ubuntu AMI id in your region and replace the UBUNTU_AMI_ID_FOR_MONGODB variable in the script
-#3. Check that instance types are available in your region for MONGO_DB_INSTANCE_TYPE
-#4. Set AMS_AMI_ID=
+# 1. Install jq for json parsing
+#    Ubuntu install
+#      sudo apt-get install jq 
+#    Mac install
+#      brew install jq
+#
+# 2. Learn Ubuntu 16.04 AMI id in your region and replace the UBUNTU_AMI_ID_FOR_MONGODB variable in the script 
 
-#TODO
-#Check jq exists if not inform the user
+# Usage
+# ./aws-ams-cluster-install.sh -i AMI_ID [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]
+# Parameters:
+#   -i AMI_ID -> Amazon Machine Image Id of the Ant Media Server Enterprise
+#   -y true -> headless install
+#   -t uninstall -> uninstalls and delete the components elements in the cluster. If you install no need to set other parameters
+#   -c CERTIFICATE_ARN -> Write certifate arn from AWS ACM. Binding for HTTPS and WSS connections
+#
+# Samples
+#
+# Install Cluster interactively without https
+#    ./aws-ams-cluster-install.sh -i AMI_ID
+#
+# Install Headless without https 
+#    ./aws-ams-cluster-install.sh -i AMI_ID -y true
+#
+# Install with https and wss
+#    ./aws-ams-cluster-install.sh -i AMI_ID -c CERTIFICATE_ARN
+#
+# Uninstall 
+#    ./aws-ams-cluster-install.sh -t uninstall
+
+
+# TODO: make UBUNTU_AMI_ID_FOR_MONGODB parametric
+# TODO: wget the other scripts ams-change-mode-to-cluster.sh and mongodb-instance-init.sh from github 
 
 
 AMS_AMI_ID=
 HEADLESS_PROCESS=false
 OPERATION_TYPE=install
 ACM_CERTIFICATE_ARN=
-
 
 #pem key name
 KEYPAIR_NAME=ams-cluster-key
@@ -571,8 +592,6 @@ if [ $? -ne 0 ]; then
     echo "jq is not installed. Please install jq"
     exit 1
 fi
-
-
 
 if [ "$OPERATION_TYPE" == "install" ]; then
 
