@@ -153,6 +153,8 @@ EDGE_TARGET_GROUP_LISTENER_ARN_FILE=.edgeTargetGroupListenerArn
 ORIGIN_TARGET_GROUP_LISTENER_ARN_FILE=.originTargetGroupListenerArn
 EDGE_TARGET_GROUP_SECURE_LISTENER_ARN_FILE=.edgeTargetGroupSecureListenerArn
 ORIGIN_TARGET_GROUP_SECURE_LISTENER_ARN_FILE=.originTargetGroupSecureListenerArn
+MONGO_DB_INSTANCE_INIT_FILE=mongodb-instance-init.sh
+AMS_CHANGE_MODE_TO_CLUSTER=ams-change-mode-to-cluster.sh
 
 #Checks and delete security group by name
 #Get one parameter which is security group name
@@ -213,7 +215,7 @@ install_mongodb_instance()
     echo "Creating MongoDB Instance"
     MONGODB_INSTANCE_ID=`aws ec2 run-instances --image-id $UBUNTU_AMI_ID_FOR_MONGODB --count 1 \
     --instance-type $MONGO_DB_INSTANCE_TYPE --key-name $KEYPAIR_NAME \
-    --security-group-ids $MONGODB_SECURITY_GROUP_ID --user-data file://mongodb-instance-init.sh | jq --raw-output .Instances[0].InstanceId`
+    --security-group-ids $MONGODB_SECURITY_GROUP_ID --user-data file://$MONGO_DB_INSTANCE_INIT_FILE | jq --raw-output .Instances[0].InstanceId`
 
     if [ "$MONGODB_INSTANCE_ID" != "" ]; then
         echo $MONGODB_INSTANCE_ID > $MONGODB_INSTANCE_ID_FILE
@@ -270,7 +272,7 @@ install_origin_scale_group() {
     add_ingress_to_security_group $ORIGION_SCALE_GROUP_SECURITY_GROUP_ID tcp 6000-65000 $VPC_CIDR_NETWORK
 
     #Create launch configuration for origin cluster
-    USER_DATA_INIT="`cat ams-change-mode-to-cluster.sh` $MONGODB_SERVER_IP" 
+    USER_DATA_INIT="`cat $AMS_CHANGE_MODE_TO_CLUSTER` $MONGODB_SERVER_IP" 
 
     aws autoscaling create-launch-configuration --launch-configuration-name $ORIGION_SCALE_GROUP_LAUNCH_CONF_NAME \
     --image-id $AMS_AMI_ID --instance-type $ORIGIN_CLUSTER_INSTANCE_TYPE --associate-public-ip-address \
@@ -342,7 +344,7 @@ install_edge_scale_group () {
     #add 5080 for websocket/http communication. Open for world
     add_ingress_to_security_group $EDGE_SCALE_GROUP_SECURITY_GROUP_ID tcp 5080 0.0.0.0/0
 
-    USER_DATA_INIT="`cat ams-change-mode-to-cluster.sh` $MONGODB_SERVER_IP" 
+    USER_DATA_INIT="`cat $AMS_CHANGE_MODE_TO_CLUSTER` $MONGODB_SERVER_IP" 
     aws autoscaling create-launch-configuration --launch-configuration-name $EDGE_SCALE_GROUP_LAUNCH_CONF_NAME \
         --image-id $AMS_AMI_ID --instance-type $EDGE_CLUSTER_INSTANCE_TYPE --associate-public-ip-address \
         --security-groups $EDGE_SCALE_GROUP_SECURITY_GROUP_ID  --user-data "$USER_DATA_INIT"
@@ -429,12 +431,21 @@ install_load_balancer() {
          exit 1
     fi
 
-    #create target group for orign
+    #create target group for origin
 
     ORIGIN_TARGET_GROUP_ARN=`aws elbv2 create-target-group --name $ORIGIN_TARGET_GROUP_NAME --protocol HTTP --port 5080 \
     --vpc-id $VPC_NETWORK_ID | jq --raw-output .TargetGroups[0].TargetGroupArn`
     if [ "$ORIGIN_TARGET_GROUP_ARN" != "" ]; then
         echo $ORIGIN_TARGET_GROUP_ARN > $ORIGIN_TARGET_GROUP_ARN_FILE
+    fi
+
+    #enable session stickyness for origin target group
+    #sticky session is good for logging in to web console
+    ENABLE_STICKY_SESSION_RESULT=`aws elbv2 modify-target-group-attributes --target-group-arn $ORIGIN_TARGET_GROUP_ARN \
+            --attributes Key=stickiness.enabled,Value=true Key=stickiness.type,Value=lb_cookie Key=stickiness.lb_cookie.duration_seconds,Value=3600 | jq --raw-output .Attributes[0].Value`
+
+    if [ $ENABLE_STICKY_SESSION_RESULT != true ]; then
+        echo "Warning: Origin Target group cannot be set for sticky session. You can enable it on AWS Console"
     fi
 
     #create target group for edge
@@ -443,6 +454,15 @@ install_load_balancer() {
 
     if [ "$EDGE_TARGET_GROUP_ARN" != "" ]; then
         echo $EDGE_TARGET_GROUP_ARN > $EDGE_TARGET_GROUP_ARN_FILE
+    fi
+
+    #enable session stickyness for origin target group
+    #sticky session is good for logging in to web console
+    ENABLE_STICKY_SESSION_RESULT=`aws elbv2 modify-target-group-attributes --target-group-arn $EDGE_TARGET_GROUP_ARN \
+            --attributes Key=stickiness.enabled,Value=true Key=stickiness.type,Value=lb_cookie Key=stickiness.lb_cookie.duration_seconds,Value=3600 | jq --raw-output .Attributes[0].Value`
+
+    if [ $ENABLE_STICKY_SESSION_RESULT != true ]; then
+        echo "Warning: Edge Target group cannot be set for sticky session. You can enable it on AWS Console"
     fi
 
     #create listener 80 port forwared to edge target group arn
@@ -615,6 +635,20 @@ if [ "$OPERATION_TYPE" == "install" ]; then
         echo "$KEYPAIR_NAME already exists. Skipping creating key pair"
     fi
 
+
+    # get mongo db instance init file
+    if [ ! -f $MONGO_DB_INSTANCE_INIT_FILE ]; then
+        wget -O $MONGO_DB_INSTANCE_INIT_FILE https://raw.githubusercontent.com/ant-media/Scripts/master/aws_cluster_install/mongodb-instance-init.sh 
+    fi
+
+    # get instance init file
+    if [ ! -f $AMS_CHANGE_MODE_TO_CLUSTER ]; then 
+        wget -O $AMS_CHANGE_MODE_TO_CLUSTER https://raw.githubusercontent.com/ant-media/Scripts/master/aws_cluster_install/ams-change-mode-to-cluster.sh
+    fi
+
+    
+
+    
 
     ################################################
     ############ Getting VPC Parameters ############
