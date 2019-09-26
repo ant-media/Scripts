@@ -7,10 +7,8 @@
 #    Mac install
 #      brew install jq
 #
-# 2. Learn Ubuntu 16.04 AMI id in your region and replace the UBUNTU_AMI_ID_FOR_MONGODB variable in the script 
-
 # Usage
-# ./aws-ams-cluster-install.sh [-i AMI_ID] [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]
+# ./aws-ams-cluster-install.sh [-i AMI_ID] [-u UBUNTU_AMI_ID] [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]
 # Parameters:
 #   -i AMI_ID -> Amazon Machine Image Id(AMI) of the Ant Media Server Enterprise. It's optional. If it's not set, it uses Marketplace image in your region
 #   -u UBUNTU_AMI_ID -> Ubuntu 16.04 AMI ID for installing MONGODB. Optional. If not set, try to get find an AMI from marketplace
@@ -565,13 +563,14 @@ print_sample_usage() {
       echo "You should enter Ant Media Server Enterprise Edition AMI ID to continue"
       echo ""
       echo "Sample usage:"
-      echo "$0  [-i AMI_ID] [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]"
+      echo "$0  [-i AMI_ID] [-u UBUNTU_AMI_ID] [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]"
       echo ""
       echo "Parameters:"
-      echo "-i AMI_ID -> Amazon Machine Image Id of the Ant Media Server Enterprise. Optional. If not specified. Uses AWS Marketplace Image "
-      echo "-y true|false -> true: Headless install for automation. false: Interactive install. Optional. Default value is false"
-      echo "-t uninstall|install -> uninstalls the whole elements in the cluster. Optional. Default value is install"
-      echo "-c CERTIFICATE_ARN -> Write certifate arn from AWS ACM binding for HTTPS and WSS connections. Optional. No default value"
+      echo "-i AMI_ID -> Optional. Amazon Machine Image Id of the Ant Media Server Enterprise. If not specified. Uses AWS Marketplace Image "
+      echo "-u UBUNTU_AMI_ID -> Optional. Ubuntu 16.04 AMI ID for installing MONGODB. If not set, try to get find an AMI from marketplace"
+      echo "-y true|false -> Optional. true: Headless install for automation. false: Interactive install. Default value is false"
+      echo "-t uninstall|install -> Optional. uninstall: uninstalls the whole elements in the cluster. install: installs the cluster. Default value is install"
+      echo "-c CERTIFICATE_ARN -> Optional but Strongly recommended. Write certifate arn from AWS ACM binding for HTTPS and WSS connections."
       echo ""
 }
 
