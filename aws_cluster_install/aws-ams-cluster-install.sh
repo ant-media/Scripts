@@ -10,44 +10,46 @@
 # 2. Learn Ubuntu 16.04 AMI id in your region and replace the UBUNTU_AMI_ID_FOR_MONGODB variable in the script 
 
 # Usage
-# ./aws-ams-cluster-install.sh -i AMI_ID [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]
+# ./aws-ams-cluster-install.sh [-i AMI_ID] [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]
 # Parameters:
-#   -i AMI_ID -> Amazon Machine Image Id of the Ant Media Server Enterprise
-#   -y true -> headless install
-#   -t uninstall -> uninstalls and delete the components elements in the cluster. If you install no need to set other parameters
-#   -c CERTIFICATE_ARN -> Write certifate arn from AWS ACM. Binding for HTTPS and WSS connections
+#   -i AMI_ID -> Amazon Machine Image Id(AMI) of the Ant Media Server Enterprise. It's optional. If it's not set, it uses Marketplace image in your region
+#   -u UBUNTU_AMI_ID -> Ubuntu 16.04 AMI ID for installing MONGODB. Optional. If not set, try to get find an AMI from marketplace
+#   -y true|false -> headless install. Optional. Default value is true
+#   -t uninstall|install -> install or uninstalls components elements in the cluster. Optional. Default value is install. 
+#   -c CERTIFICATE_ARN -> Write certifate arn from AWS ACM. Binding for HTTPS and WSS connections. Optional. Default value is not set.
 #
 # Samples
 #
-# Install Cluster interactively without https
+# Install Cluster interactively without https with AWS Marketplace AMI
+#     ./aws-ams-cluster-install.sh
+#
+# Install Cluster interactively without https with specified Ant Media Server AMI ID
 #    ./aws-ams-cluster-install.sh -i AMI_ID
 #
 # Install Headless without https 
-#    ./aws-ams-cluster-install.sh -i AMI_ID -y true
+#    ./aws-ams-cluster-install.sh -y true
 #
 # Install with https and wss
-#    ./aws-ams-cluster-install.sh -i AMI_ID -c CERTIFICATE_ARN
+#    ./aws-ams-cluster-install.sh -c CERTIFICATE_ARN
 #
 # Uninstall 
 #    ./aws-ams-cluster-install.sh -t uninstall
 
-
-# TODO: make UBUNTU_AMI_ID_FOR_MONGODB parametric
-# TODO: wget the other scripts ams-change-mode-to-cluster.sh and mongodb-instance-init.sh from github 
 
 
 AMS_AMI_ID=
 HEADLESS_PROCESS=false
 OPERATION_TYPE=install
 ACM_CERTIFICATE_ARN=
+#ubuntu 16.04 image for installing mongodb. 
+UBUNTU_AMI_ID_FOR_MONGODB=
 
 #pem key name
 KEYPAIR_NAME=ams-cluster-key
 
 #mongodb instance security group name
 MONGODB_SECURITY_GROUP_NAME=ams-cluster-mongodb-security-group
-#ubuntu 16.04 image for mongodb. 
-UBUNTU_AMI_ID_FOR_MONGODB=ami-0085d4f8878cddc81
+
 #mongodb instance type 
 MONGO_DB_INSTANCE_TYPE=c5.xlarge
 
@@ -144,6 +146,7 @@ EDGE_GROUP_ALARM_REMOVECAPACITY=ams-edge-alarm-removecapacity
 #edge group cpu threshold for scaling in. If it's less than threshold, instance count is decreased 
 EDGE_SCALEIN_CLOUDWATCH_THRESHOLD=40  
 
+AWS_MARKETPLACE_AMS_ENTERPRISE_PRODUCT_CODE=8kf9kapq2qbo37fuekp8k7o6r
 
 ############## you do not need to change the parameters below #############
 MONGODB_INSTANCE_ID_FILE=.mongodbInstance
@@ -155,6 +158,8 @@ EDGE_TARGET_GROUP_SECURE_LISTENER_ARN_FILE=.edgeTargetGroupSecureListenerArn
 ORIGIN_TARGET_GROUP_SECURE_LISTENER_ARN_FILE=.originTargetGroupSecureListenerArn
 MONGO_DB_INSTANCE_INIT_FILE=mongodb-instance-init.sh
 AMS_CHANGE_MODE_TO_CLUSTER=ams-change-mode-to-cluster.sh
+
+
 
 #Checks and delete security group by name
 #Get one parameter which is security group name
@@ -560,13 +565,13 @@ print_sample_usage() {
       echo "You should enter Ant Media Server Enterprise Edition AMI ID to continue"
       echo ""
       echo "Sample usage:"
-      echo "$0  -i AMI_ID [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]"
+      echo "$0  [-i AMI_ID] [-y true|false] [-t install|uninstall] [-c CERTIFICATE_ARN]"
       echo ""
       echo "Parameters:"
-      echo "-i AMI_ID -> Amazon Machine Image Id of the Ant Media Server Enterprise"
-      echo "-y true -> headless install"
-      echo "-t uninstall -> uninstalls the whole elements in the cluster"
-      echo "-c CERTIFICATE_ARN -> Write certifate arn from AWS ACM binding for HTTPS and WSS connections"
+      echo "-i AMI_ID -> Amazon Machine Image Id of the Ant Media Server Enterprise. Optional. If not specified. Uses AWS Marketplace Image "
+      echo "-y true|false -> true: Headless install for automation. false: Interactive install. Optional. Default value is false"
+      echo "-t uninstall|install -> uninstalls the whole elements in the cluster. Optional. Default value is install"
+      echo "-c CERTIFICATE_ARN -> Write certifate arn from AWS ACM binding for HTTPS and WSS connections. Optional. No default value"
       echo ""
 }
 
@@ -582,7 +587,7 @@ print_sample_usage() {
 # -y headless process if true,  
 # -t install / uninstall
 #
-while getopts i:y:t:c: option
+while getopts i:y:t:c:u: option
 do
   case "${option}" in
     i) 
@@ -596,6 +601,9 @@ do
     ;;
     c)
     ACM_CERTIFICATE_ARN=${OPTARG}
+    ;;
+    u)
+    UBUNTU_AMI_ID_FOR_MONGODB=${OPTARG}
     ;;
    esac
 done
@@ -615,11 +623,32 @@ fi
 
 if [ "$OPERATION_TYPE" == "install" ]; then
 
-    if [ -z "$AMS_AMI_ID" ]
-    then
-        print_sample_usage
-        exit 1
+    if [ -z "$AMS_AMI_ID" ]; then
+
+        echo "Getting Ant Media Server Enterprise AMI ID from AWS Marketplace"
+        AMS_AMI_ID=`aws ec2 describe-images  --filters Name=product-code,Values=$AWS_MARKETPLACE_AMS_ENTERPRISE_PRODUCT_CODE Name=is-public,Values=true | jq --raw-output .Images[0].ImageId`
+        if [ "$AMS_AMI_ID" == "null" ]; then
+            echo "Cannot find Ant Media Server Enterprise AMI in your region. Please specify it on command line parameter"
+            echo ""
+            echo ""
+            print_sample_usage
+            exit 1 
+        fi
     fi
+
+    if [ -z "$UBUNTU_AMI_ID_FOR_MONGODB" ]; then
+
+        echo "Getting Ubuntu 16.04 AMI ID for installing MongoDB"
+        UBUNTU_AMI_ID_FOR_MONGODB=`aws ec2 describe-images  --owners 099720109477 --filters Name=name,Values=*ubuntu-xenial-16.04-amd64-server* Name=virtualization-type,Values=hvm Name=architecture,Values=x86_64 Name=is-public,Values=true | jq --raw-output .Images[0].ImageId`
+        if [ "$UBUNTU_AMI_ID_FOR_MONGODB" == "null" ]; then
+           echo "Cannot find Ubuntu 16.04 AMI ID in your region. Please specify it on command line"
+           echo ""
+           echo ""
+           print_sample_usage
+           exit 1
+        fi
+     fi
+    
 
 
     #check if key pair exists
