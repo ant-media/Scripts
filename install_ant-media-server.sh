@@ -99,6 +99,10 @@ check $?
 $SUDO mkdir $AMS_BASE/log
 check $?
 
+$SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
+$SUDO systemctl daemon-reload
+$SUDO systemctl enable antmedia.service
+
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   $SUDO useradd -d $AMS_BASE/ -s /bin/false -r antmedia
   check $?
