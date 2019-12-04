@@ -87,15 +87,6 @@ fi
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 check $?
 
-$SUDO cp $AMS_BASE/antmedia /etc/init.d/
-check $?
-
-$SUDO update-rc.d antmedia defaults
-check $?
-
-$SUDO update-rc.d antmedia enable
-check $?
-
 $SUDO mkdir $AMS_BASE/log
 check $?
 
