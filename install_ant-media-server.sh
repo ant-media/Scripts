@@ -87,12 +87,17 @@ fi
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 check $?
 
-$SUDO mkdir $AMS_BASE/log
+$SUDO cp $AMS_BASE/antmedia /etc/init.d/
 check $?
 
-$SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
-$SUDO systemctl daemon-reload
-$SUDO systemctl enable antmedia.service
+$SUDO update-rc.d antmedia defaults
+check $?
+
+$SUDO update-rc.d antmedia enable
+check $?
+
+$SUDO mkdir $AMS_BASE/log
+check $?
 
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   $SUDO useradd -d $AMS_BASE/ -s /bin/false -r antmedia
