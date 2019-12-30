@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #
 # Download latest ant media server and run this script by giving the zip file
 # ./install_ant-media-server.sh ant-media-server-*.zip
@@ -94,6 +93,11 @@ $SUDO update-rc.d antmedia defaults
 check $?
 
 $SUDO update-rc.d antmedia enable
+check $?
+
+$SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
+$SUDO systemctl daemon-reload
+$SUDO systemctl enable antmedia.service
 check $?
 
 $SUDO mkdir $AMS_BASE/log
