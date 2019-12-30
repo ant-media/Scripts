@@ -12,32 +12,44 @@ SAVE_SETTINGS=false
 
 
 restore_settings() {
-  #app settings
-  files[0]=/webapps/LiveApp/WEB-INF/red5-web.properties
-  files[1]=/webapps/ConsoleApp/WEB-INF/red5-web.properties
-  files[2]=/webapps/WebRTCApp/WEB-INF/red5-web.properties
-  files[3]=/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
-  files[4]=/webapps/root/WEB-INF/red5-web.properties
+  webapps=("LiveApp" "WebRTCAppEE" "root" "WebRTCApp") 
+    sleep 20
+    for i in ${webapps[*]}; do
+	    if [ -d "$BACKUP_DIR/webapps/$i/" ]; then
+   		cp -p $BACKUP_DIR/webapps/$i/WEB-INF/red5-web.properties $AMS_BASE/webapps/$i/WEB-INF/red5-web.properties
+      		cp -p $BACKUP_DIR/webapps/$i/WEB-INF/*.xml $AMS_BASE/webapps/$i/WEB-INF/
+      			if [ -d $BACKUP_DIR/webapps/$i/streams/ ]; then
+  	    			cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+      		        fi
+	    fi
+    done
 
-  #db files
-  files[5]=/liveapp.db
-  files[6]=/server.db
-  files[7]=/webrtcapp.db
-  files[8]=/webrtcappee.db
+    d=$(diff -rq $AMS_BASE/webapps/ $BACKUP_DIR/webapps/ | awk -F":" '{print $2}' | xargs)
 
-  #copy app settings
-  for file in ${files[*]}
-  do
-    if [ -f $BACKUP_DIR$file ]; then
-      $SUDO cp $BACKUP_DIR$file $AMS_BASE$file
-    fi
-  done
+    if [ ! -z "$d" ]; then
+      for custom_app in $d; do
+        mkdir $AMS_BASE/webapps/$custom_app
+        unzip $AMS_BASE/StreamApp*.war -d $AMS_BASE/webapps/$custom_app
+        sleep 2
+        cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/red5-web.properties $AMS_BASE/webapps/$custom_app/WEB-INF/red5-web.properties
+        cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/*.xml $AMS_BASE/webapps/$custom_app/WEB-INF/
+        if [ -d $BACKUP_DIR/webapps/$custom_app/streams/ ]; then
+  	      cp -p -r $BACKUP_DIR/webapps/$custom_app/streams/ $AMS_BASE/webapps/$custom_app/
+        fi
+      done
+     fi
 
-  echo "Settings are restored."
+  find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
+  if [ $? -eq "0" ]; then
+    echo "Settings are restored."
+  else
+    echo "Settings are not restored. Please send the log of this console to contact@antmedia.io"
+  fi
 }
 
+
 check() {
-  OUT=$1
+  OUT=$?
   if [ $OUT -ne 0 ]; then
     echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
     exit $OUT
@@ -59,20 +71,10 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-$SUDO apt-get update -y
-check $?
-
-$SUDO apt-get install openjdk-8-jdk unzip jsvc -y
-check $?
-
-openjfxExists=`apt-cache search openjfx | wc -l`
-if [ "$openjfxExists" -gt "0" ];
-then
-  $SUDO apt-get install openjfx -y
-fi
+$SUDO yum -y install java-1.8.0-openjdk unzip apache-commons-daemon-jsvc
+check
 
 unzip $1
-check $?
 
 if ! [ -d $AMS_BASE ]; then
   $SUDO mv ant-media-server $AMS_BASE
@@ -84,17 +86,12 @@ else
   check $?
 fi
 
-$SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
-check $?
+$SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/jre-openjdk"'  $AMS_BASE/antmedia
 
 $SUDO cp $AMS_BASE/antmedia /etc/init.d/
 check $?
 
-$SUDO update-rc.d antmedia defaults
-check $?
-
-$SUDO update-rc.d antmedia enable
-check $?
+$SUDO chkconfig antmedia on
 
 $SUDO mkdir $AMS_BASE/log
 check $?
@@ -109,12 +106,20 @@ check $?
 
 $SUDO service antmedia stop
 $SUDO service antmedia start
-OUT=$?
+
+ports=("5080","443","5443","1935","5554")
+
+for i in ${ports[*]}
+do
+  firewall-cmd --add-port=$i/tcp --permanent > /dev/null 2>&1
+done
+firewall-cmd --add-port=5000-65000/udp --permanent > /dev/null 2>&1
+firewall-cmd --reload > /dev/null 2>&1
 
 if [ $OUT -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
     sleep 5
-    $SUDO service antmedia stop
+#    $SUDO service antmedia stop
     restore_settings
     check $?
     $SUDO chown -R antmedia:antmedia $AMS_BASE/
