@@ -12,32 +12,46 @@ SAVE_SETTINGS=false
 
 
 restore_settings() {
-  #app settings
-  files[0]=/webapps/LiveApp/WEB-INF/red5-web.properties
-  files[1]=/webapps/ConsoleApp/WEB-INF/red5-web.properties
-  files[2]=/webapps/WebRTCApp/WEB-INF/red5-web.properties
-  files[3]=/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
-  files[4]=/webapps/root/WEB-INF/red5-web.properties
+  webapps=("LiveApp" "WebRTC*" "root") 
 
-  #db files
-  files[5]=/liveapp.db
-  files[6]=/server.db
-  files[7]=/webrtcapp.db
-  files[8]=/webrtcappee.db
-
-  #copy app settings
-  for file in ${files[*]}
-  do
-    if [ -f $BACKUP_DIR$file ]; then
-      $SUDO cp $BACKUP_DIR$file $AMS_BASE$file
-    fi
+  for i in ${webapps[*]}; do
+        while [ ! -d $AMS_BASE/webapps/$i/WEB-INF/ ]; do
+                sleep 1
+        done
+        if [ -d $BACKUP_DIR/webapps/$i/ ]; then
+          cp -p -r $BACKUP_DIR/webapps/$i/WEB-INF/red5-web.properties $AMS_BASE/webapps/$i/WEB-INF/red5-web.properties
+          cp -p -r $BACKUP_DIR/webapps/$i/WEB-INF/*.xml $AMS_BASE/webapps/$i/WEB-INF/
+          if [ -d $BACKUP_DIR/webapps/$i/streams/ ]; then
+            cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+          fi
+        fi
   done
 
-  echo "Settings are restored."
+  diff_webapps=$(diff <(ls $AMS_BASE/webapps/) <(ls $BACKUP_DIR/webapps/) | awk -F">" '{print $2}' | xargs)
+
+  if [ ! -z "$diff_webapps" ]; then
+    for custom_app in $diff_webapps; do
+      mkdir $AMS_BASE/webapps/$custom_app
+      unzip $AMS_BASE/StreamApp*.war -d $AMS_BASE/webapps/$custom_app
+      sleep 2
+      cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/red5-web.properties $AMS_BASE/webapps/$custom_app/WEB-INF/red5-web.properties
+      cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/*.xml $AMS_BASE/webapps/$custom_app/WEB-INF/
+      if [ -d $BACKUP_DIR/webapps/$custom_app/streams/ ]; then
+  	    cp -p -r $BACKUP_DIR/webapps/$custom_app/streams/ $AMS_BASE/webapps/$custom_app/
+      fi
+    done
+  fi
+
+  find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
+  if [ $? -eq "0" ]; then
+    echo "Settings are restored."
+  else
+    echo "Settings are not restored. Please send the log of this console to contact@antmedia.io"
+  fi
 }
 
 check() {
-  OUT=$1
+  OUT=$?
   if [ $OUT -ne 0 ]; then
     echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
     exit $OUT
@@ -107,22 +121,24 @@ fi
 $SUDO chown -R antmedia:antmedia $AMS_BASE/
 check $?
 
-$SUDO service antmedia stop
+$SUDO service antmedia stop &
+wait $!
 $SUDO service antmedia start
 OUT=$?
 
 if [ $OUT -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
     sleep 5
-    $SUDO service antmedia stop
+#    $SUDO service antmedia stop
     restore_settings
     check $?
     $SUDO chown -R antmedia:antmedia $AMS_BASE/
     check $?
-    $SUDO service antmedia start
+    $SUDO service antmedia restart
     check $?
   fi
   echo "Ant Media Server is started"
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
 fi
+
