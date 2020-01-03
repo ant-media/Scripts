@@ -129,7 +129,6 @@ OUT=$?
 if [ $OUT -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
     sleep 5
-#    $SUDO service antmedia stop
     restore_settings
     check $?
     $SUDO chown -R antmedia:antmedia $AMS_BASE/
