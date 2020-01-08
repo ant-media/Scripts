@@ -109,7 +109,7 @@ check $?
 $SUDO service antmedia stop
 $SUDO service antmedia start
 
-ports=("5080" "443" "5443" "1935" "5554")
+ports=("5080" "443" "5443" "1935")
 
 for i in ${ports[*]}
 do
