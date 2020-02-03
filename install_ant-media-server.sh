@@ -43,6 +43,15 @@ restore_settings() {
   fi
 
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
+
+  #SSL Restore
+  if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
+    ssl_files=("red5.properties" "jee-container.xml" "truststore.jks" "keystore.jks")
+    for ssl in ${ssl_files[*]}; do
+      cp -p $BACKUP_DIR/conf/$ssl $AMS_BASE/conf/
+    done
+  fi
+
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
   else
