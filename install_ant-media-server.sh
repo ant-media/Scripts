@@ -10,6 +10,9 @@ AMS_BASE=/usr/local/antmedia
 BACKUP_DIR="/usr/local/antmedia-backup-"$(date +"%Y-%m-%d_%H-%M-%S")
 SAVE_SETTINGS=false
 
+/sbin/iptables -I INPUT -p tcp ! -s 127.0.0.1 --dport 5599 -j DROP
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
 
 restore_settings() {
   webapps=("LiveApp" "WebRTC*" "root") 
@@ -85,7 +88,7 @@ fi
 $SUDO apt-get update -y
 check $?
 
-$SUDO apt-get install openjdk-8-jdk unzip jsvc -y
+$SUDO apt-get install openjdk-8-jdk unzip jsvc iptables-persistent -y
 check $?
 
 openjfxExists=`apt-cache search openjfx | wc -l`
@@ -134,6 +137,8 @@ $SUDO service antmedia stop &
 wait $!
 $SUDO service antmedia start
 OUT=$?
+
+/usr/sbin/netfilter-persistent save
 
 if [ $OUT -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
