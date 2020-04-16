@@ -68,7 +68,7 @@ distro () {
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "16.04" ] && [ "$VERSION_ID" != "7" ] ; then
          echo $msg
          exit 1
-            fi
+      fi
     else
       echo $msg
       exit 1
