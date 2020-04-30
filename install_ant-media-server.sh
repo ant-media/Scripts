@@ -110,7 +110,8 @@ if [ "$ID" == "ubuntu" ]; then
   openjfxExists=`apt-cache search openjfx | wc -l`
   if [ "$openjfxExists" -gt "0" ];
     then
-    $SUDO apt-get install openjfx -y
+      $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
+      $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni
   fi          
 elif [ "$ID" == "centos" ]; then
   $SUDO yum -y install java-1.8.0-openjdk unzip apache-commons-daemon-jsvc 
