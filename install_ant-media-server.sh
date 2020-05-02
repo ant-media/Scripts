@@ -37,7 +37,7 @@ restore_settings() {
       cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/red5-web.properties $AMS_BASE/webapps/$custom_app/WEB-INF/red5-web.properties
       cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/*.xml $AMS_BASE/webapps/$custom_app/WEB-INF/
       if [ -d $BACKUP_DIR/webapps/$custom_app/streams/ ]; then
-  	    cp -p -r $BACKUP_DIR/webapps/$custom_app/streams/ $AMS_BASE/webapps/$custom_app/
+        cp -p -r $BACKUP_DIR/webapps/$custom_app/streams/ $AMS_BASE/webapps/$custom_app/
       fi
     done
   fi
@@ -58,6 +58,25 @@ restore_settings() {
     echo "Settings are not restored. Please send the log of this console to contact@antmedia.io"
   fi
 }
+
+distro () {
+  os_release="/etc/os-release"
+  if [ -f "$os_release" ]; then
+    . $os_release
+    msg="We are supporting Ubuntu 16.04, 18.04 and Centos 7."
+    if [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
+      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "16.04" ] && [ "$VERSION_ID" != "7" ] ; then
+         echo $msg
+         exit 1
+      fi
+    else
+      echo $msg
+      exit 1
+    fi
+  fi
+}
+
+distro
 
 check() {
   OUT=$?
@@ -82,71 +101,88 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-$SUDO apt-get update -y
-check $?
+if [ "$ID" == "ubuntu" ]; then
+  $SUDO apt-get update -y
+  check
+  $SUDO apt-get install openjdk-8-jdk unzip jsvc -y
+  check
+  #update-java-alternatives -s java-1.8.0-openjdk-amd64
+  openjfxExists=`apt-cache search openjfx | wc -l`
+  if [ "$openjfxExists" -gt "0" ];
+    then
+    $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
+    $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni
+  fi          
+elif [ "$ID" == "centos" ]; then
+  $SUDO yum -y install java-1.8.0-openjdk unzip apache-commons-daemon-jsvc 
+  check
+  if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
+    ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
+  fi
+  ports=("5080" "443" "80" "5443" "1935")
 
-$SUDO apt-get install openjdk-8-jdk unzip jsvc -y
-check $?
-
-openjfxExists=`apt-cache search openjfx | wc -l`
-if [ "$openjfxExists" -gt "0" ];
-then
-  $SUDO apt-get install openjfx -y
+  for i in ${ports[*]}
+  do
+    firewall-cmd --add-port=$i/tcp --permanent > /dev/null 2>&1
+  done
+  firewall-cmd --add-port=5000-65000/udp --permanent > /dev/null 2>&1
+  firewall-cmd --reload > /dev/null 2>&1
 fi
 
 unzip $1
-check $?
+check
 
 if ! [ -d $AMS_BASE ]; then
   $SUDO mv ant-media-server $AMS_BASE
-  check $?
+  check
 else
   $SUDO mv $AMS_BASE $BACKUP_DIR
-  check $?
+  check
   $SUDO mv ant-media-server $AMS_BASE
-  check $?
+  check
 fi
 
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
-check $?
+check
 
-$SUDO cp $AMS_BASE/antmedia /etc/init.d/
-check $?
+$SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
+check
 
-$SUDO update-rc.d antmedia defaults
-check $?
+#converting octal to decimal for centos 
+if [ "$ID" == "centos" ]; then
+  sed -i 's/-umask 133/-umask 91/g' /lib/systemd/system/antmedia.service
+fi
 
-$SUDO update-rc.d antmedia enable
-check $?
+$SUDO systemctl daemon-reload
+$SUDO systemctl enable antmedia
 
 $SUDO mkdir $AMS_BASE/log
-check $?
+check
 
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   $SUDO useradd -d $AMS_BASE/ -s /bin/false -r antmedia
-  check $?
+  check
 fi
 
 $SUDO chown -R antmedia:antmedia $AMS_BASE/
-check $?
+check
 
 $SUDO service antmedia stop &
 wait $!
 $SUDO service antmedia start
-OUT=$?
+check
 
-if [ $OUT -eq 0 ]; then
+if [ $? -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
     sleep 5
     restore_settings
-    check $?
+    check
     $SUDO chown -R antmedia:antmedia $AMS_BASE/
-    check $?
+    check
     $SUDO service antmedia restart
-    check $?
+    check
   fi
   echo "Ant Media Server is started"
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
 fi
-
