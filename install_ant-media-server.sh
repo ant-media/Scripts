@@ -151,8 +151,17 @@ if [ "$ID" == "centos" ]; then
   sed -i 's/-umask 133/-umask 91/g' /lib/systemd/system/antmedia.service
 fi
 
-$SUDO systemctl daemon-reload
-$SUDO systemctl enable antmedia
+if ! [ -x "$(command -v systemctl)" ]; then
+  $SUDO cp $AMS_BASE/antmedia /etc/init.d
+  $SUDO update-rc.d antmedia defaults
+  $SUDO update-rc.d antmedia enable
+  check
+else
+  $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
+  $SUDO systemctl daemon-reload
+  $SUDO systemctl enable antmedia
+  check
+fi
 
 $SUDO mkdir $AMS_BASE/log
 check
