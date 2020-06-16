@@ -157,6 +157,21 @@ if ! [ -x "$(command -v systemctl)" ]; then
   $SUDO update-rc.d antmedia enable
   check
 else
+ 
+  #total memory in mb
+  TOTAL_MEMORY=`vmstat -s -Sm | grep 'total memory' | awk -F' ' '{print $1}'`
+  declare -i QUARTER_MEMORY=$TOTAL_MEMORY/4
+  declare -i HALF_MEMORY=$TOTAL_MEMORY/2
+  declare -i MAX_MEMORY=$TOTAL_MEMORY*85/100
+  
+  #-Xmx #1/4 of the total memory
+  #-Dorg.bytedeco.javacpp.maxbytes=  #1/2 of the total memory
+  #-Dorg.bytedeco.javacpp.maxphysicalbytes=    #3/4 of the total memory
+  
+  MEMORY_LINE="Environment=JVM_MEMORY_OPTIONS="
+  MEMORY_LINE_WITH_OPTIONS="$MEMORY_LINE -Xmx${QUARTER_MEMORY}m -Dorg.bytedeco.javacpp.maxbytes=${HALF_MEMORY}m -Dorg.bytedeco.javacpp.maxphysicalbytes=${MAX_MEMORY}m"
+  sed 's/${MEMORY_LINE}/${MEMORY_LINE_WITH_OPTIONS}/g' $AMS_BASE/antmedia.service
+  
   $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
   $SUDO systemctl daemon-reload
   $SUDO systemctl enable antmedia

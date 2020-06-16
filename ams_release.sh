@@ -9,6 +9,15 @@
 #Future work: Deploying to maven central takes about 2-3 hours so that it blocks Ant-Media-Server to pass the test.
 #another solution we may add sonatype as release repo
 
+if [ -z "$1" ]; then
+  echo "Please give the version as parameter"
+  echo "Sample usage:"
+  echo "$0  1.6.1"
+  echo "$0  1.6.1-SNAPSHOT"
+  exit 1
+fi
+
+
 check() {
   OUT=$1
   if [ $OUT -ne 0 ]; then
@@ -92,9 +101,7 @@ declare -a arr=(
                  "Ant-Media-Server"
                  "Ant-Media-Enterprise"
                  "ManagementConsole_WebApp"
-                 "SampleApp"
-                 "WebRTCApp"
-                 "WebRTCApp4Enterprise"
+                 "StreamApp"
                  )
 
 VERSION=$1
