@@ -58,7 +58,7 @@ Parameters:
   MongoDBInstanceType:
     Description: Ant Media MongoDB EC2 instance type
     Type: String
-    Default: c5.large
+    Default: t3.micro
     AllowedValues:
       - c5.large
       - c5.xlarge
@@ -66,6 +66,12 @@ Parameters:
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - m5.large
       - m5.xlarge
       - m5.2xlarge
@@ -120,10 +126,10 @@ Parameters:
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
   AntMediaOriginCapacity:
-    Default: '2'
+    Default: '1'
     Description: The initial number of Ant Media Origin instances
     Type: Number
-    MinValue: '2'
+    MinValue: '1'
     MaxValue: '20'
   AntMediaOriginCapacityMax:
     Default: '10'
@@ -233,15 +239,19 @@ Resources:
       Properties:
         VPCZoneIdentifier: !Ref Subnets
         LaunchConfigurationName: !Ref LaunchConfigOrigin
-        MinSize: '2'
+        MinSize: '1'
         MaxSize: !Ref AntMediaOriginCapacityMax
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
+        Tags:
+        - Key: Name
+          Value: Antmedia Origin
+          PropagateAtLaunch: 'true'
       CreationPolicy:
         ResourceSignal:
           Timeout: PT15M
-          Count: '2'
+          Count: !Ref AntMediaOriginCapacity
       UpdatePolicy:
         AutoScalingRollingUpdate:
           MinInstancesInService: '1'
@@ -309,6 +319,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
           apt-get update -y
           apt-get install -y python-pip
           apt-get install -y python-setuptools
@@ -316,22 +327,25 @@ Resources:
           python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigOrigin --configsets setup --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
-          bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
 
   EdgeGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref LaunchConfigEdge
-      MinSize: '2'
+      MinSize: '1'
       MaxSize: !Ref AntMediaEdgeCapacityMax
       DesiredCapacity: !Ref AntMediaEdgeCapacity
       TargetGroupARNs:
         - !Ref ALBTargetGroupEdge
+      Tags:
+        - Key: Name
+          Value: Antmedia Origin
+          PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
-        Count: '2'
+        Count: !Ref AntMediaEdgeCapacity
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: '1'
@@ -399,6 +413,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
           apt-get update -y
           apt-get install -y python-pip
           apt-get install -y python-setuptools
@@ -406,7 +421,7 @@ Resources:
           python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
-          bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+          
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -558,7 +573,7 @@ Resources:
         InstanceType: !Ref MongoDBInstanceType
         Tags:
         - Key: Name
-          Value: MongoDB
+          Value: Antmedia MongoDB
         SecurityGroups:
           - !Ref DBEC2SecurityGroup
         UserData:
@@ -573,7 +588,7 @@ Resources:
             systemctl enable mongod
             systemctl restart mongod
 Outputs:
-  URL:
+  HTTP:
     Description: URL of the Ant Media Server
     Value: !Join 
       - ''
@@ -581,7 +596,7 @@ Outputs:
         - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
-  URL:
+  HTTPS:
     Description: URL of the Ant Media Server
     Value: !Join 
       - ''
@@ -589,5 +604,3 @@ Outputs:
         - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
-
-          
