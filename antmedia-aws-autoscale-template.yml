@@ -340,7 +340,7 @@ Resources:
         - !Ref ALBTargetGroupEdge
       Tags:
         - Key: Name
-          Value: Antmedia Origin
+          Value: Antmedia Edge
           PropagateAtLaunch: 'true'
     CreationPolicy:
       ResourceSignal:
