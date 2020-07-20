@@ -25,6 +25,7 @@ gdrive1_access=""
 gdrive2_access_token=""
 gdrive2_access=""
 gdrive2_secret=""
+gdrive2_clientid=""
 
 delete_instances() {
 
@@ -135,7 +136,7 @@ if [ `api_stream_exist $ip; echo $?` == "1" ]; then
 				ssh -i ovh.pem -oStrictHostKeyChecking=no ubuntu@$ip "pkill sar"
 				echo "Uploading to gdrive"
 				ssh -i ovh.pem -oStrictHostKeyChecking=no ubuntu@$ip << EOF 
-				echo -e """[gdrive-archive]\ntype = drive\nclient_id = 324991809003-naunuv0b7knnkik3f49e3turrfd56n3f.apps.googleusercontent.com\nclient_secret = $gdrive2_secret\nscope = drive\nroot_folder_id= 1vIuoznubQArC1mwIxjgFg-Ca60YUXI1g\ntoken = {\"access_token\":\"$gdrive2_access_token\",\"token_type\":\"Bearer\",\"refresh_token\":\"$gdrive2_access\",\"expiry\":\"2020-06-29T15:03:49.491458963Z\"}""" >> ~/.config/rclone/rclone.conf				
+				echo -e """[gdrive-archive]\ntype = drive\nclient_id = $gdrive2_clientid\nclient_secret = $gdrive2_secret\nscope = drive\nroot_folder_id= 1vIuoznubQArC1mwIxjgFg-Ca60YUXI1g\ntoken = {\"access_token\":\"$gdrive2_access_token\",\"token_type\":\"Bearer\",\"refresh_token\":\"$gdrive2_access\",\"expiry\":\"2020-06-29T15:03:49.491458963Z\"}""" >> ~/.config/rclone/rclone.conf				
 				/usr/bin/rclone copy /tmp/memory-$(date +"%d-%m-%Y").csv gdrive-archive: &
 				wait $!
 				/usr/bin/rclone copy /tmp/cpu-$(date +"%d-%m-%Y").csv gdrive-archive: &
