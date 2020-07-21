@@ -171,6 +171,7 @@ if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   check
 fi
 
+$SUDO echo "nativeLogLevel=WARN" >> $AMS_BASE/conf/red5.properties
 $SUDO chown -R antmedia:antmedia $AMS_BASE/
 check
 
