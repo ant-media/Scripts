@@ -49,6 +49,10 @@ restore_settings() {
       cp -p $BACKUP_DIR/conf/$ssl $AMS_BASE/conf/
     done
   fi
+  
+  if [ $(grep 'nativeLogLevel=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
+    $SUDO echo "nativeLogLevel=ERROR" >> $AMS_BASE/conf/red5.properties
+  fi 
 
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
