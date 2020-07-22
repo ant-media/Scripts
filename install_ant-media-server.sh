@@ -50,7 +50,9 @@ restore_settings() {
     done
   fi
   
-  $SUDO echo "nativeLogLevel=WARN" >> $AMS_BASE/conf/red5.properties
+  if [ $(grep 'nativeLogLevel=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
+    $SUDO echo "nativeLogLevel=WARN" >> $AMS_BASE/conf/red5.properties
+  fi 
 
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
