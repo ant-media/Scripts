@@ -210,7 +210,7 @@ Resources:
     Properties:
       ServiceToken: !Sub ${GetLatestAMI.Arn}
       Owner: "679593333241"
-      Name: "AWS-Marketplace-v200-EE-52cdb7ae-1096-4915-823f-ff83a0a529a9-ami-09c097dbc3f65d784.4"
+      Name: "AntMedia-AWS-Marketplace-EE-*"
       Architecture: "x86_64"
 
   UbuntuAmi:
