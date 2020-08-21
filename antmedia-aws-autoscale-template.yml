@@ -17,7 +17,7 @@ Parameters:
   InstanceType:
     Description: Ant Media Server EC2 instance type
     Type: String
-    Default: t2.large
+    Default: c5.xlarge
     AllowedValues:
       - t2.large
       - t2.xlarge
@@ -58,14 +58,25 @@ Parameters:
   MongoDBInstanceType:
     Description: Ant Media MongoDB EC2 instance type
     Type: String
-    Default: c5.large
+    Default: c5.xlarge
     AllowedValues:
+      - a1.medium
+      - a1.large
+      - a1.xlarge
+      - a1.2xlarge
+      - a1.4xlarge
       - c5.large
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - t3.xlarge
+      - t3.2xlarge
       - m5.large
       - m5.xlarge
       - m5.2xlarge
@@ -233,7 +244,7 @@ Resources:
       Properties:
         VPCZoneIdentifier: !Ref Subnets
         LaunchConfigurationName: !Ref LaunchConfigOrigin
-        MinSize: '1'
+        MinSize: !Ref AntMediaOriginCapacity
         MaxSize: !Ref AntMediaOriginCapacityMax
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
@@ -327,7 +338,7 @@ Resources:
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref LaunchConfigEdge
-      MinSize: '1'
+      MinSize: !Ref AntMediaEdgeCapacity
       MaxSize: !Ref AntMediaEdgeCapacityMax
       DesiredCapacity: !Ref AntMediaEdgeCapacity
       TargetGroupARNs:
@@ -598,3 +609,5 @@ Outputs:
         - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
+
+          
