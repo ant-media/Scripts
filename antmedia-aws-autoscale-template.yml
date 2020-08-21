@@ -60,23 +60,12 @@ Parameters:
     Type: String
     Default: c5.xlarge
     AllowedValues:
-      - a1.medium
-      - a1.large
-      - a1.xlarge
-      - a1.2xlarge
-      - a1.4xlarge
       - c5.large
       - c5.xlarge
       - c5.2xlarge
       - c5.4xlarge
       - c5.9xlarge
       - c5.18xlarge
-      - t3.micro
-      - t3.small
-      - t3.medium
-      - t3.large
-      - t3.xlarge
-      - t3.2xlarge
       - m5.large
       - m5.xlarge
       - m5.2xlarge
