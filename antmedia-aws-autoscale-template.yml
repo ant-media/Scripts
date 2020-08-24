@@ -14,32 +14,39 @@ Parameters:
       must be a list of at least two existing subnets associated with at least
       two different availability zones. They should be residing in the selected
       Virtual Private Cloud.
-  InstanceType:
-    Description: Ant Media Server EC2 instance type
+  EdgeInstanceType:
+    Description: Ant Media Server Edge EC2 instance type
     Type: String
     Default: c5.xlarge
     AllowedValues:
       - t2.large
       - t2.xlarge
       - t2.2xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
       - m4.large
       - m4.xlarge
       - m4.2xlarge
       - m4.4xlarge
       - m4.10xlarge
       - m4.16xlarge
-      - c5d.large
-      - c5d.xlarge
-      - c5d.2xlarge
-      - c5d.4xlarge
-      - c5d.9xlarge
-      - c5d.18xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
       - c5.large
       - c5.xlarge
       - c5.2xlarge
@@ -48,11 +55,83 @@ Parameters:
       - c5.12xlarge
       - c5.18xlarge
       - c5.24xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+
+  OriginInstanceType:
+    Description: Ant Media Server Origin EC2 instance type
+    Type: String
+    Default: c5.xlarge
+    AllowedValues:
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
       - c4.large
       - c4.xlarge
       - c4.2xlarge
       - c4.4xlarge
       - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
     ConstraintDescription: must be a valid EC2 instance type.
 
   MongoDBInstanceType:
@@ -309,7 +388,7 @@ Resources:
       ImageId: !Ref AntMediaAmi
       SecurityGroups:
         - !Ref InstanceSecurityGroup
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref OriginInstanceType
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -403,7 +482,7 @@ Resources:
       ImageId: !Ref AntMediaAmi
       SecurityGroups:
         - !Ref InstanceSecurityGroup
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref EdgeInstanceType
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
