@@ -106,20 +106,19 @@ fi
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   check
-  $SUDO apt-get install openjdk-8-jdk unzip jsvc -y
+  $SUDO apt-get install openjdk-11-jdk unzip jsvc -y
   check
   #update-java-alternatives -s java-1.8.0-openjdk-amd64
   openjfxExists=`apt-cache search openjfx | wc -l`
   if [ "$openjfxExists" -gt "0" ];
     then
-      $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
-      $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni
+      $SUDO apt install openjfx=11.0.2+1-1~18.04.2 libopenjfx-java=11.0.2+1-1~18.04.2 libopenjfx-jni=11.0.2+1-1~18.04.2 -y -qq --allow-downgrades
   fi          
 elif [ "$ID" == "centos" ]; then
-  $SUDO yum -y install java-1.8.0-openjdk unzip apache-commons-daemon-jsvc 
+  $SUDO yum -y install java-11-openjdk unzip apache-commons-daemon-jsvc 
   check
-  if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
-    ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
+  if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
+    ln -s /usr/lib/jvm/java-1.11.* /usr/lib/jvm/java-11-openjdk-amd64
   fi
   ports=("5080" "443" "80" "5443" "1935")
 
@@ -144,7 +143,7 @@ else
   check
 fi
 
-$SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
+$SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"'  $AMS_BASE/antmedia
 check
 
 $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
