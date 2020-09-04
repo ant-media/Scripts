@@ -196,6 +196,7 @@ fi
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"'  $AMS_BASE/antmedia
 check
 echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64" >>~/.bashrc
+source ~/.bashrc
 echo "JAVA_HOME : $JAVA_HOME"
 
 
