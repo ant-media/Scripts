@@ -143,13 +143,16 @@ else
   check
 fi
 
-
-$SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"'  $AMS_BASE/antmedia
+echo update-alternatives --list java
+echo "JAVA_HOME old : $JAVA_HOME"
+$SUDO sed -i '/JAVA_HOME="\/usr\/local\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64/"'  $AMS_BASE/antmedia
 check
-echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64" >>~/.bashrc
+echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
 source ~/.bashrc
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 echo "JAVA_HOME : $JAVA_HOME"
+$SUDO mkdir -p $JAVA_HOME/lib/amd64
+$SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
 check
