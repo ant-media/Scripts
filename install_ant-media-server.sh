@@ -143,7 +143,7 @@ else
   check
 fi
 
-echo update-alternatives --list java
+update-alternatives --list java
 echo "JAVA_HOME old : $JAVA_HOME"
 $SUDO sed -i '/JAVA_HOME="\/usr\/local\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64/"'  $AMS_BASE/antmedia
 check
@@ -151,6 +151,8 @@ echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
 source ~/.bashrc
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 echo "JAVA_HOME : $JAVA_HOME"
+
+# use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file 
 $SUDO mkdir -p $JAVA_HOME/lib/amd64
 $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
@@ -189,6 +191,11 @@ $SUDO service antmedia stop &
 wait $!
 $SUDO service antmedia start
 check
+
+# make /tmp directory writable because vertx library is writing its cache files there
+$SUDO chown -R antmedia:antmedia /tmp
+check
+
 
 if [ $? -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
