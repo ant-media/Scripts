@@ -148,6 +148,7 @@ $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-oracle"/c\JAVA_HOME="\/usr\/l
 check
 echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64" >>~/.bashrc
 source ~/.bashrc
+export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 echo "JAVA_HOME : $JAVA_HOME"
 
 $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
