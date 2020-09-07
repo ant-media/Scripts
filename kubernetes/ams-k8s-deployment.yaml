@@ -17,6 +17,6 @@ spec:
       - name: ant-media-server
         imagePullPolicy: IfNotPresent  # change this value accordingly. It can be Never, Always or IfNotPresent
         image: ant-media-server-enterprise-k8s:latest  #change this value according to your image.
-		# You basically need to update the mongodb server url. You may also need to add -u and -p parameters for
-		#specifying mongodb username and passwords respectively 
+# You basically need to update the mongodb server url(-h) below. You may also need to add -u and -p parameters for
+# specifying mongodb username and passwords respectively 
         args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "127.0.0.1"]  
