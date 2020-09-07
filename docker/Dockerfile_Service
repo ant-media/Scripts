@@ -10,7 +10,7 @@ ARG MongoDBUsername=
 ARG MongoDBPassword=
 
 RUN apt-get update
-RUN apt-get install -y libcap2 wget net-tools
+RUN apt-get install -y libcap2 wget net-tools curl
 
 ADD ./${AntMediaServer} /home
 
