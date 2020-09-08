@@ -9,8 +9,8 @@ ARG MongoDBServer=
 ARG MongoDBUsername=
 ARG MongoDBPassword=
 
-RUN apt-get update
-RUN apt-get install -y libcap2 wget net-tools curl
+#Running update and install makes the builder not to use cache which resolves some updates
+RUN apt-get update && apt-get install -y curl libcap2 wget net-tools
 
 ADD ./${AntMediaServer} /home
 
