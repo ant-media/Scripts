@@ -494,12 +494,41 @@ Resources:
           python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
-          
+
+  ELBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: Ant Media Server LB Security Group
+        GroupDescription: Allows access to the Reverse Proxy ALB
+        VpcId: !Ref VpcId
+        SecurityGroupIngress:
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            Description: Allow 80. Port for Origin Instances 
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            Description: Allow 443. Port for Origin Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5080
+            ToPort: 5080
+            Description: Allow 5080. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5443
+            ToPort: 5443
+            Description: Allow 5443. Port for Edge Instances
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
       Subnets: !Ref Subnets
+      SecurityGroups:
+        - !GetAtt [ ELBSecurityGroup, GroupId ]
   ALBListener443:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
