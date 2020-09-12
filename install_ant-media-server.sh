@@ -6,11 +6,34 @@
 # If you want to save setting from previous installation add argument true
 # ./install_ant-media-server.sh ant-media-server-*.zip true
 
+# -s : install as a service or not
+# -r : restore settings
+# -i : ant media server zip file
+
 AMS_BASE=/usr/local/antmedia
 BACKUP_DIR="/usr/local/antmedia-backup-"$(date +"%Y-%m-%d_%H-%M-%S")
 SAVE_SETTINGS=false
+INSTALL_SERVICE=true
+ANT_MEDIA_SERVER_ZIP_FILE=
 
+usage() {
+  echo ""
+  echo "Usage:"
+  echo "$0 OPTIONS"
+  echo ""
+  echo "OPTIONS:"
+  echo "  -i -> Provide Ant Media Server Zip file name. Mandatory"
+  echo "  -r -> Restore settings flag. It can accept true or false. Optional. Default value is true"
+  echo "  -i -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is false"
+  echo ""
+  echo "Sample usage:"
+  echo "$0 -i name-of-the-ant-media-server-zip-file"
+  echo "$0 -i name-of-the-ant-media-server-zip-file -r false -i true"
+  echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
+  echo ""
+}
 
+# Restore settings
 restore_settings() {
   webapps=("LiveApp" "WebRTC*" "root") 
 
@@ -61,6 +84,7 @@ restore_settings() {
   fi
 }
 
+#Get the linux distribution
 distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
@@ -78,8 +102,7 @@ distro () {
   fi
 }
 
-distro
-
+#Just checks if the latest ioperation is successfull
 check() {
   OUT=$?
   if [ $OUT -ne 0 ]; then
@@ -88,15 +111,41 @@ check() {
   fi
 }
 
-if [ -z "$1" ]; then
+# Start
+
+distro
+
+while getopts 'i:s:r:h' option
+do
+  case "${option}" in
+    s) INSTALL_SERVICE=${OPTARG};;
+    i) ANT_MEDIA_SERVER_ZIP_FILE=${OPTARG};;
+    r) SAVE_SETTINGS=${OPTARG};;
+    h) usage 
+       exit 1;;
+   esac
+done
+
+
+
+if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
+  # it means the previous parameters are used. 
+  echo "Using old syntax to match the parameters. It's deprecated and use the new way by typing $0 -h"
+  ANT_MEDIA_SERVER_ZIP_FILE=$1
+
+  if [ ! -z "$2" ]; then
+    SAVE_SETTINGS=$2
+  fi
+fi
+
+if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   echo "Please give the Ant Media Server zip file as parameter"
-  echo "$0  ant-media-server-....zip"
+  usage
   exit 1
 fi
 
-if [ ! -z "$2" ]; then
-   SAVE_SETTINGS=$2
-fi
+
+
 
 SUDO="sudo"
 if ! [ -x "$(command -v sudo)" ]; then
@@ -131,7 +180,7 @@ elif [ "$ID" == "centos" ]; then
   firewall-cmd --reload > /dev/null 2>&1
 fi
 
-unzip $1
+unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
 if ! [ -d $AMS_BASE ]; then
@@ -147,24 +196,27 @@ fi
 $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 check
 
-$SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
-check
 
-#converting octal to decimal for centos 
-if [ "$ID" == "centos" ]; then
-  sed -i 's/-umask 133/-umask 91/g' /lib/systemd/system/antmedia.service
-fi
-
-if ! [ -x "$(command -v systemctl)" ]; then
-  $SUDO cp $AMS_BASE/antmedia /etc/init.d
-  $SUDO update-rc.d antmedia defaults
-  $SUDO update-rc.d antmedia enable
-  check
-else
+if [ "$INSTALL_SERVICE" == "true" ]; then
   $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
-  $SUDO systemctl daemon-reload
-  $SUDO systemctl enable antmedia
   check
+
+  #converting octal to decimal for centos 
+  if [ "$ID" == "centos" ]; then
+    sed -i 's/-umask 133/-umask 91/g' /lib/systemd/system/antmedia.service
+  fi
+
+  if ! [ -x "$(command -v systemctl)" ]; then
+    $SUDO cp $AMS_BASE/antmedia /etc/init.d
+    $SUDO update-rc.d antmedia defaults
+    $SUDO update-rc.d antmedia enable
+    check
+  else
+    $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
+    $SUDO systemctl daemon-reload
+    $SUDO systemctl enable antmedia
+    check
+  fi
 fi
 
 $SUDO mkdir $AMS_BASE/log
@@ -178,10 +230,12 @@ fi
 $SUDO chown -R antmedia:antmedia $AMS_BASE/
 check
 
-$SUDO service antmedia stop &
-wait $!
-$SUDO service antmedia start
-check
+if [ "$INSTALL_SERVICE" == "true" ]; then
+  $SUDO service antmedia stop &
+  wait $!
+  $SUDO service antmedia start
+  check
+fi
 
 if [ $? -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
@@ -190,10 +244,19 @@ if [ $? -eq 0 ]; then
     check
     $SUDO chown -R antmedia:antmedia $AMS_BASE/
     check
-    $SUDO service antmedia restart
-    check
+
+    if [ "$INSTALL_SERVICE" == "true" ]; then
+      $SUDO service antmedia restart
+      check
+    fi 
   fi
-  echo "Ant Media Server is started"
+
+  if [ "$INSTALL_SERVICE" == "true" ]; then
+     echo "Ant Media Server is installed. You have the whole control and manage to run the start.sh in the $AMS_BASE"
+     echo "because you prefer to not have the service installation. Type $0 -h for usage info "
+  else
+     echo "Ant Media Server is installed and started."
+  fi
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
 fi
