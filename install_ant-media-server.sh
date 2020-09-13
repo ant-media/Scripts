@@ -251,7 +251,7 @@ if [ $? -eq 0 ]; then
     fi 
   fi
 
-  if [ "$INSTALL_SERVICE" == "true" ]; then
+  if [ "$INSTALL_SERVICE" == "false" ]; then
      echo "Ant Media Server is installed. You have the whole control and manage to run the start.sh in the $AMS_BASE"
      echo "because you prefer to not have the service installation. Type $0 -h for usage info "
   else
