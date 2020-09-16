@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ant-media-server
+  labels:
+    run: ant-media-server
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5080
+  selector:
+    run: ant-media-server
