@@ -23,7 +23,7 @@ RUN cd home \
 
 RUN cd home \
     && pwd \
-    && ./install_ant-media-server.sh ${AntMediaServer}
+    && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
 
 
 RUN update-java-alternatives -s java-1.8.0-openjdk-amd64
