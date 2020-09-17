@@ -657,6 +657,7 @@ Resources:
   DBEC2SecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
+        VpcId: !Ref VpcId
         GroupDescription: MongoDB SecurityGroup
         SecurityGroupIngress:
           - IpProtocol: tcp
@@ -673,11 +674,12 @@ Resources:
         KeyName: !Ref KeyName
         ImageId: !Ref UbuntuAmi
         InstanceType: !Ref MongoDBInstanceType
+        SubnetId: !Select [ 0, !Ref Subnets ]
+        SecurityGroupIds:
+          - !GetAtt "DBEC2SecurityGroup.GroupId"
         Tags:
         - Key: Name
           Value: Antmedia-MongoDB
-        SecurityGroups:
-          - !Ref DBEC2SecurityGroup
         UserData:
          Fn::Base64:
           !Sub |
