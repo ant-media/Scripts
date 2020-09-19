@@ -227,7 +227,18 @@ Parameters:
   LoadBalancerCertificateArn:
     Description: 'Optional Amazon Resource Name (ARN) of the certificate to associate with the load balancer.'
     Type: String
-    Default: ''  
+    Default: ''
+  RTMP: 
+    Description: If you want to install RTMP Load balancer, please select True
+    Default: false
+    Type: String
+    AllowedValues: 
+      - true
+      - false 
+Conditions:
+  CreateRTMPResources: !Equals 
+    - !Ref RTMP
+    - true
 
 Resources:
   DescribeImagesRole:
@@ -306,6 +317,38 @@ Resources:
       Subscription:
         - Endpoint: !Ref Email
           Protocol: email
+  RTMPLoadBalancer:
+    Condition: CreateRTMPResources
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:        
+      ConnectionDrainingPolicy:
+        Enabled: true
+        Timeout: 60
+      ConnectionSettings:
+        IdleTimeout: 60
+      CrossZone: true
+      Listeners:
+          - InstancePort: 1935
+            InstanceProtocol: TCP
+            LoadBalancerPort: 1935
+            Protocol: TCP          
+      Subnets: !Ref Subnets
+      SecurityGroups:
+        - !GetAtt [ RTMPSecurityGroup, GroupId ]
+
+  RTMPSecurityGroup:
+    Condition: CreateRTMPResources
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Ant Media Server RTMP Load Balancer Security Group
+      GroupDescription: Allows access
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 1935
+          ToPort: 1935
+          Description: Allow 1935. Port for Origin Instances
 
   OriginGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
@@ -317,6 +360,8 @@ Resources:
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
+        LoadBalancerNames: 
+           - !If [CreateRTMPResources, !Ref RTMPLoadBalancer, !Ref "AWS::NoValue"]
         Tags:
         - Key: Name
           Value: Antmedia-Origin
@@ -709,5 +754,13 @@ Outputs:
         - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
-
+  RTMP:
+    Condition: CreateRTMPResources
+    Description: RTMP URL of the Ant Media Server
+    Value: !Join 
+      - ''
+      - - 'rtmp://'
+        - !GetAtt 
+          - RTMPLoadBalancer
+          - DNSName 
           
