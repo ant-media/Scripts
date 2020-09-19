@@ -14,32 +14,39 @@ Parameters:
       must be a list of at least two existing subnets associated with at least
       two different availability zones. They should be residing in the selected
       Virtual Private Cloud.
-  InstanceType:
-    Description: Ant Media Server EC2 instance type
+  EdgeInstanceType:
+    Description: Ant Media Server Edge EC2 instance type
     Type: String
-    Default: t2.large
+    Default: c5.xlarge
     AllowedValues:
       - t2.large
       - t2.xlarge
       - t2.2xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
       - m4.large
       - m4.xlarge
       - m4.2xlarge
       - m4.4xlarge
       - m4.10xlarge
       - m4.16xlarge
-      - c5d.large
-      - c5d.xlarge
-      - c5d.2xlarge
-      - c5d.4xlarge
-      - c5d.9xlarge
-      - c5d.18xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
       - c5.large
       - c5.xlarge
       - c5.2xlarge
@@ -48,17 +55,89 @@ Parameters:
       - c5.12xlarge
       - c5.18xlarge
       - c5.24xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+
+  OriginInstanceType:
+    Description: Ant Media Server Origin EC2 instance type
+    Type: String
+    Default: c5.xlarge
+    AllowedValues:
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
       - c4.large
       - c4.xlarge
       - c4.2xlarge
       - c4.4xlarge
       - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
     ConstraintDescription: must be a valid EC2 instance type.
 
   MongoDBInstanceType:
     Description: Ant Media MongoDB EC2 instance type
     Type: String
-    Default: c5.large
+    Default: c5.xlarge
     AllowedValues:
       - c5.large
       - c5.xlarge
@@ -148,7 +227,18 @@ Parameters:
   LoadBalancerCertificateArn:
     Description: 'Optional Amazon Resource Name (ARN) of the certificate to associate with the load balancer.'
     Type: String
-    Default: ''  
+    Default: ''
+  RTMP: 
+    Description: If you want to install RTMP Load balancer, please select True
+    Default: false
+    Type: String
+    AllowedValues: 
+      - true
+      - false 
+Conditions:
+  CreateRTMPResources: !Equals 
+    - !Ref RTMP
+    - true
 
 Resources:
   DescribeImagesRole:
@@ -227,17 +317,51 @@ Resources:
       Subscription:
         - Endpoint: !Ref Email
           Protocol: email
+  RTMPLoadBalancer:
+    Condition: CreateRTMPResources
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:        
+      ConnectionDrainingPolicy:
+        Enabled: true
+        Timeout: 60
+      ConnectionSettings:
+        IdleTimeout: 60
+      CrossZone: true
+      Listeners:
+          - InstancePort: 1935
+            InstanceProtocol: TCP
+            LoadBalancerPort: 1935
+            Protocol: TCP          
+      Subnets: !Ref Subnets
+      SecurityGroups:
+        - !GetAtt [ RTMPSecurityGroup, GroupId ]
+
+  RTMPSecurityGroup:
+    Condition: CreateRTMPResources
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: Ant Media Server RTMP Load Balancer Security Group
+      GroupDescription: Allows access
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 1935
+          ToPort: 1935
+          Description: Allow 1935. Port for Origin Instances
 
   OriginGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
       Properties:
         VPCZoneIdentifier: !Ref Subnets
         LaunchConfigurationName: !Ref LaunchConfigOrigin
-        MinSize: '1'
+        MinSize: !Ref AntMediaOriginCapacity
         MaxSize: !Ref AntMediaOriginCapacityMax
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
+        LoadBalancerNames: 
+           - !If [CreateRTMPResources, !Ref RTMPLoadBalancer, !Ref "AWS::NoValue"]
         Tags:
         - Key: Name
           Value: Antmedia-Origin
@@ -309,7 +433,7 @@ Resources:
       ImageId: !Ref AntMediaAmi
       SecurityGroups:
         - !Ref InstanceSecurityGroup
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref OriginInstanceType
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -327,7 +451,7 @@ Resources:
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref LaunchConfigEdge
-      MinSize: '1'
+      MinSize: !Ref AntMediaEdgeCapacity
       MaxSize: !Ref AntMediaEdgeCapacityMax
       DesiredCapacity: !Ref AntMediaEdgeCapacity
       TargetGroupARNs:
@@ -403,24 +527,53 @@ Resources:
       ImageId: !Ref AntMediaAmi
       SecurityGroups:
         - !Ref InstanceSecurityGroup
-      InstanceType: !Ref InstanceType
+      InstanceType: !Ref EdgeInstanceType
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-          apt-get update -y
+          apt-get update 
           apt-get install -y python-pip
           apt-get install -y python-setuptools
           mkdir -p /opt/aws/bin
           python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
-          
+
+  ELBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: Ant Media Server LB Security Group
+        GroupDescription: Allows access
+        VpcId: !Ref VpcId
+        SecurityGroupIngress:
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            Description: Allow 80. Port for Origin Instances 
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            Description: Allow 443. Port for Origin Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5080
+            ToPort: 5080
+            Description: Allow 5080. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5443
+            ToPort: 5443
+            Description: Allow 5443. Port for Edge Instances
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
       Subnets: !Ref Subnets
+      SecurityGroups:
+        - !GetAtt [ ELBSecurityGroup, GroupId ]
   ALBListener443:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
@@ -549,6 +702,7 @@ Resources:
   DBEC2SecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
+        VpcId: !Ref VpcId
         GroupDescription: MongoDB SecurityGroup
         SecurityGroupIngress:
           - IpProtocol: tcp
@@ -565,11 +719,12 @@ Resources:
         KeyName: !Ref KeyName
         ImageId: !Ref UbuntuAmi
         InstanceType: !Ref MongoDBInstanceType
+        SubnetId: !Select [ 0, !Ref Subnets ]
+        SecurityGroupIds:
+          - !GetAtt "DBEC2SecurityGroup.GroupId"
         Tags:
         - Key: Name
           Value: Antmedia-MongoDB
-        SecurityGroups:
-          - !Ref DBEC2SecurityGroup
         UserData:
          Fn::Base64:
           !Sub |
@@ -577,10 +732,11 @@ Resources:
             wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
             echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu `lsb_release -cs`/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
             sudo apt-get update
-            sudo apt-get install -y mongodb-org
+            sudo apt-get install -y mongodb-org python-pip python-setuptools
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
+
 Outputs:
   HTTP:
     Description: URL of the Ant Media Server
@@ -598,3 +754,13 @@ Outputs:
         - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
+  RTMP:
+    Condition: CreateRTMPResources
+    Description: RTMP URL of the Ant Media Server
+    Value: !Join 
+      - ''
+      - - 'rtmp://'
+        - !GetAtt 
+          - RTMPLoadBalancer
+          - DNSName 
+          
