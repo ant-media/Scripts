@@ -487,7 +487,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-          apt-get update -y
+          apt-get update 
           apt-get install -y python-pip
           apt-get install -y python-setuptools
           mkdir -p /opt/aws/bin
@@ -499,7 +499,7 @@ Resources:
       Type: AWS::EC2::SecurityGroup
       Properties:
         GroupName: Ant Media Server LB Security Group
-        GroupDescription: Allows access to the Reverse Proxy ALB
+        GroupDescription: Allows access
         VpcId: !Ref VpcId
         SecurityGroupIngress:
           - CidrIp: 0.0.0.0/0
@@ -687,10 +687,17 @@ Resources:
             wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
             echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu `lsb_release -cs`/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
             sudo apt-get update
-            sudo apt-get install -y mongodb-org
+            sudo apt-get install -y mongodb-org python-pip python-setuptools
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
+            mkdir -p /opt/aws/bin
+            python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource DBInstance --region ${AWS::Region}
+        CreationPolicy:
+          ResourceSignal:
+            Count: 1
+            Timeout: PT10M
 Outputs:
   HTTP:
     Description: URL of the Ant Media Server
