@@ -691,13 +691,7 @@ Resources:
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
-            mkdir -p /opt/aws/bin
-            python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource DBInstance --region ${AWS::Region}
-        CreationPolicy:
-          ResourceSignal:
-            Count: 1
-            Timeout: PT10M
+
 Outputs:
   HTTP:
     Description: URL of the Ant Media Server
