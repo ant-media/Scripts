@@ -201,6 +201,7 @@ source ~/.bashrc
 export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
 echo "JAVA_HOME : $JAVA_HOME"
 
+
 # use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file 
 $SUDO mkdir -p $JAVA_HOME/lib/amd64
 $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
@@ -249,7 +250,6 @@ fi
 # make /tmp directory writable because vertx library is writing its cache files there
 $SUDO chown -R antmedia:antmedia /tmp
 check
-
 
 if [ $? -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
