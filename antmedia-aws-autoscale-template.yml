@@ -739,7 +739,7 @@ Resources:
 
 Outputs:
   OriginHTTPS:
-    Description: HTTP URL of the Ant Media Origin Server
+    Description: HTTPS URL of the Ant Media Origin Servers
     Value: !Join 
       - ''
       - - 'https://'
@@ -748,7 +748,7 @@ Outputs:
           - DNSName
     
   EdgeHTTPS:
-    Description: HTTPS URL of the Ant Media Edge Server
+    Description: HTTPS URL of the Ant Media Edge Servers
     Value: !Join 
       - ''
       - - 'https://'
@@ -758,7 +758,7 @@ Outputs:
         - ':5443'
 
   OriginHTTP:
-    Description: HTTP URL of the Ant Media Origin Server
+    Description: HTTP URL of the Ant Media Origin Servers
     Value: !Join 
       - ''
       - - 'http://'
@@ -767,7 +767,7 @@ Outputs:
           - DNSName
 
   EdgeHTTP:
-    Description: HTTP URL of the Ant Media Edge Server
+    Description: HTTP URL of the Ant Media Edge Servers
     Value: !Join 
       - ''
       - - 'http://'
