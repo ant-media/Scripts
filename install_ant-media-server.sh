@@ -247,10 +247,6 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   check
 fi
 
-# make /tmp directory writable because vertx library is writing its cache files there
-$SUDO chown -R antmedia:antmedia /tmp
-check
-
 if [ $? -eq 0 ]; then
   if [ $SAVE_SETTINGS == "true" ]; then
     sleep 5
