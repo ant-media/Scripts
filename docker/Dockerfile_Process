@@ -28,8 +28,6 @@ RUN cd home \
     && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
 
 
-RUN update-java-alternatives -s java-1.11.0-openjdk-amd64
-
 # Keep this for compatibility
 RUN /bin/bash -c 'if [ ! -z "${MongoDBServer}" ]; then \
                     /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBServer} ${MongoDBUsername} ${MongoDBPassword}; \
