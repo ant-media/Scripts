@@ -130,7 +130,7 @@ done
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used. 
-  echo "Using old syntax to match the parameters. It's deprecated and use the new way by typing $0 -h"
+  echo "Using old syntax to match the parameters. It's deprecated. Learn the new way by typing $0 -h"
   ANT_MEDIA_SERVER_ZIP_FILE=$1
 
   if [ ! -z "$2" ]; then
@@ -192,14 +192,37 @@ else
   check
 fi
 
-update-alternatives --list java
-echo "JAVA_HOME old : $JAVA_HOME"
-$SUDO sed -i '/JAVA_HOME="\/usr\/local\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64/"'  $AMS_BASE/antmedia
-check
-echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
-source ~/.bashrc
-export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
-echo "JAVA_HOME : $JAVA_HOME"
+#check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
+VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2`
+if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]];
+then
+  if [ "$ID" == "ubuntu" ]; 
+  then
+    $SUDO apt-get install openjdk-8-jdk -y
+    $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
+    $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
+    $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni -y
+    $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
+    
+  elif [ "$ID" == "centos" ]; 
+  then
+    $SUDO yum -y install java-1.8.0-openjdk
+    if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
+     ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
+    fi
+  fi
+    
+  $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
+  $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
+  
+else
+
+  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
+  source ~/.bashrc
+  export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+  echo "JAVA_HOME : $JAVA_HOME"
+  $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
+fi
 
 
 # use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file 
