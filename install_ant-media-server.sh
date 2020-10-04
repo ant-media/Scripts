@@ -221,7 +221,7 @@ else
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
-  $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
+  $SUDO update-java-alternatives -s java-1.11.0-openjdk-amd64
 fi
 
 
