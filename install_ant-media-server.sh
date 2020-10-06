@@ -130,7 +130,7 @@ done
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used. 
-  echo "Using old syntax to match the parameters. It's deprecated and use the new way by typing $0 -h"
+  echo "Using old syntax to match the parameters. It's deprecated. Learn the new way by typing $0 -h"
   ANT_MEDIA_SERVER_ZIP_FILE=$1
 
   if [ ! -z "$2" ]; then
@@ -155,20 +155,19 @@ fi
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   check
-  $SUDO apt-get install openjdk-8-jdk unzip jsvc -y
+  $SUDO apt-get install openjdk-11-jdk unzip jsvc -y
   check
   #update-java-alternatives -s java-1.8.0-openjdk-amd64
   openjfxExists=`apt-cache search openjfx | wc -l`
   if [ "$openjfxExists" -gt "0" ];
     then
-      $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
-      $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni
+      $SUDO apt install openjfx=11.0.2+1-1~18.04.2 libopenjfx-java=11.0.2+1-1~18.04.2 libopenjfx-jni=11.0.2+1-1~18.04.2 -y -qq --allow-downgrades
   fi          
 elif [ "$ID" == "centos" ]; then
-  $SUDO yum -y install java-1.8.0-openjdk unzip apache-commons-daemon-jsvc 
+  $SUDO yum -y install java-11-openjdk unzip apache-commons-daemon-jsvc 
   check
-  if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
-    ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
+  if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
+    ln -s /usr/lib/jvm/java-1.11.* /usr/lib/jvm/java-11-openjdk-amd64
   fi
   ports=("5080" "443" "80" "5443" "1935")
 
@@ -193,8 +192,42 @@ else
   check
 fi
 
-$SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-8-oracle"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
-check
+#check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
+VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2`
+if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]];
+then
+  if [ "$ID" == "ubuntu" ]; 
+  then
+    $SUDO apt-get install openjdk-8-jdk -y
+    $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
+    $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
+    $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni -y
+    $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
+    
+  elif [ "$ID" == "centos" ]; 
+  then
+    $SUDO yum -y install java-1.8.0-openjdk
+    if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
+     ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
+    fi
+  fi
+    
+  $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
+  $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
+  
+else
+
+  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
+  source ~/.bashrc
+  export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
+  echo "JAVA_HOME : $JAVA_HOME"
+  $SUDO update-java-alternatives -s java-1.11.0-openjdk-amd64
+fi
+
+
+# use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file 
+$SUDO mkdir -p $JAVA_HOME/lib/amd64
+$SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
