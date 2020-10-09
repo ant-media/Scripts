@@ -155,7 +155,7 @@ fi
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   check
-  $SUDO apt-get install openjdk-11-jdk unzip jsvc -y
+  $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev -y
   check
   #update-java-alternatives -s java-1.8.0-openjdk-amd64
   openjfxExists=`apt-cache search openjfx | wc -l`
@@ -164,7 +164,7 @@ if [ "$ID" == "ubuntu" ]; then
       $SUDO apt install openjfx=11.0.2+1-1~18.04.2 libopenjfx-java=11.0.2+1-1~18.04.2 libopenjfx-jni=11.0.2+1-1~18.04.2 -y -qq --allow-downgrades
   fi          
 elif [ "$ID" == "centos" ]; then
-  $SUDO yum -y install java-11-openjdk unzip apache-commons-daemon-jsvc 
+  $SUDO yum -y install java-11-openjdk unzip apache-commons-daemon-jsvc apr-devel openssl-devel 
   check
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
     ln -s /usr/lib/jvm/java-1.11.* /usr/lib/jvm/java-11-openjdk-amd64
