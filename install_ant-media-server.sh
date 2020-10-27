@@ -91,7 +91,7 @@ distro () {
     . $os_release
     msg="We are supporting Ubuntu 16.04, 18.04 and Centos 7."
     if [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "16.04" ] && [ "$VERSION_ID" != "7" ] ; then
+      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "7" ] ; then
          echo $msg
          exit 1
             fi
@@ -155,7 +155,7 @@ fi
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   check
-  $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev -y
+  $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
   check
   #update-java-alternatives -s java-1.8.0-openjdk-amd64
   openjfxExists=`apt-cache search openjfx | wc -l`
