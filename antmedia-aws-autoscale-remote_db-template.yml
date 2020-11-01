@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  Ant Media Server AutoScaling CloudFormation Templates.
+  Ant Media Server AutoScaling with Remote MongoDB Connection CloudFormation Template
   If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
   VpcId:
