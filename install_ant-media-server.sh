@@ -91,9 +91,9 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 16.04, 18.04 and Centos 7."
+    msg="We are supporting Ubuntu 18.04"
     if [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "16.04" ] && [ "$VERSION_ID" != "7" ] ; then
+      if [ "$VERSION_ID" != "18.04" ]; then
          echo $msg
          exit 1
             fi
