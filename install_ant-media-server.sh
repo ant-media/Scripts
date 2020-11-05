@@ -91,9 +91,9 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04 and Centos 8"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04 and Centos 8"
     if [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "8" ]; then
+      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ]; then
          echo $msg
          exit 1
             fi
@@ -157,7 +157,7 @@ fi
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   check
-  $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev -y
+  $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
   check
   #update-java-alternatives -s java-1.8.0-openjdk-amd64
   openjfxExists=`apt-cache search openjfx | wc -l`
@@ -166,15 +166,13 @@ if [ "$ID" == "ubuntu" ]; then
       $SUDO apt install openjfx=11.0.2+1-1~18.04.2 libopenjfx-java=11.0.2+1-1~18.04.2 libopenjfx-jni=11.0.2+1-1~18.04.2 -y -qq --allow-downgrades
   fi          
 elif [ "$ID" == "centos" ]; then
-  $SUDO yum -y install epel-release-8-8.el8.noarch
+  $SUDO yum -y install epel-release
   $SUDO yum -y install java-11-openjdk unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd  
   check
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
     find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
 
   fi
-
-  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 
   ports=("5080" "443" "80" "5443" "1935")
 
@@ -228,7 +226,7 @@ else
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
-  $SUDO update-java-alternatives -s java-1.11.0-openjdk-amd64
+  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 fi
 
 
