@@ -82,7 +82,7 @@ restore_settings() {
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
   else
-    echo "Settings are not restored. Please send the log of this console to contact@antmedia.io"
+    echo "Settings are not restored. Please send the log of this console to support@antmedia.io"
   fi
 }
 
@@ -108,7 +108,7 @@ distro () {
 check() {
   OUT=$?
   if [ $OUT -ne 0 ]; then
-    echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
+    echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
     exit $OUT
   fi
 }
@@ -297,5 +297,5 @@ if [ $? -eq 0 ]; then
      echo "Ant Media Server is installed and started."
   fi
 else
-  echo "There is a problem in installing the ant media server. Please send the log of this console to contact@antmedia.io"
+  echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
