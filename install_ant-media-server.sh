@@ -15,6 +15,8 @@ BACKUP_DIR="/usr/local/antmedia-backup-"$(date +"%Y-%m-%d_%H-%M-%S")
 SAVE_SETTINGS=false
 INSTALL_SERVICE=true
 ANT_MEDIA_SERVER_ZIP_FILE=
+OTHER_DISTRO=false
+SERVICE_FILE=/lib/systemd/system/antmedia.service
 
 usage() {
   echo ""
@@ -92,9 +94,19 @@ distro () {
   if [ -f "$os_release" ]; then
     . $os_release
     msg="We are supporting Ubuntu 18.04, Ubuntu 20.04 and Centos 8"
-    if [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
+    if [ "$OTHER_DISTRO" == "true" ]; then
+      echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
+      read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
+      CUSTOM_PACKAGES=${CUSTOM_PACKAGES^} 
+                  if [ "$CUSTOM_PACKAGES" == "N" ]; then
+                echo "Interrupted by user"
+                exit 1
+            fi
+
+      read -p 'Enter JVM Path (default: /usr/lib/jvm/java-1.11.0-openjdk-amd64/): ' CUSTOM_JVM
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ]; then
-         echo $msg
+         echo $mgs
          exit 1
             fi
     else
@@ -115,19 +127,20 @@ check() {
 
 # Start
 
-distro
-
-while getopts 'i:s:r:h' option
+while getopts 'i:s:r:d:h' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
     i) ANT_MEDIA_SERVER_ZIP_FILE=${OPTARG};;
     r) SAVE_SETTINGS=${OPTARG};;
+    d) OTHER_DISTRO=${OPTARG};;
     h) usage 
        exit 1;;
    esac
 done
 
+
+distro
 
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
@@ -236,13 +249,9 @@ $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
-  $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
-  $SUDO chmod 644 /lib/systemd/system/antmedia.service
-  check
-
   #converting octal to decimal for centos 
   if [ "$ID" == "centos" ]; then
-    sed -i 's/-umask 133/-umask 91/g' /lib/systemd/system/antmedia.service
+    sed -i 's/-umask 133/-umask 91/g' $SERVICE_FILE
   fi
 
   if ! [ -x "$(command -v systemctl)" ]; then
@@ -252,6 +261,9 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
     check
   else
     $SUDO cp $AMS_BASE/antmedia.service /lib/systemd/system/
+    if [ "$OTHER_DISTRO" == "true" ]; then
+      sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$CUSTOM_JVM#g" $SERVICE_FILE
+    fi
     $SUDO systemctl daemon-reload
     $SUDO systemctl enable antmedia
     check
