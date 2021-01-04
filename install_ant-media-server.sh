@@ -104,6 +104,9 @@ distro () {
             fi
 
       read -p 'Enter JVM Path (default: /usr/lib/jvm/java-1.11.0-openjdk-amd64/): ' CUSTOM_JVM
+      if [ -z "$CUSTOM_JVM" ]; then
+         CUSTOM_JVM="/usr/lib/jvm/java-1.11.0-openjdk-amd64/"
+      fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ]; then
          echo $mgs
