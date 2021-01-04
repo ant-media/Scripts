@@ -17,6 +17,7 @@ INSTALL_SERVICE=true
 ANT_MEDIA_SERVER_ZIP_FILE=
 OTHER_DISTRO=false
 SERVICE_FILE=/lib/systemd/system/antmedia.service
+DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 
 usage() {
   echo ""
@@ -103,9 +104,9 @@ distro () {
                 exit 1
             fi
 
-      read -p 'Enter JVM Path (default: /usr/lib/jvm/java-1.11.0-openjdk-amd64/): ' CUSTOM_JVM
+      read -p "Enter JVM Path (default: $DEFAULT_JAVA): " CUSTOM_JVM
       if [ -z "$CUSTOM_JVM" ]; then
-         CUSTOM_JVM="/usr/lib/jvm/java-1.11.0-openjdk-amd64/"
+         CUSTOM_JVM=$DEFAULT_JAVA
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ]; then
