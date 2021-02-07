@@ -23,11 +23,11 @@ RUN cd home \
 
 RUN cd home \
     && pwd \
-    && ./install_ant-media-server.sh ${AntMediaServer}
+    && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
 
 
 RUN /bin/bash -c 'if [ ! -z "${MongoDBServer}" ]; then \
                     /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBServer} ${MongoDBUsername} ${MongoDBPassword}; \
                  fi'
 
-ENTRYPOINT service antmedia start && /bin/bash
+ENTRYPOINT ["/usr/local/antmedia/start.sh"]
