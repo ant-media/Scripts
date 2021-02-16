@@ -74,7 +74,7 @@ restore_settings() {
       cp -p $BACKUP_DIR/conf/$ssl $AMS_BASE/conf/
     done
 
-    cert_files=("chain.pem", "privkey.pem", "fullchain.pem")
+    cert_files=("chain.pem" "privkey.pem" "fullchain.pem")
 
     for certs in ${cert_files[*]}; do
       sudo cp -p /etc/letsencrypt/live/$(grep "rtmps.keystorepass=" $BACKUP_DIR/conf/red5.properties  | awk -F"=" '{print $2}')/$certs $AMS_BASE/conf/
