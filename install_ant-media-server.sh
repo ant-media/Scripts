@@ -73,11 +73,27 @@ restore_settings() {
     for ssl in ${ssl_files[*]}; do
       cp -p $BACKUP_DIR/conf/$ssl $AMS_BASE/conf/
     done
+
+    cert_files=("chain.pem" "privkey.pem" "fullchain.pem")
+
+    for certs in ${cert_files[*]}; do
+      sudo cp -p /etc/letsencrypt/live/$(grep "rtmps.keystorepass=" $BACKUP_DIR/conf/red5.properties  | awk -F"=" '{print $2}')/$certs $AMS_BASE/conf/
+    done
   fi
   
   if [ $(grep 'nativeLogLevel=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
     $SUDO echo "nativeLogLevel=ERROR" >> $AMS_BASE/conf/red5.properties
+  fi
+
+
+  if [ $(grep 'http.ssl_certificate_chain_file=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
+    $SUDO echo "http.ssl_certificate_chain_file=conf/chain.pem" >> $AMS_BASE/conf/red5.properties
   fi 
+
+  if [ $(grep 'SSLCertificateChainFile' $AMS_BASE/conf/jee-container.xml | wc -l) == "0" ]; then
+    $SUDO sed -i '/<entry key="SSLCertificateFile.*/a <entry key="SSLCertificateChainFile" value="${http.ssl_certificate_chain_file}" />' $AMS_BASE/conf/jee-container.xml
+  fi  
+
 
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
