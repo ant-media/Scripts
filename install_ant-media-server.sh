@@ -28,17 +28,19 @@ usage() {
   echo "  -i -> Provide Ant Media Server Zip file name. Mandatory"
   echo "  -r -> Restore settings flag. It can accept true or false. Optional. Default value is false"
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
+  echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
   echo ""
   echo "Sample usage:"
   echo "$0 -i name-of-the-ant-media-server-zip-file"
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
+  echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
   echo ""
 }
 
 # Restore settings
 restore_settings() {
-  webapps=("LiveApp" "WebRTC*" "root") 
+  webapps=("LiveApp" "WebRTC*" "root")
 
   for i in ${webapps[*]}; do
         while [ ! -d $AMS_BASE/webapps/$i/WEB-INF/ ]; do
@@ -83,7 +85,7 @@ restore_settings() {
       sudo cp -p /etc/letsencrypt/live/$(grep "rtmps.keystorepass=" $BACKUP_DIR/conf/red5.properties  | awk -F"=" '{print $2}')/$certs $AMS_BASE/conf/
     done
   fi
-  
+
   if [ $(grep 'nativeLogLevel=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
     $SUDO echo "nativeLogLevel=ERROR" >> $AMS_BASE/conf/red5.properties
   fi
@@ -91,11 +93,11 @@ restore_settings() {
 
   if [ $(grep 'http.ssl_certificate_chain_file=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
     $SUDO echo "http.ssl_certificate_chain_file=conf/chain.pem" >> $AMS_BASE/conf/red5.properties
-  fi 
+  fi
 
   if [ $(grep 'SSLCertificateChainFile' $AMS_BASE/conf/jee-container.xml | wc -l) == "0" ]; then
     $SUDO sed -i '/<entry key="SSLCertificateFile.*/a <entry key="SSLCertificateChainFile" value="${http.ssl_certificate_chain_file}" />' $AMS_BASE/conf/jee-container.xml
-  fi  
+  fi
 
 
   if [ $? -eq "0" ]; then
@@ -114,7 +116,7 @@ distro () {
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
-      CUSTOM_PACKAGES=${CUSTOM_PACKAGES^} 
+      CUSTOM_PACKAGES=${CUSTOM_PACKAGES^}
                   if [ "$CUSTOM_PACKAGES" == "N" ]; then
                 echo "Interrupted by user"
                 exit 1
@@ -124,7 +126,7 @@ distro () {
       if [ -z "$CUSTOM_JVM" ]; then
          CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then  
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ]; then
          echo $mgs
          exit 1
@@ -154,7 +156,7 @@ do
     i) ANT_MEDIA_SERVER_ZIP_FILE=${OPTARG};;
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
-    h) usage 
+    h) usage
        exit 1;;
    esac
 done
@@ -164,7 +166,7 @@ distro
 
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
-  # it means the previous parameters are used. 
+  # it means the previous parameters are used.
   echo "Using old syntax to match the parameters. It's deprecated. Learn the new way by typing $0 -h"
   ANT_MEDIA_SERVER_ZIP_FILE=$1
 
@@ -197,10 +199,10 @@ if [ "$ID" == "ubuntu" ]; then
   if [ "$openjfxExists" -gt "0" ];
     then
       $SUDO apt install openjfx=11.0.2+1-1~18.04.2 libopenjfx-java=11.0.2+1-1~18.04.2 libopenjfx-jni=11.0.2+1-1~18.04.2 -y -qq --allow-downgrades
-  fi          
+  fi
 elif [ "$ID" == "centos" ]; then
   $SUDO yum -y install epel-release
-  $SUDO yum -y install java-11-openjdk unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd  
+  $SUDO yum -y install java-11-openjdk unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
   check
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
     find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
@@ -234,25 +236,25 @@ fi
 VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2`
 if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]];
 then
-  if [ "$ID" == "ubuntu" ]; 
+  if [ "$ID" == "ubuntu" ];
   then
     $SUDO apt-get install openjdk-8-jdk -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
-    $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y 
+    $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y
     $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
-    
-  elif [ "$ID" == "centos" ]; 
+
+  elif [ "$ID" == "centos" ];
   then
     $SUDO yum -y install java-1.8.0-openjdk
     if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
      ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
     fi
   fi
-    
+
   $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
   $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
-  
+
 else
 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
@@ -263,13 +265,13 @@ else
 fi
 
 
-# use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file 
+# use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file
 $SUDO mkdir -p $JAVA_HOME/lib/amd64
 $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
-  #converting octal to decimal for centos 
+  #converting octal to decimal for centos
   if [ "$ID" == "centos" ]; then
     sed -i 's/-umask 133/-umask 91/g' $SERVICE_FILE
   fi
@@ -319,7 +321,7 @@ if [ $? -eq 0 ]; then
     if [ "$INSTALL_SERVICE" == "true" ]; then
       $SUDO service antmedia restart
       check
-    fi 
+    fi
   fi
 
   if [ "$INSTALL_SERVICE" == "false" ]; then
