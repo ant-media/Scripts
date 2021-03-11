@@ -68,16 +68,16 @@ Parameters:
     Default: 0.0.0.0/0
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
-  ElasticIPAddress: 
+  ElasticIPAddress:
     Description: If you want to assign an Elastic IP Address, please select True
     Default: false
     Type: String
-    AllowedValues: 
+    AllowedValues:
       - true
       - false
 
 Conditions:
-  CreateIP: !Equals 
+  CreateIP: !Equals
     - !Ref ElasticIPAddress
     - true
 
@@ -183,14 +183,14 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            apt-get update 
+            apt-get update
             apt-get install -y python-pip
             apt-get install -y python-setuptools
             mkdir -p /opt/aws/bin
             python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource TestInstance --region ${AWS::Region}
             sudo apt-get install apt-transport-https software-properties-common wget -y
-            wget -qO- https://mirrors.dotsrc.org/apache/kafka/2.6.0/kafka_2.13-2.6.0.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
+            wget -qO- https://downloads.apache.org/kafka/2.7.0/kafka_2.13-2.7.0.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
             wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
             echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
             wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
@@ -265,7 +265,7 @@ Resources:
 
             output {
               elasticsearch {
-                 hosts => ["127.0.0.1:9200"] 
+                 hosts => ["127.0.0.1:9200"]
                  index => "logstash-%{[type]}-%{+YYYY.MM.dd}"
               }
             }
@@ -294,7 +294,7 @@ Resources:
             sudo curl -X "POST" "http://127.0.0.1:3000/api/datasources" \
                 -H "Content-Type: application/json" \
                 -u "admin:admin" \
-                --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log 
+                --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log
 
             sudo systemctl daemon-reload
             sudo systemctl enable logstash.service && sudo systemctl enable elasticsearch && sudo systemctl enable kafka && sudo systemctl enable kafka-zookeeper
@@ -315,7 +315,7 @@ Outputs:
   InstanceElasticIP:
     Description: Elastic IP Address
     Condition: CreateIP
-    Value: !Ref ElasticIP 
+    Value: !Ref ElasticIP
 
   PublicIPV4:
     Description: Public IP Address of Monitoring Tool
@@ -324,10 +324,10 @@ Outputs:
 
   MonitorURL:
     Description: "Grafana Default Username and Password: admin/admin"
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'http://'
-        - !GetAtt 
+        - !GetAtt
           - MonitorInstance
           - PublicIp
         - ':3000'
