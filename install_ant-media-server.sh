@@ -128,7 +128,7 @@ distro () {
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ]; then
-         echo $mgs
+         echo $msg
          exit 1
             fi
     else
