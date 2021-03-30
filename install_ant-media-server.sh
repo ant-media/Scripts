@@ -283,7 +283,7 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
     check
   else
     $SUDO chmod 644 $AMS_BASE/antmedia.service
-    $SUDO cp $AMS_BASE/antmedia.service /etc/systemd/system/
+    $SUDO cp -p $AMS_BASE/antmedia.service /etc/systemd/system/
     if [ "$OTHER_DISTRO" == "true" ]; then
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$CUSTOM_JVM#g" $SERVICE_FILE
     fi
