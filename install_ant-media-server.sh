@@ -233,7 +233,7 @@ else
 fi
 
 #check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
-VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2`
+VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
 if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]];
 then
   if [ "$ID" == "ubuntu" ];
@@ -293,7 +293,13 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   fi
 fi
 
-$SUDO mkdir $AMS_BASE/log
+if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* || $VERSION == 2.2* || $VERSION == 2.3.0 ]];
+then
+  $SUDO mkdir $AMS_BASE/log
+else
+  $SUDO mkdir -p /var/log/antmedia
+  $SUDO chown -R antmedia.antmedia /var/log/antmedia
+fi
 check
 
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
