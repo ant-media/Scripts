@@ -293,13 +293,7 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   fi
 fi
 
-if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* || $VERSION == 2.2* || $VERSION == 2.3.0 ]];
-then
-  $SUDO mkdir $AMS_BASE/log
-else
-  $SUDO mkdir -p /var/log/antmedia
-  $SUDO chown -R antmedia.antmedia /var/log/antmedia
-fi
+$SUDO mkdir $AMS_BASE/log
 check
 
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
