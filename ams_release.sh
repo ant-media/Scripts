@@ -109,6 +109,7 @@ declare -a arr=(
                  "Ant-Media-Server"
                  "Ant-Media-Enterprise"
                  "ManagementConsole_WebApp"
+                 "ManagementConsole_AngularApp"
                  "StreamApp"
                  "webrtc-test"
                  "testcluster"
