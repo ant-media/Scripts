@@ -3,6 +3,8 @@
 #First parameter is the version name either release or snapshot works
 #if it is release version, script create and checkout a branch, update version, commit, tag and push the script
 # ./release 1.6.1
+#if it is release version with branch parameter, script create & checkout a branch and push the 
+#./release 1.6.1 branch
 #if it is a snapshot version, it updates the version, commits and pushes . After that it should be merged with master
 #./release 1.6.2-SNAPSHOT
 
@@ -53,22 +55,27 @@ update_version_and_push()
 
   check $?
 
-  if [ "$2" = "self" ]
-  then
-      #project's own version is updated
-      mvn versions:set -DnewVersion=$NEW_VERSION
-  else
-      #project's parent is updated
-      mvn versions:update-parent -DparentVersion=$NEW_VERSION $ALLOW_SNAPSHOT
-  fi
-   check $?
+  if [[ ! "$2" = "branch" && ! "$3" = "branch" ]]  # if it's not branch, update the version
+  then 
+    if [ "$2" = "self" ]
+    then
+        #project's own version is updated
+        mvn versions:set -DnewVersion=$NEW_VERSION
+    else
+        #project's parent is updated
+        mvn versions:update-parent -DparentVersion=$NEW_VERSION $ALLOW_SNAPSHOT
+    fi
+    check $?
 
-  #add change pom.xml
-  git add pom.xml
-  check $?
-  #commit pom.xml
-  git commit -m "Update version to $NEW_VERSION"
-  check $?
+    #add change pom.xml
+    git add pom.xml
+    check $?
+    #commit pom.xml
+    git commit -m "Update version to $NEW_VERSION"
+    check $?
+  fi
+
+
   #push branch to remote
   if [[ ! $NEW_VERSION =~ .*SNAPSHOT$ ]];
   then
@@ -78,18 +85,19 @@ update_version_and_push()
     # if it is snapshot, just push HEAD to the origin
     git push origin HEAD
   fi
-
-
   check $?
 
-  if [[ ! $NEW_VERSION =~ .*SNAPSHOT$ ]];
-  then
-	  #tag branch
-    git tag $TAG_NAME
-    check $?
-    #push tags
-    git push origin --tags
-    check $?
+  if [[ ! "$2" = "branch" && ! "$3" = "branch" ]]  # if it's not branch, tag the version
+  then 
+    if [[ ! $NEW_VERSION =~ .*SNAPSHOT$ ]];
+    then
+      #tag branch
+      git tag $TAG_NAME
+      check $?
+      #push tags
+      git push origin --tags
+      check $?
+    fi
   fi
 
 }
@@ -107,11 +115,13 @@ declare -a arr=(
                  )
 
 VERSION=$1
-
+BRANCH_PARAMETER=$2
 
 PARENT_PATH=$CURRENT_PATH/Ant-Media-Server-Parent
+
 cd $PARENT_PATH
-update_version_and_push $VERSION self
+update_version_and_push $VERSION self $BRANCH_PARAMETER
+
 mvn install -Dgpg.skip=true
 
 ##  loop through the  array
@@ -119,7 +129,7 @@ for i in "${arr[@]}"
 do
    echo "Entering $i"
    cd $CURRENT_PATH/$i
-   update_version_and_push $VERSION
+   update_version_and_push $VERSION $BRANCH_PARAMETER
 done
 
 if [[  $VERSION =~ .*SNAPSHOT$ ]];
