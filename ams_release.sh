@@ -109,7 +109,7 @@ declare -a arr=(
                  "Ant-Media-Server"
                  "Ant-Media-Enterprise"
                  "ManagementConsole_WebApp"
-                 "ManagementConsole_AngularApp"
+             #    "ManagementConsole_AngularApp"
                  "StreamApp"
                  "webrtc-test"
                  "testcluster"
@@ -119,10 +119,9 @@ VERSION=$1
 BRANCH_PARAMETER=$2
 
 PARENT_PATH=$CURRENT_PATH/Ant-Media-Server-Parent
-
 cd $PARENT_PATH
-update_version_and_push $VERSION self $BRANCH_PARAMETER
 
+update_version_and_push $VERSION self $BRANCH_PARAMETER
 mvn install -Dgpg.skip=true
 
 ##  loop through the  array
