@@ -44,7 +44,7 @@ get_change_log()
 	  TAG=`git tag --sort=-creatordate | head -n 1`;
 	fi
 
-    git log --no-merges --oneline --pretty=format:"<li> <a href='http://github.com/ant-media/$FOLDER/commit/%H'>%h</a> %s - %cr</li>" $TAG..HEAD >> $CHANGE_LOG
+    git log --no-merges --pretty=format:"<li> <a href='http://github.com/ant-media/$FOLDER/commit/%H'>%h</a> %s - %cr</li>" $TAG..HEAD >> $CHANGE_LOG
 
     cd ..
  
@@ -68,7 +68,7 @@ if [ ! -n "$TAG" ]; then
   TAG=`git tag --sort=-creatordate | head -n 1`;
 fi
 
-git log --no-merges --oneline $TAG..HEAD --reverse >> $CHANGE_LOG
+git log --no-merges --pretty=format:"<li> <a href='http://github.com/ant-media/$FOLDER/commit/%H'>%h</a> %s - %cr</li>"  $TAG..HEAD --reverse >> $CHANGE_LOG
 
 # "Ant-Media-Server-Common"
 get_change_log https://github.com/ant-media/Ant-Media-Server-Common.git Ant-Media-Server-Common
