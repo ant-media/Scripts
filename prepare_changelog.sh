@@ -44,7 +44,7 @@ get_change_log()
 	  TAG=`git tag --sort=-creatordate | head -n 1`;
 	fi
 
-  echo "<li>$FOLDER</li>" >> $CHANGE_LOG
+  echo "$FOLDER" >> $CHANGE_LOG
   git log --no-merges --pretty=format:"<li> <a href='http://github.com/ant-media/$FOLDER/commit/%H'>%h</a> %s - %ci</li>" --reverse $TAG..HEAD >> $CHANGE_LOG
 
   cd ..
@@ -68,7 +68,7 @@ if [ ! -n "$TAG" ]; then
   echo "TAG parameter not supplied.";
   TAG=`git tag --sort=-creatordate | head -n 1`;
 fi
-echo "<li>Ant-Media-Enterprise</li>" >> $CHANGE_LOG
+echo "Ant-Media-Enterprise" >> $CHANGE_LOG
 git log --no-merges --pretty=format:"<li>%h - %s - %ci</li>"  $TAG..HEAD --reverse >> $CHANGE_LOG
 
 # "Ant-Media-Server-Common"
