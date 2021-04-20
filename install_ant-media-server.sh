@@ -202,23 +202,21 @@ if [ "$ID" == "ubuntu" ]; then
   fi
 elif [ "$ID" == "centos" ]; then
   if [ "$VERSION_ID" == "8" ]; then
-
     $SUDO yum -y install epel-release
-    $SUDO yum -y install java-11-openjdk unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
+    $SUDO yum -y install java-11-openjdk java-11-openjdk-devel unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
     check
-    if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
-      find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
-    fi
   elif [ "$VERSION_ID" == "7" ]; then
     $SUDO yum -y install epel-release
-    $SUDO yum -y install wget unzip openssl-devel libva-devel java-11-openjdk libvdpau apr-devel
+    $SUDO yum -y install wget unzip openssl-devel libva-devel java-11-openjdk java-11-openjdk-devel libvdpau apr-devel
     $SUDO rpm -ihv --force https://antmedia.io/centos7/libva-2.3.0-1.el7.x86_64.rpm
     $SUDO rpm -ihv --force https://antmedia.io/centos7/libva-intel-driver-2.3.0-5.el7.x86_64.rpm
     $SUDO rpm -ihv --force https://antmedia.io/centos7/openssl11-libs-1.1.1g-3.el7.x86_64.rpm
     $SUDO wget https://antmedia.io/centos7/libstdc++.so.6.0.23 -O /usr/lib64/libstdc++.so.6.0.23 && ln -sf /usr/lib64/libstdc++.so.6.0.23 /usr/lib64/libstdc++.so.6
-    if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
-      find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
-    fi
+    check
+  fi
+  if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
+    find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
+    check
   fi
 
   ports=("5080" "443" "80" "5443" "1935")
