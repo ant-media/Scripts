@@ -281,11 +281,7 @@ $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
-  #converting octal to decimal for centos
-  if [ "$ID" == "centos" ]; then
-    sed -i 's/-umask 133/-umask 18/g' $SERVICE_FILE
-  fi
-
+  
   if ! [ -x "$(command -v systemctl)" ]; then
     $SUDO cp $AMS_BASE/antmedia /etc/init.d
     $SUDO update-rc.d antmedia defaults
