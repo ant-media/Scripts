@@ -16,7 +16,7 @@ SAVE_SETTINGS=false
 INSTALL_SERVICE=true
 ANT_MEDIA_SERVER_ZIP_FILE=
 OTHER_DISTRO=false
-SERVICE_FILE=/lib/systemd/system/antmedia.service
+SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 
 usage() {
