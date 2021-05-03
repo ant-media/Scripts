@@ -308,6 +308,17 @@ fi
 $SUDO mkdir $AMS_BASE/log
 check
 
+OS=`uname | tr "[:upper:]" "[:lower:]"` 
+ARCH=`uname -m`
+PLATFORM=$OS-$ARCH
+
+echo "PLATFORM:$PLATFORM"
+
+if [ -d "$AMS_BASE/lib/native-$PLATFORM" ] ; then
+  $SUDO mv $AMS_BASE/lib/native-$PLATFORM $AMS_BASE/lib/native
+  $SUDO rm -r $AMS_BASE/lib/native-*
+fi
+
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   $SUDO useradd -d $AMS_BASE/ -s /bin/false -r antmedia
   check
