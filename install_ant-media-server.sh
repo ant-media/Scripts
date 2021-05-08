@@ -308,7 +308,7 @@ fi
 $SUDO mkdir $AMS_BASE/log
 check
 
-OS=`uname | tr "[:upper:]" "[:lower:]"` 
+OS=`uname | tr "[:upper:]" "[:lower:]"`
 ARCH=`uname -m`
 PLATFORM=$OS-$ARCH
 
