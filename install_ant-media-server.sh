@@ -69,8 +69,9 @@ restore_settings() {
   fi
 
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
-  cp -p $BACKUP_DIR/conf/red5.properties $AMS_BASE/conf/
-  cp -p $BACKUP_DIR/conf/jee-container.xml $AMS_BASE/conf/
+  #cp -p $BACKUP_DIR/conf/red5.properties $AMS_BASE/conf/
+  #cp -p $BACKUP_DIR/conf/jee-container.xml $AMS_BASE/conf/
+  cp -p $BACKUP_DIR/conf/{red5.properties,jee-container.xml,instanceId} $AMS_BASE/conf
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
@@ -308,7 +309,7 @@ fi
 $SUDO mkdir $AMS_BASE/log
 check
 
-OS=`uname | tr "[:upper:]" "[:lower:]"` 
+OS=`uname | tr "[:upper:]" "[:lower:]"`
 ARCH=`uname -m`
 PLATFORM=$OS-$ARCH
 
