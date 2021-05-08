@@ -16,7 +16,7 @@ SAVE_SETTINGS=false
 INSTALL_SERVICE=true
 ANT_MEDIA_SERVER_ZIP_FILE=
 OTHER_DISTRO=false
-SERVICE_FILE=/lib/systemd/system/antmedia.service
+SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 
 usage() {
@@ -200,23 +200,21 @@ if [ "$ID" == "ubuntu" ]; then
   fi
 elif [ "$ID" == "centos" ]; then
   if [ "$VERSION_ID" == "8" ]; then
-
     $SUDO yum -y install epel-release
-    $SUDO yum -y install java-11-openjdk unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
+    $SUDO yum -y install java-11-openjdk java-11-openjdk-devel unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
     check
-    if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
-      find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
-    fi
   elif [ "$VERSION_ID" == "7" ]; then
     $SUDO yum -y install epel-release
-    $SUDO yum -y install wget unzip openssl-devel libva-devel java-11-openjdk libvdpau apr-devel
+    $SUDO yum -y install wget unzip openssl-devel libva-devel java-11-openjdk java-11-openjdk-devel libvdpau apr-devel
     $SUDO rpm -ihv --force https://antmedia.io/centos7/libva-2.3.0-1.el7.x86_64.rpm
     $SUDO rpm -ihv --force https://antmedia.io/centos7/libva-intel-driver-2.3.0-5.el7.x86_64.rpm
     $SUDO rpm -ihv --force https://antmedia.io/centos7/openssl11-libs-1.1.1g-3.el7.x86_64.rpm
     $SUDO wget https://antmedia.io/centos7/libstdc++.so.6.0.23 -O /usr/lib64/libstdc++.so.6.0.23 && ln -sf /usr/lib64/libstdc++.so.6.0.23 /usr/lib64/libstdc++.so.6
-    if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
-      find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
-    fi
+    check
+  fi
+  if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
+    find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
+    check
   fi
 
   ports=("5080" "443" "80" "5443" "1935")
@@ -280,11 +278,7 @@ $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
-  #converting octal to decimal for centos
-  if [ "$ID" == "centos" ]; then
-    sed -i 's/-umask 133/-umask 18/g' $SERVICE_FILE
-  fi
-
+  
   if ! [ -x "$(command -v systemctl)" ]; then
     $SUDO cp $AMS_BASE/antmedia /etc/init.d
     $SUDO update-rc.d antmedia defaults
@@ -304,8 +298,18 @@ fi
 
 $SUDO mkdir $AMS_BASE/log
 check
-
 $SUDO ln -sf /usr/local/antmedia/log/ /var/log/antmedia
+
+OS=`uname | tr "[:upper:]" "[:lower:]"` 
+ARCH=`uname -m`
+PLATFORM=$OS-$ARCH
+
+echo "PLATFORM:$PLATFORM"
+
+if [ -d "$AMS_BASE/lib/native-$PLATFORM" ] ; then
+  $SUDO mv $AMS_BASE/lib/native-$PLATFORM $AMS_BASE/lib/native
+  $SUDO rm -r $AMS_BASE/lib/native-*
+fi
 
 if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
   $SUDO useradd -d $AMS_BASE/ -s /bin/false -r antmedia
