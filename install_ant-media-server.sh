@@ -69,8 +69,7 @@ restore_settings() {
   fi
 
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
-  cp -p $BACKUP_DIR/conf/red5.properties $AMS_BASE/conf/
-  cp -p $BACKUP_DIR/conf/jee-container.xml $AMS_BASE/conf/
+  cp -p $BACKUP_DIR/conf/{red5.properties,jee-container.xml,instanceId} $AMS_BASE/conf
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
@@ -278,7 +277,7 @@ $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
-  
+
   if ! [ -x "$(command -v systemctl)" ]; then
     $SUDO cp $AMS_BASE/antmedia /etc/init.d
     $SUDO update-rc.d antmedia defaults
@@ -300,7 +299,7 @@ $SUDO mkdir $AMS_BASE/log
 check
 $SUDO ln -sf /usr/local/antmedia/log/ /var/log/antmedia
 
-OS=`uname | tr "[:upper:]" "[:lower:]"` 
+OS=`uname | tr "[:upper:]" "[:lower:]"`
 ARCH=`uname -m`
 PLATFORM=$OS-$ARCH
 
