@@ -124,7 +124,8 @@ distro () {
 
       read -p "Enter JVM Path (default: $DEFAULT_JAVA): " CUSTOM_JVM
       if [ -z "$CUSTOM_JVM" ]; then
-         CUSTOM_JVM=$DEFAULT_JAVA
+        $SUDO apt-get update && $SUDO apt-get install coreutils
+        CUSTOM_JVM=$DEFAULT_JAVA
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "7" ]; then
@@ -180,9 +181,6 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   usage
   exit 1
 fi
-
-
-
 
 SUDO="sudo"
 if ! [ -x "$(command -v sudo)" ]; then
@@ -274,7 +272,6 @@ else
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 fi
 
-
 # use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file
 $SUDO mkdir -p $JAVA_HOME/lib/amd64
 $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
@@ -301,6 +298,7 @@ fi
 
 $SUDO mkdir $AMS_BASE/log
 check
+$SUDO ln -sf /usr/local/antmedia/log/ /var/log/antmedia
 
 OS=`uname | tr "[:upper:]" "[:lower:]"` 
 ARCH=`uname -m`
