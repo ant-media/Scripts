@@ -49,7 +49,12 @@ restore_settings() {
         if [ -d $BACKUP_DIR/webapps/$i/ ]; then
           cp -p -r $BACKUP_DIR/webapps/$i/WEB-INF/red5-web.properties $AMS_BASE/webapps/$i/WEB-INF/red5-web.properties
           if [ -d $BACKUP_DIR/webapps/$i/streams/ ]; then
-            cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+            if [ -L $BACKUP_DIR/webapps/$i/streams ]; then
+              ii=`echo $BACKUP_DIR/webapps/$i/streams | cut -d "/" -f 6`
+              ln -sf $(readlink -f $BACKUP_DIR/webapps/$i/streams) $AMS_BASE/webapps/$ii/streams
+            else
+              cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+            fi
           fi
         fi
   done
