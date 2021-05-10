@@ -49,7 +49,12 @@ restore_settings() {
         if [ -d $BACKUP_DIR/webapps/$i/ ]; then
           cp -p -r $BACKUP_DIR/webapps/$i/WEB-INF/red5-web.properties $AMS_BASE/webapps/$i/WEB-INF/red5-web.properties
           if [ -d $BACKUP_DIR/webapps/$i/streams/ ]; then
-            cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+            if [ -L $BACKUP_DIR/webapps/$i/streams ]; then
+              ii=`echo $BACKUP_DIR/webapps/$i/streams | cut -d "/" -f 6`
+              ln -sf $(readlink -f $BACKUP_DIR/webapps/$i/streams) $AMS_BASE/webapps/$ii/streams
+            else
+              cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+            fi
           fi
         fi
   done
@@ -69,8 +74,7 @@ restore_settings() {
   fi
 
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
-  cp -p $BACKUP_DIR/conf/red5.properties $AMS_BASE/conf/
-  cp -p $BACKUP_DIR/conf/jee-container.xml $AMS_BASE/conf/
+  cp -p $BACKUP_DIR/conf/{red5.properties,jee-container.xml,instanceId} $AMS_BASE/conf
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
@@ -278,7 +282,7 @@ $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
-  
+
   if ! [ -x "$(command -v systemctl)" ]; then
     $SUDO cp $AMS_BASE/antmedia /etc/init.d
     $SUDO update-rc.d antmedia defaults
@@ -300,7 +304,7 @@ $SUDO mkdir $AMS_BASE/log
 check
 $SUDO ln -sf /usr/local/antmedia/log/ /var/log/antmedia
 
-OS=`uname | tr "[:upper:]" "[:lower:]"` 
+OS=`uname | tr "[:upper:]" "[:lower:]"`
 ARCH=`uname -m`
 PLATFORM=$OS-$ARCH
 
