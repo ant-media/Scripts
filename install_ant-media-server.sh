@@ -116,7 +116,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04 and Centos 8"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 20.10 and Centos 8"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -132,7 +132,7 @@ distro () {
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "7" ]; then
+      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "7" ]; then
          echo $msg
          exit 1
             fi
