@@ -78,16 +78,7 @@ restore_settings() {
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
-    ssl_files=("truststore.jks" "keystore.jks")
-    for ssl in ${ssl_files[*]}; do
-      cp -p $BACKUP_DIR/conf/$ssl $AMS_BASE/conf/
-    done
-
-    cert_files=("chain.pem" "privkey.pem" "fullchain.pem")
-
-    for certs in ${cert_files[*]}; do
-      sudo cp -p /etc/letsencrypt/live/$(grep "rtmps.keystorepass=" $BACKUP_DIR/conf/red5.properties  | awk -F"=" '{print $2}')/$certs $AMS_BASE/conf/
-    done
+    cp -p $BACKUP_DIR/conf/{chain.pem,privkey.pem,fullchain.pem,truststore.jks,keystore.jks} $AMS_BASE/conf/
   fi
 
   if [ $(grep 'nativeLogLevel=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
