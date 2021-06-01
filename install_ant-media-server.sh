@@ -293,7 +293,6 @@ fi
 
 $SUDO mkdir $AMS_BASE/log
 check
-$SUDO ln -sf /usr/local/antmedia/log/ /var/log/antmedia
 
 OS=`uname | tr "[:upper:]" "[:lower:]"`
 ARCH=`uname -m`
