@@ -294,7 +294,7 @@ fi
 # create log directory if not exist
 if [ ! -d "/var/log/antmedia" ] 
 then
-    mkdir /var/log/antmedia 
+    $SUDO mkdir /var/log/antmedia 
 fi
 
 $SUDO ln -sf /var/log/antmedia $AMS_BASE/log
