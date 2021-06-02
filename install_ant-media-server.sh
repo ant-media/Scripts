@@ -291,8 +291,13 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   fi
 fi
 
+# create log directory if not exist
+if [ ! -d "/var/log/antmedia" ] 
+then
+    mkdir /var/log/antmedia 
+fi
 
-$SUDO ln -sf /var/log/antmedia /usr/local/antmedia/log
+$SUDO ln -sf /var/log/antmedia $AMS_BASE/log
 check
 
 $SUDO touch $AMS_BASE/log/antmedia-error.log
