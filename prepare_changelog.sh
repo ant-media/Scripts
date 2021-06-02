@@ -5,11 +5,9 @@
 # "Ant-Media-Server"
 # "Ant-Media-Enterprise"
 # "Ant-Media-Server-Common"
-# "ManagementConsole_WebApp"
 # "ManagementConsole_AngularApp"
 # "StreamApp"
 # "Ant-Media-Server-Parent"
-# "Ant-Media-Server-Service"
 
 # Usage
 # ./prepare_change_log [BRANCH_NAME] [TAG]
@@ -44,7 +42,7 @@ get_change_log()
 	  TAG=`git tag --sort=-creatordate | head -n 1`;
 	fi
 
-  echo "$FOLDER" >> $CHANGE_LOG
+  echo "<h3>$FOLDER</h3>" >> $CHANGE_LOG
   git log --no-merges --pretty=format:"<li> <a href='http://github.com/ant-media/$FOLDER/commit/%H'>%h</a> %s - %ci</li>" --reverse $TAG..HEAD >> $CHANGE_LOG
 
   cd ..
@@ -68,7 +66,7 @@ if [ ! -n "$TAG" ]; then
   echo "TAG parameter not supplied.";
   TAG=`git tag --sort=-creatordate | head -n 1`;
 fi
-echo "Ant-Media-Enterprise" >> $CHANGE_LOG
+echo "<h3>Ant-Media-Enterprise</h3>" >> $CHANGE_LOG
 git log --no-merges --pretty=format:"<li>%h - %s - %ci</li>"  $TAG..HEAD --reverse >> $CHANGE_LOG
 
 # "Ant-Media-Server-Common"
@@ -80,14 +78,5 @@ get_change_log https://github.com/ant-media/StreamApp.git StreamApp
 # "Ant-Media-Server-Parent"
 get_change_log https://github.com/ant-media/ant-media-server-parent.git Ant-Media-Server-Parent
 
-# "ManagementConsole_WebApp"
-get_change_log https://github.com/ant-media/ManagementConsole_WebApp.git ManagementConsole_WebApp
-
 # "ManagementConsole_AngularApp"
 get_change_log https://github.com/ant-media/ManagementConsole_AngularApp.git ManagementConsole_AngularApp
-
-# "Ant-Media-Server-Service"
-get_change_log https://github.com/ant-media/Ant-Media-Server-Service.git Ant-Media-Server-Service
-
-
-
