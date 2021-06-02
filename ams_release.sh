@@ -105,10 +105,8 @@ update_version_and_push()
 CURRENT_PATH=`pwd`
 declare -a arr=(
                  "Ant-Media-Server-Common"
-                 "Ant-Media-Server-Service"
                  "Ant-Media-Server"
                  "Ant-Media-Enterprise"
-                 "ManagementConsole_WebApp"
              #    "ManagementConsole_AngularApp"
                  "StreamApp"
                  "webrtc-test"
