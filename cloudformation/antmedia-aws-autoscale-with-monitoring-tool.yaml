@@ -268,28 +268,28 @@ Parameters:
     Description: 'Amazon Resource Name (ARN) of the certificate to associate with the load balancer. If you do not have the SSL certificate, please check this guide: https://antmedia.io/ant-media-server-cloudformation-installation/ '
     Type: String
     Default: ''
-  RTMP: 
+  RTMP:
     Description: If you want to install RTMP Load balancer, please select True
     Default: false
     Type: String
-    AllowedValues: 
+    AllowedValues:
       - true
       - false
-  ElasticIPAddress: 
+  ElasticIPAddress:
     Description: If you want to assign an Elastic IP Address, please select True
     Default: false
     Type: String
-    AllowedValues: 
+    AllowedValues:
       - true
       - false
 
 Conditions:
-  CreateRTMPResources: !Equals 
+  CreateRTMPResources: !Equals
     - !Ref RTMP
     - true
-  CreateIP: !Equals 
+  CreateIP: !Equals
     - !Ref ElasticIPAddress
-    - true 
+    - true
 
 Resources:
   DescribeImagesRole:
@@ -379,7 +379,7 @@ Resources:
   RTMPLoadBalancer:
     Condition: CreateRTMPResources
     Type: AWS::ElasticLoadBalancing::LoadBalancer
-    Properties:        
+    Properties:
       ConnectionDrainingPolicy:
         Enabled: true
         Timeout: 60
@@ -390,7 +390,7 @@ Resources:
           - InstancePort: 1935
             InstanceProtocol: TCP
             LoadBalancerPort: 1935
-            Protocol: TCP          
+            Protocol: TCP
       Subnets: !Ref Subnets
       SecurityGroups:
         - !GetAtt [ RTMPSecurityGroup, GroupId ]
@@ -419,7 +419,7 @@ Resources:
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
-        LoadBalancerNames: 
+        LoadBalancerNames:
            - !If [CreateRTMPResources, !Ref RTMPLoadBalancer, !Ref "AWS::NoValue"]
         Tags:
         - Key: Name
@@ -475,12 +475,12 @@ Resources:
               content: !Sub |
                 [Unit]
                 Description=cfn-hup daemon
-                
+
                 [Service]
                 Type=simple
                 ExecStart=/opt/aws/bin/cfn-hup
                 Restart=always
-                
+
                 [Install]
                 WantedBy=multi-user.target
               mode: "000400"
@@ -570,12 +570,12 @@ Resources:
               content: !Sub |
                 [Unit]
                 Description=cfn-hup daemon
-                
+
                 [Service]
                 Type=simple
                 ExecStart=/opt/aws/bin/cfn-hup
                 Restart=always
-                
+
                 [Install]
                 WantedBy=multi-user.target
               mode: "000400"
@@ -593,7 +593,7 @@ Resources:
           #!/bin/bash
           sudo sed -i "s/server.kafka_brokers=.*/server.kafka_brokers=${MonitorInstance.PrivateIp}:9092/g" /usr/local/antmedia/conf/red5.properties
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-          apt-get update 
+          apt-get update
           apt-get install -y python-pip
           apt-get install -y python-setuptools
           mkdir -p /opt/aws/bin
@@ -612,7 +612,7 @@ Resources:
             IpProtocol: tcp
             FromPort: 80
             ToPort: 80
-            Description: Allow 80. Port for Origin Instances 
+            Description: Allow 80. Port for Origin Instances
           - CidrIp: 0.0.0.0/0
             IpProtocol: tcp
             FromPort: 443
@@ -835,14 +835,14 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            apt-get update 
+            apt-get update
             apt-get install -y python-pip
             apt-get install -y python-setuptools
             mkdir -p /opt/aws/bin
             python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource TestInstance --region ${AWS::Region}
             sudo apt-get install apt-transport-https software-properties-common wget -y
-            wget -qO- https://mirrors.dotsrc.org/apache/kafka/2.6.0/kafka_2.13-2.6.0.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
+            wget -qO- https://downloads.apache.org/kafka/2.7.0/kafka_2.13-2.7.0.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
             wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
             echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
             wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
@@ -917,7 +917,7 @@ Resources:
 
             output {
               elasticsearch {
-                 hosts => ["127.0.0.1:9200"] 
+                 hosts => ["127.0.0.1:9200"]
                  index => "logstash-%{[type]}-%{+YYYY.MM.dd}"
               }
             }
@@ -946,7 +946,7 @@ Resources:
             sudo curl -X "POST" "http://127.0.0.1:3000/api/datasources" \
                 -H "Content-Type: application/json" \
                 -u "admin:admin" \
-                --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log 
+                --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log
 
 
 
@@ -970,60 +970,58 @@ Resources:
 Outputs:
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'https://'
-        - !GetAtt 
+        - !GetAtt
           - ApplicationLoadBalancer
           - DNSName
-    
+
   EdgeHTTPS:
     Description: HTTPS URL of the Ant Media Edge Servers
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'https://'
-        - !GetAtt 
+        - !GetAtt
           - ApplicationLoadBalancer
           - DNSName
         - ':5443'
 
   OriginHTTP:
     Description: HTTP URL of the Ant Media Origin Servers
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'http://'
-        - !GetAtt 
+        - !GetAtt
           - ApplicationLoadBalancer
           - DNSName
 
   EdgeHTTP:
     Description: HTTP URL of the Ant Media Edge Servers
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'http://'
-        - !GetAtt 
+        - !GetAtt
           - ApplicationLoadBalancer
           - DNSName
-        - ':5080'       
+        - ':5080'
 
   RTMP:
     Condition: CreateRTMPResources
     Description: RTMP URL of the Ant Media Server
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'rtmp://'
-        - !GetAtt 
+        - !GetAtt
           - RTMPLoadBalancer
           - DNSName
 
   MonitorURL:
     Description: "Grafana Default Username and Password: admin/admin"
-    Value: !Join 
+    Value: !Join
       - ''
       - - 'http://'
-        - !GetAtt 
+        - !GetAtt
           - MonitorInstance
           - PublicIp
         - ':3000'
-
-          
