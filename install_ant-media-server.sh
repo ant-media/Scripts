@@ -18,6 +18,7 @@ ANT_MEDIA_SERVER_ZIP_FILE=
 OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
+LOG_DIRECTORY="/var/log/antmedia"
 
 usage() {
   echo ""
@@ -292,17 +293,19 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
 fi
 
 # create log directory if not exist
-if [ ! -d "/var/log/antmedia" ] 
+if [ ! -d "$LOG_DIRECTORY" ] 
 then
-    $SUDO mkdir /var/log/antmedia 
+    #delete if there is a symbolic link or something
+    $SUDO rm -rf $LOG_DIRECTORY 
+    #create log 
+    $SUDO mkdir $LOG_DIRECTORY
 fi
 
-$SUDO ln -sf /var/log/antmedia $AMS_BASE/log
+$SUDO ln -sf $LOG_DIRECTORY $AMS_BASE/log
 check
 
 $SUDO touch $AMS_BASE/log/antmedia-error.log
 check
-
 
 OS=`uname | tr "[:upper:]" "[:lower:]"`
 ARCH=`uname -m`
@@ -321,6 +324,8 @@ if ! [ $(getent passwd | grep antmedia.*$AMS_BASE) ] ; then
 fi
 
 $SUDO chown -R antmedia:antmedia $AMS_BASE/
+check
+$SUDO chown -R antmedia:antmedia $LOG_DIRECTORY
 check
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
