@@ -21,6 +21,18 @@ DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 ARCH=`uname -m`
 
+init() {
+  remote_file="$(curl -sL https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh | md5sum | cut -d ' ' -f 1)"
+  local_file="$(md5sum $0 | cut -d '' -f 1 )"
+
+  if [ "$remote_file" != "$local_file" ]; then
+    wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+    chmod +x $0
+  fi
+}
+
+init
+
 usage() {
   echo ""
   echo "Usage:"
