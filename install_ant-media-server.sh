@@ -28,6 +28,8 @@ init() {
   if [ "$remote_file" != "$local_file" ]; then
     wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
     chmod +x $0
+    echo "Updating the installation script. Please rerun the script."
+    exit 1
   fi
 }
 
