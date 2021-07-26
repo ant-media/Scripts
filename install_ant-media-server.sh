@@ -26,10 +26,15 @@ init() {
   local_file="$(md5sum $0 | cut -d '' -f 1 )"
 
   if [ "$remote_file" != "$local_file" ]; then
-    wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
-    chmod +x $0
-    echo "Updating the installation script. Please rerun the script."
-    exit 1
+    echo -n "Your installation script is outdated. Would you like to update it ? [Y/n]"
+    read update
+    update=${update^}
+    if [ "$update" == "Y" ]; then
+      wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+      chmod +x $0
+      echo "Updating the installation script. Please rerun the script."
+      exit 1
+    fi
   fi
 }
 
