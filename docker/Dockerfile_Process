@@ -6,11 +6,6 @@ FROM ubuntu:18.04
 
 ARG AntMediaServer
 
-# Keep this value ARGs for compatibility
-ARG MongoDBServer=
-ARG MongoDBUsername=
-ARG MongoDBPassword=
-
 ARG BranchName=master
 
 #Running update and install makes the builder not to use cache which resolves some updates
@@ -27,11 +22,6 @@ RUN cd home \
     && pwd \
     && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
 
-
-# Keep this for compatibility
-RUN /bin/bash -c 'if [ ! -z "${MongoDBServer}" ]; then \
-                    /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBServer} ${MongoDBUsername} ${MongoDBPassword}; \
-                 fi'
 
 # Options 
 # -g: Use global(Public) IP in network communication. Its value can be true or false. Default value is false.
