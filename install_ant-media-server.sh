@@ -21,24 +21,18 @@ DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 ARCH=`uname -m`
 
-init() {
+update_script () {
+  SCRIPT_NAME="$0"
   remote_file="$(curl -sL https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh | md5sum | cut -d ' ' -f 1)"
   local_file="$(md5sum $0 | cut -d '' -f 1 )"
-
   if [ "$remote_file" != "$local_file" ]; then
-    echo -n "Your installation script is outdated. Would you like to update it ? [Y/n]"
-    read update
-    update=${update^}
-    if [ "$update" == "Y" ]; then
-      wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
-      chmod +x $0
-      echo "Updating the installation script. Please rerun the script."
-      exit 1
-    fi
+    wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+    chmod +x $0
+    echo "Updated the installation script. Please rerun the script."
+    exit 1
   fi
 }
 
-init
 
 usage() {
   echo ""
@@ -166,13 +160,14 @@ check() {
 
 # Start
 
-while getopts 'i:s:r:d:h' option
+while getopts 'i:s:r:d:hu' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
     i) ANT_MEDIA_SERVER_ZIP_FILE=${OPTARG};;
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
+    u) UPDATE="true";;
     h) usage
        exit 1;;
    esac
@@ -181,6 +176,9 @@ done
 
 distro
 
+if [ "$UPDATE" == "true" ]; then
+  update_script
+fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used.
