@@ -19,6 +19,7 @@ OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
+ARCH=`uname -m`
 
 usage() {
   echo ""
@@ -124,6 +125,10 @@ distro () {
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ]; then
+      if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
+        echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
+        exit 1
+      fi
       if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "7" ]; then
          echo $msg
          exit 1
@@ -185,9 +190,13 @@ fi
 
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
-  check
-  $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
-  check
+  if [ "aarch64" == $ARCH ]; then
+    $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev -y
+    check
+  else
+    $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
+    check
+  fi
   #update-java-alternatives -s java-1.8.0-openjdk-amd64
   openjfxExists=`apt-cache search openjfx | wc -l`
   if [ "$openjfxExists" -gt "0" ];
@@ -286,6 +295,10 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
     if [ "$OTHER_DISTRO" == "true" ]; then
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$CUSTOM_JVM#g" $SERVICE_FILE
     fi
+    if [ "aarch64" == $ARCH ]; then
+      $SUDO update-java-alternatives -s java-1.11.*-openjdk-arm64
+      sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$DEFAULT_JAVA_ARM#g" $SERVICE_FILE
+    fi
     $SUDO systemctl daemon-reload
     $SUDO systemctl enable antmedia
     check
@@ -293,11 +306,11 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
 fi
 
 # create log directory if not exist
-if [ ! -d "$LOG_DIRECTORY" ] 
+if [ ! -d "$LOG_DIRECTORY" ]
 then
     #delete if there is a symbolic link or something
-    $SUDO rm -rf $LOG_DIRECTORY 
-    #create log 
+    $SUDO rm -rf $LOG_DIRECTORY
+    #create log
     $SUDO mkdir $LOG_DIRECTORY
 fi
 
@@ -308,7 +321,6 @@ $SUDO touch $AMS_BASE/log/antmedia-error.log
 check
 
 OS=`uname | tr "[:upper:]" "[:lower:]"`
-ARCH=`uname -m`
 PLATFORM=$OS-$ARCH
 
 echo "PLATFORM:$PLATFORM"
