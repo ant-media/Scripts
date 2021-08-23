@@ -29,7 +29,8 @@ get_change_log()
 {
 	GIT_URL=$1
 	FOLDER=$2
-	
+	PULL_REQUEST_BASE_URL=$3
+
 	if [ $(git ls-remote $GIT_URL $BRANCH_NAME  | wc -l) == "1" ];  
   then 
       echo " $BRANCH_NAME branch found";  
@@ -49,7 +50,7 @@ get_change_log()
   DATE_OF_THE_TAG=`git log -1 --date=iso-strict --pretty=format:%ad $TAG`
 
   echo "<h3>$FOLDER</h3>" >> $CHANGE_LOG
-  gh pr list --state merged --search "created:>$DATE_OF_THE_TAG" -L 1000 --json title,body,number --template '{{range .}} <li> <a href="http://github.com/ant-media/Ant-Media-Server/pull/{{.number}}">{{.number}}</a> {{.title}} - <a href="https://github.com/ant-media/Ant-Media-Server/issues/{{.body}}">{{.body}}</a></li>{{end}}' >> $CHANGE_LOG
+  gh pr list --state merged --search "created:>$DATE_OF_THE_TAG" -L 1000 --json title,body,number --template "{{range .}} <li> <a href='$PULL_REQUEST_BASE_URL/pull/{{.number}}'>{{.number}}</a> {{.title}} - <a href='https://github.com/ant-media/Ant-Media-Server/issues/{{.body}}'>{{.body}}</a></li>{{end}}" >> $CHANGE_LOG
 
   cd ..
  
@@ -67,7 +68,7 @@ li , body {
 #get Ant Media Server
 export GH_REPO=ant-media/Ant-Media-Server
 export GH_HOST=github.com
-get_change_log https://github.com/ant-media/Ant-Media-Server.git Ant-Media-Server
+get_change_log https://github.com/ant-media/Ant-Media-Server.git Ant-Media-Server https://github.com/ant-media/Ant-Media-Server
 
 #get Ant Media Server Enterprise log
 if [ ! -n "$TAG" ]; then
@@ -81,12 +82,12 @@ curl --location --request GET "https://gitlab.com/api/v4/projects/5032874/merge_
 
 # "StreamApp"
 export GH_REPO=ant-media/StreamApp
-get_change_log https://github.com/ant-media/StreamApp.git StreamApp
+get_change_log https://github.com/ant-media/StreamApp.git StreamApp https://github.com/ant-media/StreamApp
 
 # "Ant-Media-Server-Parent"
 export GH_REPO=ant-media/ant-media-server-parent
-get_change_log https://github.com/ant-media/ant-media-server-parent.git Ant-Media-Server-Parent
+get_change_log https://github.com/ant-media/ant-media-server-parent.git Ant-Media-Server-Parent https://github.com/ant-media/ant-media-server-parent
 
 # "ManagementConsole_AngularApp"
 export GH_REPO=ant-media/ManagementConsole_AngularApp
-get_change_log https://github.com/ant-media/ManagementConsole_AngularApp.git ManagementConsole_AngularApp
+get_change_log https://github.com/ant-media/ManagementConsole_AngularApp.git ManagementConsole_AngularApp false https://github.com/ant-media/ManagementConsole_AngularApp
