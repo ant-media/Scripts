@@ -14,8 +14,9 @@
 if [ -z "$1" ]; then
   echo "Please give the version as parameter"
   echo "Sample usage:"
-  echo "$0  1.6.1"
-  echo "$0  1.6.1-SNAPSHOT"
+  echo "$0  1.6.1  -> create & checkout the release branch, update version, commit, tag and push to the origin"
+  echo "$0  1.6.1 branch -> create & checkout the release branch, don't update version, push to the origin "
+  echo "$0  1.6.1-SNAPSHOT -> update the version, commit and push to the origin"
   exit 1
 fi
 
@@ -42,7 +43,7 @@ update_version_and_push()
   if [[ ! $NEW_VERSION =~ .*SNAPSHOT$ ]]; #if it is not a snapshot version
   then
 	  echo "Checking out $BRANCH_NAME"
-    if [ ! `git branch --list $BRANCH_NAME` ]
+    if [ `git branch --list $BRANCH_NAME | wc -l` == "0" ]
     then
       echo "$BRANCH_NAME branch is being created."
       git branch $BRANCH_NAME
@@ -55,24 +56,27 @@ update_version_and_push()
 
   check $?
 
-  if [[ ! "$2" = "branch" && ! "$3" = "branch" ]]  # if it's not branch, update the version
-  then 
-    if [ "$2" = "self" ]
-    then
-        #project's own version is updated
-        mvn versions:set -DnewVersion=$NEW_VERSION
-    else
-        #project's parent is updated
-        mvn versions:update-parent -DparentVersion=$NEW_VERSION $ALLOW_SNAPSHOT
-    fi
-    check $?
+  #run maven comments if pom.xml exists 
+  if [[ -f "pom.xml" ]]; then
+    if [[ ! "$2" = "branch" && ! "$3" = "branch" ]]  # if it's not branch, update the version
+    then 
+      if [ "$2" = "self" ]
+      then
+          #project's own version is updated
+          mvn versions:set -DnewVersion=$NEW_VERSION
+      else
+          #project's parent is updated
+          mvn versions:update-parent -DparentVersion=$NEW_VERSION $ALLOW_SNAPSHOT
+      fi
+      check $?
 
-    #add change pom.xml
-    git add pom.xml
-    check $?
-    #commit pom.xml
-    git commit -m "Update version to $NEW_VERSION"
-    check $?
+      #add change pom.xml
+      git add pom.xml
+      check $?
+      #commit pom.xml
+      git commit -m "Update version to $NEW_VERSION"
+      check $?
+    fi
   fi
 
 
@@ -104,10 +108,9 @@ update_version_and_push()
 
 CURRENT_PATH=`pwd`
 declare -a arr=(
-                 "Ant-Media-Server-Common"
                  "Ant-Media-Server"
                  "Ant-Media-Enterprise"
-             #    "ManagementConsole_AngularApp"
+                 "ManagementConsole_AngularApp"
                  "StreamApp"
                  "webrtc-test"
                  "testcluster"
