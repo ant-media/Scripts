@@ -44,12 +44,15 @@ usage() {
   echo "  -r -> Restore settings flag. It can accept true or false. Optional. Default value is false"
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
+  echo "  -u -> Update Ant Media Server new installation script. Default value is false"
+
   echo ""
   echo "Sample usage:"
   echo "$0 -i name-of-the-ant-media-server-zip-file"
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
   echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
+  echo "$0 -u"
   echo ""
 }
 
