@@ -7,13 +7,15 @@ When a node joins the Cluster in Ant Media Server, this script automatically add
 1. Copy the nginx-scale-in.sh file to /usr/bin/ and give it run executable permission.
 
 ```
-wget -O /usr/bin/nginx-scale-in.sh https://raw.githubusercontent.com/ant-media/Scripts/nginx-scale-in/nginx-scale-in.sh
-chmod +x /usr/bin/nginx-scale-in.sh
+wget -O /usr/bin/nginx-scale-in.sh\ 
+ https://raw.githubusercontent.com/ant-media/Scripts/nginx-scale-in/nginx-scale-in.sh && chmod +x /usr/bin/nginx-scale-in.sh
+
 ```
 2. Copy the antmedia-cluster-check.service file to /etc/systemd/system/ 
 
 ```
-wget -O /etc/systemd/system/antmedia-cluster-check.service https://raw.githubusercontent.com/ant-media/Scripts/nginx-scale-in/antmedia-cluster-check.service
+wget -O /etc/systemd/system/antmedia-cluster-check.service\
+ https://raw.githubusercontent.com/ant-media/Scripts/nginx-scale-in/antmedia-cluster-check.service
 
 ```
 
