@@ -1,0 +1,8 @@
+[Unit]
+Description=Ant Media Cluster Check Script
+
+[Service]
+ExecStart=/usr/bin/nginx-scale-in.sh
+
+[Install]
+WantedBy=multi-user.target
