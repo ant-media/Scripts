@@ -167,7 +167,7 @@ Parameters:
     Description: The initial number of Ant Media Origin instances
     Type: Number
     MinValue: '1'
-    MaxValue: '20'
+    MaxValue: '1000'
   AntMediaOriginCapacityMax:
     Default: '10'
     Description: The initial number of Ant Media Origin instances
@@ -178,7 +178,7 @@ Parameters:
     Description: The initial number of Ant Media Edge instances
     Type: Number
     MinValue: '1'
-    MaxValue: '20'
+    MaxValue: '1000'
   AntMediaEdgeCapacityMax:
     Default: '10'
     Description: The initial number of Ant Media Edge instances
