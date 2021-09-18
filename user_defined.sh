@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# This script allows your recordings to be transcoded again when ABR is enabled for the bitrate you specify.
+
+# How to use this script
+
+# Need to add settings.muxerFinishScript=/Script-DIR/custom_recordings.sh parameter in /usr/local/antmedia/webapps/{Application-Name}/WEB-INF/red5-web.properties
+# Please be sure that the script is in right path and enable MP4 recording and ABR in Application settings.
+# After the muxing process is finished, AMS saves the adaptive recording files in the target directory, i.e., /usr/local/antmedia/custom
+
+
 # Please make sure you installed FFmpeg before running the script.
 # apt-get install -y ffmpeg
 
