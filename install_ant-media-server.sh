@@ -96,6 +96,13 @@ restore_settings() {
     $SUDO sed -i '/<entry key="SSLCertificateFile.*/a <entry key="SSLCertificateChainFile" value="${http.ssl_certificate_chain_file}" />' $AMS_BASE/conf/jee-container.xml
   fi
 
+  # This is a fix in upgrading versions that uses Http11Nio2Protocol
+  # I think we can delete the following two lines after 6 months because it will become useless. 
+  # Sep 25, 21 - mekya
+  if [ $(grep 'Http11AprProtocol' $AMS_BASE/conf/jee-container.xml | wc -l) != "0" ]; then
+    $sudo sed -i 's/org.apache.coyote.http11.Http11AprProtocol/org.apache.coyote.http11.Http11Nio2Protocol/g' $AMS_BASE/conf/jee-container.xml
+  fi
+
 
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
