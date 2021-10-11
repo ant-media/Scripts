@@ -744,8 +744,8 @@ Resources:
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
-            wget -P /tmp/ https://raw.githubusercontent.com/muratugureminoglu/Scripts/master/mongo_set_username_password.sh && chmod +x /tmp/mongo_set_username_password.sh
-            echo "/tmp/mongo_set_username_password.sh ${DashboardUsername} ${DashboardPassword}"| at now + 3 minutes
+            wget -P /tmp/ https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/cloudformation_set_username_password.sh && chmod +x /tmp/cloudformation_set_username_password.sh
+            echo "/tmp/cloudformation_set_username_password.sh ${DashboardUsername} ${DashboardPassword}"| at now + 2 minutes
 
 Outputs:
 
