@@ -128,6 +128,10 @@ Parameters:
     Default: 10.0.1.0/24
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x
+  STUNServerAddress:
+    Description: 'STUN Server Address'
+    Type: String
+    Default: 'stun.wavelength.antmedia.cloud'
 
 Resources:
   DescribeImagesRole:
@@ -237,6 +241,8 @@ Resources:
             #!/bin/bash
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
             sed -i "s/server.name=/server.name=$(curl -s http://checkip.amazonaws.com)/g" /usr/local/antmedia/conf/red5.properties
+            echo "settings.webrtc.stunServerURI=stun:${STUNServerAddress}" >> /usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
+            sed -i "s/'urls' : 'stun:.*/'urls' : 'stun:${STUNServerAddress}'/g" /usr/local/antmedia/webapps/WebRTCAppEE/*.html
             sleep 30
             sudo systemctl restart antmedia
 
@@ -277,7 +283,9 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash 
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp} 
-            sed -i "s/server.name=/server.name=$(curl -s http://checkip.amazonaws.com)/g" /usr/local/antmedia/conf/red5.properties 
+            sed -i "s/server.name=/server.name=$(curl -s http://checkip.amazonaws.com)/g" /usr/local/antmedia/conf/red5.properties
+            echo "settings.webrtc.stunServerURI=stun:${STUNServerAddress}" >> /usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
+            sed -i "s/'urls' : 'stun:.*/'urls' : 'stun:${STUNServerAddress}'/g" /usr/local/antmedia/webapps/WebRTCAppEE/*.html 
             sleep 30
             sudo systemctl restart antmedia
   OriginCPUPolicy:
