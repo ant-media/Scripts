@@ -174,13 +174,11 @@ Resources:
          Fn::Base64:
           !Sub |
             #!/bin/bash -xe
-
             apt-get update && apt-get install awscli -y           
             echo "settings.webrtc.stunServerURI=stun:${STUNServerAddress}" >> /usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
             sed -i "s/'urls' : 'stun:.*/'urls' : 'stun:${STUNServerAddress}'/g" /usr/local/antmedia/webapps/WebRTCAppEE/*.html
             if [ ${EnableSSL} == "true" ]; then
               echo "true" >> /tmp/test.txt
-
               cat << EOF > /tmp/aws_route53.json
               {
               "Comment": "CREATE/DELETE/UPSERT a record ",
@@ -192,7 +190,7 @@ Resources:
                                       "TTL": 300,
                                       "ResourceRecords": [{ "Value":"$(curl -s http://checkip.amazonaws.com)"}]
               }}]}
-              EOF
+            EOF
               aws route53 change-resource-record-sets --hosted-zone-id ${Route53HostedZoneId} --change-batch file:///tmp/aws_route53.json
               /usr/local/antmedia/enable_ssl.sh -d ${DomainName} -v route53
             fi
