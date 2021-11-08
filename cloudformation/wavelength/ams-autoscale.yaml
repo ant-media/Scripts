@@ -66,7 +66,7 @@ Parameters:
     ConstraintDescription: can contain only ASCII characters.
   CPUPolicyTargetValue:
     Type: Number
-    Default: 60.0
+    Default: 40.0
     Description: This parameter for creates new Instances when CPU load exceed to %60.
   VpcCidrBlock:
     Description: 'This CIDR value must be the same as VPC Network(VpcId).'
