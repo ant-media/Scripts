@@ -160,7 +160,7 @@ Resources:
       Type: 'AWS::EC2::Instance'
       Properties:
         KeyName: !Ref KeyName
-        ImageId: ami-0abaf08da8fe582f7
+        ImageId: ami-0cfa3e44d6e1604a1
         InstanceType: !Ref AntMediaServerInstanceType
         NetworkInterfaces:
           - AssociateCarrierIpAddress: true
@@ -179,9 +179,7 @@ Resources:
           !Sub |
             #!/bin/bash -xe
             apt-get update && apt-get install awscli -y           
-            echo "settings.webrtc.stunServerURI=stun:${STUNServerAddress}" >> /usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
-            sed -i "s/'urls' : 'stun:.*/'urls' : 'stun:${STUNServerAddress}'/g" /usr/local/antmedia/webapps/WebRTCAppEE/*.html
-            wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/src/main/server/enable_ssl.sh
+            sed -i "s/stun1.l.google.com:19302/${STUNServerAddress}/g" /usr/local/antmedia/webapps/WebRTCAppEE/*.html
             if [ ${EnableSSL} == "true" ]; then
               cat << EOF > /tmp/aws_route53.json
               {
@@ -198,3 +196,4 @@ Resources:
               aws route53 change-resource-record-sets --hosted-zone-id ${Route53HostedZoneId} --change-batch file:///tmp/aws_route53.json
               bash /usr/local/antmedia/enable_ssl.sh -d ${DomainName} -v route53
             fi
+
