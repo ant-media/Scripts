@@ -48,7 +48,11 @@ Parameters:
     Type: String
     AllowedValues: 
       - true
-      - false 
+      - false
+  PolicyName:
+    Description: 'Fill in this field if you selected EnableSSL true. Policy name with Route53 access granted'
+    Type: String
+    Default: ''
 Conditions:
   Route53IAM: !Equals 
     - !Ref EnableSSL
@@ -156,11 +160,11 @@ Resources:
       Type: 'AWS::EC2::Instance'
       Properties:
         KeyName: !Ref KeyName
-        ImageId: ami-09e4ff799a1e10396
+        ImageId: ami-0abaf08da8fe582f7
         InstanceType: !Ref AntMediaServerInstanceType
         NetworkInterfaces:
           - AssociateCarrierIpAddress: true
-        IamInstanceProfile: !If [Route53IAM, !Ref Route53Profile, !Ref "AWS::NoValue"]
+        IamInstanceProfile: !If [Route53IAM, !Ref PolicyName, !Ref "AWS::NoValue"]
         NetworkInterfaces:
           - SubnetId: !Select [ 0, !Ref Subnets ]
             AssociateCarrierIpAddress: true
@@ -177,8 +181,8 @@ Resources:
             apt-get update && apt-get install awscli -y           
             echo "settings.webrtc.stunServerURI=stun:${STUNServerAddress}" >> /usr/local/antmedia/webapps/WebRTCAppEE/WEB-INF/red5-web.properties
             sed -i "s/'urls' : 'stun:.*/'urls' : 'stun:${STUNServerAddress}'/g" /usr/local/antmedia/webapps/WebRTCAppEE/*.html
+            wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/src/main/server/enable_ssl.sh
             if [ ${EnableSSL} == "true" ]; then
-              echo "true" >> /tmp/test.txt
               cat << EOF > /tmp/aws_route53.json
               {
               "Comment": "CREATE/DELETE/UPSERT a record ",
@@ -192,45 +196,5 @@ Resources:
               }}]}
             EOF
               aws route53 change-resource-record-sets --hosted-zone-id ${Route53HostedZoneId} --change-batch file:///tmp/aws_route53.json
-              /usr/local/antmedia/enable_ssl.sh -d ${DomainName} -v route53
+              bash /usr/local/antmedia/enable_ssl.sh -d ${DomainName} -v route53
             fi
-
-
-  Route53Profile:
-    Condition: Route53IAM
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: "/"
-      Roles:
-      - Ref: Route53Role
-  Route53Policy:
-    Condition: Route53IAM
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: Route53Policy
-      PolicyDocument:
-        Statement:
-        - Effect: Allow
-          Action:
-          - route53:*
-          - route53domains:*
-          Resource: "*"
-        - Effect: Allow
-          Action: apigateway:GET
-          Resource: arn:aws:apigateway:*::/domainnames
-      Roles:
-      - Ref: Route53Role
-  Route53Role:
-    Condition: Route53IAM
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - ec2.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: "/"
