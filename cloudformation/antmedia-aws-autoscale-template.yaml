@@ -228,6 +228,12 @@ Parameters:
     Description: 'Amazon Resource Name (ARN) of the certificate to associate with the load balancer. If you do not have the SSL certificate, please check this guide: https://antmedia.io/ant-media-server-cloudformation-installation/ '
     Type: String
     Default: ''
+  DiskSize:
+    Default: '10'
+    Description: Disk size of instances
+    Type: Number
+    MinValue: '10'
+    MaxValue: '1000'
   RTMP: 
     Description: If you want to install RTMP Load balancer, please select True
     Default: false
@@ -434,6 +440,12 @@ Resources:
       SecurityGroups:
         - !Ref InstanceSecurityGroup
       InstanceType: !Ref OriginInstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref DiskSize
+            VolumeType: gp2
+            DeleteOnTermination: true
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -528,6 +540,12 @@ Resources:
       SecurityGroups:
         - !Ref InstanceSecurityGroup
       InstanceType: !Ref EdgeInstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref DiskSize
+            VolumeType: gp2
+            DeleteOnTermination: true
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
