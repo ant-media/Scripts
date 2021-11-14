@@ -61,6 +61,9 @@ Resources:
       CidrBlock: !Ref VpcCidrBlock
       EnableDnsHostnames: true
       EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Vpc
 
   OriginZone:
     Type: AWS::EC2::Subnet
@@ -69,6 +72,9 @@ Resources:
       VpcId: !Ref WavelengthVPC
       AvailabilityZone: !Ref WavelengthZones
       CidrBlock: !Ref OriginCidrBlock
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Origin-Subnet
 
   EdgeZone:
     Type: AWS::EC2::Subnet
@@ -77,6 +83,9 @@ Resources:
       VpcId: !Ref WavelengthVPC
       AvailabilityZone: !Ref WavelengthZones
       CidrBlock: !Ref EdgeCidrBlock
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Edge-Subnet
 
   CarrierDefaultGateway:
     Type: AWS::EC2::CarrierGateway
@@ -87,6 +96,9 @@ Resources:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref WavelengthVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Route-Table
 
   DefaultRoute:
     Type: AWS::EC2::Route
