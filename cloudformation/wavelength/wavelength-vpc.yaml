@@ -64,6 +64,7 @@ Resources:
 
   OriginZone:
     Type: AWS::EC2::Subnet
+    DependsOn: WavelengthVPC
     Properties:
       VpcId: !Ref WavelengthVPC
       AvailabilityZone: !Ref WavelengthZones
@@ -71,6 +72,7 @@ Resources:
 
   EdgeZone:
     Type: AWS::EC2::Subnet
+    DependsOn: WavelengthVPC
     Properties:
       VpcId: !Ref WavelengthVPC
       AvailabilityZone: !Ref WavelengthZones
