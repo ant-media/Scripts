@@ -190,6 +190,14 @@ Parameters:
     AllowedPattern: >-
       ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
     ConstraintDescription: must be a valid email address.
+  DashboardUsername:
+    Description: 'Web Panel Username'
+    Type: String
+    Default: ''
+  DashboardPassword:
+    Description: 'Web Panel Password'
+    Type: String
+    Default: ''
   VpcCidrBlock:
     Description: 'This CIDR value must be the same as VPC Network(VpcId).'
     Type: String
@@ -754,8 +762,19 @@ Resources:
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
+            wget -P /tmp/ https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/cloudformation_set_username_password.sh && chmod +x /tmp/cloudformation_set_username_password.sh
+            echo "/tmp/cloudformation_set_username_password.sh ${DashboardUsername} ${DashboardPassword}"| at now + 2 minutes
 
 Outputs:
+
+  Username:
+    Description: Dashboard Username 
+    Value: !Ref DashboardUsername
+
+  Password:
+    Description: Dashboard Password
+    Value: !Ref DashboardPassword
+
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
     Value: !Join 
