@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  TurnServer Installation
+Parameters:
+  Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: 'You must choose at least 2 subnets from the same VPC network.'
+    ConstraintDescription: >-
+      must be a list of at least two existing subnets associated with at least
+      two different availability zones. They should be residing in the selected
+      Virtual Private Cloud.
+  VpcId:
+    Type: 'AWS::EC2::VPC::Id'
+    Description: 'VpcId of your existing Virtual Private Cloud (VPC). The VpcId must be the same as the subnets you choose'
+    ConstraintDescription: 'must be the VPC Id of an existing Virtual Private Cloud. The VpcId must be the same as the subnets you choose.'
+  TurnServerInstanceType:
+    Description: Ant Media Server Edge EC2 instance type
+    Type: String
+    Default: t3.medium
+    AllowedValues:
+      - t3.medium
+      - t3.xlarge
+      - r5.2xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  STUNServerAddress:
+    Description: 'STUN Server Address'
+    Type: String
+    Default: ''
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. If there is no value here, you must create an ssh key (EC2 > Key Pairs).
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    MinLength: '1'
+    MaxLength: '255'
+    AllowedPattern: '[\x20-\x7E]*'
+    ConstraintDescription: can contain only ASCII characters.
+
+Resources:
+  DescribeImagesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeImages
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: ec2:DescribeImages
+                Effect: Allow
+                Resource: "*"
+  GetLatestAMI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.6
+      Handler: index.handler
+      Role: !Sub ${DescribeImagesRole.Arn}
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import traceback
+
+          def handler(event, context):
+            try:
+              response = boto3.client('ec2').describe_images(
+                  Owners=[event['ResourceProperties']['Owner']],
+                  Filters=[
+                    {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
+                    {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
+                    {'Name': 'root-device-type', 'Values': ['ebs']},
+                  ],
+              )
+
+              amis = sorted(response['Images'],
+                            key=lambda x: x['CreationDate'],
+                            reverse=True)
+              id = amis[0]['ImageId']
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, id)
+            except:
+              traceback.print_last()
+              cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+
+  UbuntuAmi:
+    Type: Custom::FindAMI
+    Properties:
+      ServiceToken: !Sub ${GetLatestAMI.Arn}
+      Owner: "099720109477"
+      Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
+      Architecture: "x86_64"
+
+  TurnServerSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access and HTTP access on the configured port
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '3478'
+          ToPort: '3478'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: '3478'
+          ToPort: '3478'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VpcId
+  TurnServerInstance:
+      Type: 'AWS::EC2::Instance'
+      Properties:
+        KeyName: !Ref KeyName
+        ImageId: !Ref UbuntuAmi
+        InstanceType: !Ref TurnServerInstanceType
+        NetworkInterfaces:
+          - AssociateCarrierIpAddress: true
+        NetworkInterfaces:
+          - SubnetId: !Select [ 0, !Ref Subnets ]
+            AssociateCarrierIpAddress: true
+            DeviceIndex: '0'
+            GroupSet:
+              - Ref: TurnServerSecurityGroup
+        Tags:
+        - Key: Name
+          Value: TurnServer
+        UserData:
+         Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            apt-get update && apt-get install coturn -y
+            sed -i 's/#TURNSERVER.*/TURNSERVER_ENABLED=1/g' /etc/default/coturn
+            cat << EOF > /etc/turnserver.conf
+            listening-port=3478
+            realm=${STUNServerAddress}
+            relay-ip=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+            external-ip=$(curl -s curl http://checkip.amazonaws.com)/$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+            fingerprint
+            EOF
+            systemctl enable coturn && systemctl restart coturn
+
+
