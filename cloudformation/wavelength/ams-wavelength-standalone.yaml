@@ -222,7 +222,7 @@ Resources:
       Type: 'AWS::EC2::Instance'
       Properties:
         KeyName: !Ref KeyName
-        ImageId: ami-0cfa3e44d6e1604a1
+        ImageId: !Ref AntMediaAmi
         InstanceType: !Ref AntMediaServerInstanceType
         NetworkInterfaces:
           - AssociateCarrierIpAddress: true
