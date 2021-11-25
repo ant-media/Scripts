@@ -3,17 +3,6 @@ Description: >-
   Ant Media Server Standalone EC2 server template for Wavelength Zone
   If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
-  Subnets:
-    Type: 'List<AWS::EC2::Subnet::Id>'
-    Description: 'You must choose at least 2 subnets from the same VPC network.'
-    ConstraintDescription: >-
-      must be a list of at least two existing subnets associated with at least
-      two different availability zones. They should be residing in the selected
-      Virtual Private Cloud.
-  VpcId:
-    Type: 'AWS::EC2::VPC::Id'
-    Description: 'VpcId of your existing Virtual Private Cloud (VPC). The VpcId must be the same as the subnets you choose'
-    ConstraintDescription: 'must be the VPC Id of an existing Virtual Private Cloud. The VpcId must be the same as the subnets you choose.'
   AntMediaServerInstanceType:
     Description: Ant Media Server EC2 instance type
     Type: String
@@ -22,6 +11,7 @@ Parameters:
       - t3.medium
       - t3.xlarge
       - r5.2xlarge
+      - g4dn.2xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. If there is no value here, you must create an ssh key (EC2 > Key Pairs).
@@ -53,6 +43,30 @@ Parameters:
     Description: 'Fill in this field if you selected EnableSSL true. Policy name with Route53 access granted'
     Type: String
     Default: ''
+
+  WavelengthZones:
+    Type: String
+    Description: ''
+    Default: us-east-1-wl1-bos-wlz-1
+    AllowedValues:
+      - us-east-1-wl1-atl-wlz-1
+      - us-east-1-wl1-bos-wlz-1
+      - us-east-1-wl1-chi-wlz-1
+      - us-east-1-wl1-dfw-wlz-1
+      - us-east-1-wl1-iah-wlz-1
+      - us-east-1-wl1-mia-wlz-1
+      - us-east-1-wl1-nyc-wlz-1
+      - us-east-1-wl1-was-wlz-1
+      - us-west-2-wl1-den-wlz-1
+      - us-west-2-wl1-las-wlz-1
+      - us-west-2-wl1-phx-wlz-1
+      - us-west-2-wl1-sfo-wlz-1
+      - us-west-2-wl1-sea-wlz-1
+      - ap-northeast-2-wl1-cjj-wlz-1
+      - ap-northeast-1-wl1-kix-wlz-1
+      - ap-northeast-1-wl1-nrt-wlz-1
+      - eu-west-2-wl1-lon-wlz-1 
+
 Conditions:
   Route53IAM: !Equals 
     - !Ref EnableSSL
@@ -129,6 +143,54 @@ Resources:
       Owner: "099720109477"
       Name: "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
       Architecture: "x86_64"
+  WavelengthVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Vpc
+
+  Subnet:
+    Type: AWS::EC2::Subnet
+    DependsOn: WavelengthVPC
+    Properties:
+      VpcId: !Ref WavelengthVPC
+      AvailabilityZone: !Ref WavelengthZones
+      CidrBlock: 10.0.1.0/24
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Origin-Subnet
+
+  CarrierDefaultGateway:
+    Type: AWS::EC2::CarrierGateway
+    Properties:
+      VpcId: !Ref WavelengthVPC
+
+  CarrierDefaultRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WavelengthVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-Wavelength-Route-Table
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: CarrierDefaultGateway
+    Properties:
+      RouteTableId: !Ref CarrierDefaultRouteTable
+      CarrierGatewayId: !Ref CarrierDefaultGateway
+      DestinationCidrBlock: 0.0.0.0/0
+
+  SubnetRouteTableAssociationOrigin:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref CarrierDefaultRouteTable
+      SubnetId: !Ref Subnet
+
 
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -155,18 +217,18 @@ Resources:
           FromPort: '5000'
           ToPort: '65000'
           CidrIp: 0.0.0.0/0
-      VpcId: !Ref VpcId
+      VpcId: !Ref WavelengthVPC
   AntMediaEC2Instance:
       Type: 'AWS::EC2::Instance'
       Properties:
         KeyName: !Ref KeyName
-        ImageId: ami-0cfa3e44d6e1604a1
+        ImageId: !Ref AntMediaAmi
         InstanceType: !Ref AntMediaServerInstanceType
         NetworkInterfaces:
           - AssociateCarrierIpAddress: true
         IamInstanceProfile: !If [Route53IAM, !Ref PolicyName, !Ref "AWS::NoValue"]
         NetworkInterfaces:
-          - SubnetId: !Select [ 0, !Ref Subnets ]
+          - SubnetId: !Ref Subnet
             AssociateCarrierIpAddress: true
             DeviceIndex: '0'
             GroupSet:
