@@ -469,7 +469,7 @@ Resources:
                 | sudo tee /etc/apt/sources.list.d/nginx.list
             curl -fsSL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
             apt update 
-            apt install nginx keepalived unzip jq -y && systemctl enable nginx keepalived
+            apt install nginx python3-certbot-dns-route53 certbot  keepalived unzip jq -y && systemctl enable nginx keepalived
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip && sudo ./aws/install && mkdir ~/.aws/
             cat <<EOF > ~/.aws/config
@@ -564,7 +564,7 @@ Resources:
                 | sudo tee /etc/apt/sources.list.d/nginx.list
             curl -fsSL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
             apt update 
-            apt install nginx keepalived unzip jq -y && systemctl enable nginx keepalived
+            apt install nginx python3-certbot-dns-route53 certbot keepalived unzip jq -y && systemctl enable nginx keepalived
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip && sudo ./aws/install && mkdir ~/.aws/
             cat <<EOF > ~/.aws/config
