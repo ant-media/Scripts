@@ -2,11 +2,11 @@
 #Usage
 #First parameter is the version name either release or snapshot works
 #if it is release version, script create and checkout a branch, update version, commit, tag and push the script
-# ./release 1.6.1
+# ./ams_release.sh 1.6.1
 #if it is release version with branch parameter, script create & checkout a branch and push the 
-#./release 1.6.1 branch
+#./ams_release.sh 1.6.1 branch
 #if it is a snapshot version, it updates the version, commits and pushes . After that it should be merged with master
-#./release 1.6.2-SNAPSHOT
+#./ams_release.sh 1.6.2-SNAPSHOT
 
 #Future work: Deploying to maven central takes about 2-3 hours so that it blocks Ant-Media-Server to pass the test.
 #another solution we may add sonatype as release repo
@@ -56,29 +56,55 @@ update_version_and_push()
 
   check $?
 
-  #run maven comments if pom.xml exists 
-  if [[ -f "pom.xml" ]]; then
-    if [[ ! "$2" = "branch" && ! "$3" = "branch" ]]  # if it's not branch, update the version
-    then 
-      if [ "$2" = "self" ]
-      then
-          #project's own version is updated
-          mvn versions:set -DnewVersion=$NEW_VERSION
-      else
-          #project's parent is updated
-          mvn versions:update-parent -DparentVersion=$NEW_VERSION $ALLOW_SNAPSHOT
-      fi
-      check $?
 
-      #add change pom.xml
-      git add pom.xml
-      check $?
-      #commit pom.xml
-      git commit -m "Update version to $NEW_VERSION"
-      check $?
-    fi
+  CURRENT_DIR=`pwd`
+
+  # Check the current directory by default
+  declare -a directoriesToCheck=(
+                "."
+                 )
+
+  #if it's plugins directory, enter each subdirectory and update the pom file
+  if [[ $CURRENT_DIR =~ .*Plugins$ ]]; then 
+      directoriesToCheck=(*/)
   fi
 
+  COMMIT_POM=false
+
+  # if it's Plugins directory, it walks through all subdirectories and update the parent mvn
+  # if it's not Plugins directory, it just go to current directory(.)  
+  for subdir in "${directoriesToCheck[@]}"; 
+  do 
+      cd  $CURRENT_DIR/$subdir
+      #run maven comments if pom.xml exists 
+      if [[ -f "pom.xml" ]]; then
+         
+        if [[ ! "$2" = "branch" && ! "$3" = "branch" ]]  # if it's not branch, update the version
+        then 
+          if [ "$2" = "self" ]
+          then
+              #project's own version is updated
+              mvn versions:set -DnewVersion=$NEW_VERSION
+          else
+              #project's parent is updated
+              mvn versions:update-parent -DparentVersion=$NEW_VERSION $ALLOW_SNAPSHOT
+          fi
+          check $?
+
+          #add change pom.xml
+          git add pom.xml
+          check $?
+          
+          COMMIT_POM=true
+        fi
+      fi
+  done
+
+  if [ "$COMMIT_POM" = true ] ; then
+    #commit pom.xml
+    git commit -m "Update version to $NEW_VERSION"
+    check $?
+  fi
 
   #push branch to remote
   if [[ ! $NEW_VERSION =~ .*SNAPSHOT$ ]];
@@ -103,7 +129,6 @@ update_version_and_push()
       check $?
     fi
   fi
-
 }
 
 CURRENT_PATH=`pwd`
@@ -114,6 +139,7 @@ declare -a arr=(
                  "StreamApp"
                  "webrtc-test"
                  "testcluster"
+                 "Plugins"
                  )
 
 VERSION=$1
