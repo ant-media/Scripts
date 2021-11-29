@@ -58,12 +58,6 @@ get_change_log()
 
 rm -f $CHANGE_LOG
 touch $CHANGE_LOG
-echo "<style>
-li , body {
-  font-family: sans-serif;
-  line-height: 35px;
-}
-</style>" >> $CHANGE_LOG
 
 #get Ant Media Server
 export GH_REPO=ant-media/Ant-Media-Server
