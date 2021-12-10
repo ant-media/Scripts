@@ -372,6 +372,8 @@ Resources:
 
   NotificationTopic:
     Type: 'AWS::SNS::Topic'
+    DependsOn:
+      - DBInstance
     Properties:
       Subscription:
         - Endpoint: !Ref Email
@@ -411,6 +413,8 @@ Resources:
 
   OriginGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
+      DependsOn:
+      - LaunchConfigOrigin
       Properties:
         VPCZoneIdentifier: !Ref Subnets
         LaunchConfigurationName: !Ref LaunchConfigOrigin
@@ -444,6 +448,8 @@ Resources:
             - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
   LaunchConfigOrigin:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
+    DependsOn:
+      - ApplicationLoadBalancer 
     Metadata:
       Comment: Install a simple application
       'AWS::CloudFormation::Init':
@@ -509,6 +515,8 @@ Resources:
 
   EdgeGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
+    DependsOn:
+      - LaunchConfigEdge
     Properties:
       VPCZoneIdentifier: !Ref Subnets
       LaunchConfigurationName: !Ref LaunchConfigEdge
@@ -540,6 +548,8 @@ Resources:
             - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
   LaunchConfigEdge:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
+    DependsOn:
+      - ApplicationLoadBalancer
     Metadata:
       Comment: Install a simple application
       'AWS::CloudFormation::Init':
@@ -633,6 +643,8 @@ Resources:
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:
+      - DBInstance
     Properties:
       Subnets: !Ref Subnets
       SecurityGroups:
@@ -679,6 +691,8 @@ Resources:
       Protocol: HTTP
   ALBTargetGroupOrigin:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    DependsOn:
+      - DBInstance
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
@@ -696,6 +710,8 @@ Resources:
           Value: '30'
   ALBTargetGroupEdge:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    DependsOn:
+      - DBInstance
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
@@ -778,6 +794,10 @@ Resources:
             CidrIp: 0.0.0.0/0
   DBInstance:
       Type: 'AWS::EC2::Instance'
+      DependsOn:
+        - GetLatestAMI
+        - UbuntuAmi
+        - DescribeImagesRole
       Properties:
         KeyName: !Ref KeyName
         ImageId: !Ref UbuntuAmi
