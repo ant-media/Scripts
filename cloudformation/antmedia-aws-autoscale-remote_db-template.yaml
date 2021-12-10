@@ -509,10 +509,11 @@ Resources:
           #!/bin/bash
           bash /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBURL} ${MongoDBUsername} ${MongoDBPassword}
           apt-get update 
-          apt-get install -y python-pip
-          apt-get install -y python-setuptools
+          apt-get install -y python3-pip
+          apt-get install -y python3-setuptools
           mkdir -p /opt/aws/bin
-          python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+          python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
           /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
 
