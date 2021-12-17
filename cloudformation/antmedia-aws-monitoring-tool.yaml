@@ -184,11 +184,6 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             apt-get update
-            apt-get install -y python-pip
-            apt-get install -y python-setuptools
-            mkdir -p /opt/aws/bin
-            python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource TestInstance --region ${AWS::Region}
             sudo apt-get install apt-transport-https software-properties-common wget -y
             wget -qO- https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/kafka_2.13-2.8.1.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
             wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
