@@ -54,7 +54,7 @@ install () {
     sudo apt-get update -qq 2> /dev/null
     sudo apt-get install apt-transport-https software-properties-common wget -y -qq
     sudo rm -rf /opt/kafka*
-    wget -qO- https://downloads.apache.org/kafka/2.7.0/kafka_2.13-2.7.0.tgz | tar -zxf -  -C /opt/ && mv /opt/kafka* /opt/kafka
+    wget -qO- https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/kafka_2.13-2.8.1.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
     wget -qO- https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add - &> /dev/null
     echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list &> /dev/null
     wget -qO- https://packages.grafana.com/gpg.key | sudo apt-key add - &> /dev/null
