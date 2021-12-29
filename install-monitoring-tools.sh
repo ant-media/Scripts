@@ -4,6 +4,8 @@ PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
 RED='\033[0;31m'
 NC='\033[0m'
 
+HEADLESS_INSTALL=false
+
 distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
@@ -21,19 +23,32 @@ distro () {
   fi
 }
 
+if [ "$INSTALL_SERVICE" == "true" ]; then
+  $SUDO service antmedia stop &
+  wait $!
+  $SUDO service antmedia start
+  check
+fi
+
 check_network () {
-  echo -e "Are you using the monitoring tool behind the nat network? [Y/n]"
-  read nat
-  nat=${nat^}
-  if [ "$nat" == "Y" ]; then
-     read -p "Please enter your private ip: " private_ip
-     PRIVATE_IP=$private_ip
-     if [ -z $PRIVATE_IP ]; then
-        echo "Private ip cannot be empty."
-    exit 1
-     fi
+
+  if [ "$HEADLESS_INSTALL" == "false" ]; then
+      echo -e "Are you using the monitoring tool behind the NAT network? [Y/n]"
+      read nat
+      nat=${nat^}
+      if [ "$nat" == "Y" ]; then
+         read -p "Please enter your private IP: " private_ip
+         PRIVATE_IP=$private_ip
+         if [ -z $PRIVATE_IP ]; then
+            echo "Private IP cannot be empty."
+        exit 1
+         fi
+      else
+         PRIVATE_IP="127.0.0.1"
+      fi
   else
-     PRIVATE_IP="127.0.0.1"
+    #default value is not installing behind NAT
+    PRIVATE_IP="127.0.0.1"
   fi
 }
 
@@ -41,10 +56,19 @@ check_ip() {
   if [[ $PRIVATE_IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
      echo ""
   else
-     echo -e "\e[41mPlease enter valid ip address.${NC}"
+     echo -e "\e[41mPlease enter valid IP address.${NC}"
      check_network
   fi
 }
+
+# y means headless installation
+while getopts 'y' option
+do
+  case "${option}" in
+    y) HEADLESS_INSTALL=true;;
+       exit 1;;
+   esac
+done
 
 distro
 check_network
