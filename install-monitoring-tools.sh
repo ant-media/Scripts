@@ -65,9 +65,8 @@ check_ip() {
 while getopts 'y' option
 do
   case "${option}" in
-    y) HEADLESS_INSTALL=true;;
-       exit 1;;
-   esac
+    y) HEADLESS_INSTALL=true  ;;
+  esac
 done
 
 distro
@@ -178,7 +177,7 @@ EOF
     sudo curl -s -X "POST" "http://127.0.0.1:3000/api/datasources" \
         -H "Content-Type: application/json" \
         -u "admin:admin" \
-        --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log  
+        --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log
     sudo systemctl daemon-reload
     sudo systemctl enable logstash.service -q && sudo systemctl enable elasticsearch -q && sudo systemctl enable kafka -q && sudo systemctl enable kafka-zookeeper -q
     sudo systemctl restart kafka-zookeeper && sudo systemctl restart kafka && sudo systemctl restart logstash && sudo systemctl restart elasticsearch
@@ -189,7 +188,7 @@ install &
 PID=$!
 echo "Installing.."
 printf "["
-while kill -0 $PID 2> /dev/null; do 
+while kill -0 $PID 2> /dev/null; do
     printf  "."
     sleep 1
 done
@@ -197,3 +196,4 @@ printf "] \e[41mDone!${NC}"
 echo -e "\n"
 echo -e "Login URL: ${RED}http://$PUBLIC_IP:3000${NC}"
 echo -e "Username and Password: ${RED}admin/admin${NC}\n"
+
