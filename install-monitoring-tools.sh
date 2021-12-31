@@ -1,10 +1,19 @@
 #!/bin/bash
 
+#
+# Usage
+# sudo ./install-monitoring-tools.sh [-y] [-m MEMORY]
+# -y provides headless installation and accepts that server is not behind NAT
+# -m MEMORY specifies the memory of the ElasticSearch because ElasticSearch may not be started with default value.
+#    You can give -m 2g , -m 2048m as memory limit
+#
+
 PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
 RED='\033[0;31m'
 NC='\033[0m'
 
 HEADLESS_INSTALL=false
+ELASTIC_SEARCH_MEMORY=
 
 check() {
   OUT=$?
@@ -42,7 +51,7 @@ check_network () {
          PRIVATE_IP=$private_ip
          if [ -z $PRIVATE_IP ]; then
             echo "Private IP cannot be empty."
-        exit 1
+            exit 1
          fi
       else
          PRIVATE_IP="127.0.0.1"
@@ -63,10 +72,11 @@ check_ip() {
 }
 
 # y means headless installation
-while getopts 'y' option
+while getopts 'ym:' option
 do
   case "${option}" in
     y) HEADLESS_INSTALL=true  ;;
+    m) ELASTIC_SEARCH_MEMORY=${OPTARG} ;;
   esac
 done
 
@@ -85,6 +95,7 @@ install () {
     check
     wget -qO- https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
     check
+    
     echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
     check
     wget -qO- https://packages.grafana.com/gpg.key | sudo apt-key add -
@@ -201,6 +212,13 @@ EOF
         
     check
     
+    if [ ! -z $ELASTIC_SEARCH_MEMORY ]; then
+       
+        sudo sed -i "/.*-Xmx.*/c\-Xmx${ELASTIC_SEARCH_MEMORY}" /etc/elasticsearch/jvm.options
+        sudo sed -i "/.*-Xms.*/c\-Xms${ELASTIC_SEARCH_MEMORY}" /etc/elasticsearch/jvm.options
+           
+    fi
+    
     sudo systemctl daemon-reload
     check
     
@@ -230,7 +248,11 @@ EOF
     
     echo "Starting Elasticsearch"
     sudo systemctl restart elasticsearch
-    check
+    OUT=$?
+    if [ $OUT -ne 0 ]; then
+        echo "Elastic search is not started. The problem may be about memory limit. You can give memory limit with -m option. Such as -m 4g, -m 1g . If that does not help, please send the log of this console to support@antmedia.io"
+        exit $OUT
+    fi
     
     echo "Starting Logstash"
     sudo systemctl restart logstash
