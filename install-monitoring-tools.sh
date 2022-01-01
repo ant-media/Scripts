@@ -102,7 +102,7 @@ install () {
     check
     sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
     check
-    apt-get update -qq 2> /dev/null && apt-get install elasticsearch logstash grafana openjdk-8-jdk -y -qq
+    apt-get update -qq 2> /dev/null && apt-get install elasticsearch logstash grafana openjdk-11-jdk -y -qq
     check
 
     CPU=$(grep -c 'processor' /proc/cpuinfo)
@@ -133,7 +133,7 @@ install () {
 
         [Service]
         Type=simple
-        Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+        Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
         ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
         ExecStop=/opt/kafka/bin/kafka-server-stop.sh
 
@@ -151,7 +151,7 @@ EOF
 
         [Service]
         Type=simple
-        Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+        Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
         ExecStart=/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties
         ExecStop=/opt/kafka/bin/zookeeper-server-stop.sh
 
