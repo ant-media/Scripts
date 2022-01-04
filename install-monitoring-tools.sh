@@ -188,7 +188,14 @@ EOF
         listener.security.protocol.map=INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT
 EOF
 
-    sudo systemctl enable grafana-server && sudo systemctl restart grafana-server
+
+	sudo systemctl daemon-reload
+    check
+    
+    sudo systemctl enable grafana-server
+    check
+    
+    sudo systemctl restart grafana-server
     check
 
     wget -q $DASHBOARD_URL -O /tmp/antmediaserver.json
@@ -218,9 +225,7 @@ EOF
         sudo sed -i "/.*-Xms.*/c\-Xms${ELASTIC_SEARCH_MEMORY}" /etc/elasticsearch/jvm.options
            
     fi
-    
-    sudo systemctl daemon-reload
-    check
+   
     
     echo "Enabling Logstash"
     sudo systemctl enable logstash.service
