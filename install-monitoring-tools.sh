@@ -102,7 +102,11 @@ install () {
     check
     sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
     check
-    apt-get update -qq 2> /dev/null && apt-get install elasticsearch logstash grafana openjdk-8-jdk -y -qq
+    sudo apt-get update -qq 2> /dev/null 
+    check
+    sudo apt-get install openjdk-8-jdk -y -qq
+    check
+    sudo apt-get install elasticsearch logstash grafana -y -qq
     check
 
     CPU=$(grep -c 'processor' /proc/cpuinfo)
