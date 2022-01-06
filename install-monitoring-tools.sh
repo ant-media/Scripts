@@ -18,6 +18,7 @@ ELASTIC_SEARCH_MEMORY=
 check() {
   OUT=$?
   if [ $OUT -ne 0 ]; then
+    sudo journalctl -xe
     echo "There is a problem in installing the monitoring tools. Please take a look at the logs above to understand the problem. If you need help, please send the log of this console to support@antmedia.io"
     exit $OUT
   fi
@@ -102,7 +103,13 @@ install () {
     check
     sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
     check
-    apt-get update -qq 2> /dev/null && apt-get install elasticsearch logstash grafana openjdk-8-jdk -y -qq
+
+    sudo apt-get update -qq 2> /dev/null 
+    check
+    sudo apt-get install openjdk-11-jdk -y -qq
+    check
+    sudo apt-get install elasticsearch logstash grafana -y -qq
+
     check
 
     CPU=$(grep -c 'processor' /proc/cpuinfo)
@@ -133,7 +140,7 @@ install () {
 
         [Service]
         Type=simple
-        Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+        Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
         ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
         ExecStop=/opt/kafka/bin/kafka-server-stop.sh
 
@@ -151,7 +158,7 @@ EOF
 
         [Service]
         Type=simple
-        Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
+        Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
         ExecStart=/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties
         ExecStop=/opt/kafka/bin/zookeeper-server-stop.sh
 
@@ -188,28 +195,14 @@ EOF
         listener.security.protocol.map=INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT
 EOF
 
-    sudo systemctl enable grafana-server && sudo systemctl restart grafana-server
-    check
 
-    wget -q $DASHBOARD_URL -O /tmp/antmediaserver.json
-    check
-    wget -q $DATASOURCE_URL -O /tmp/antmedia-datasource.json
-    check
-
-    sleep 5
-
-    sudo curl -s "http://127.0.0.1:3000/api/dashboards/db" \
-        -u "admin:admin" \
-        -H "Content-Type: application/json" \
-        --data-binary "@/tmp/antmediaserver.json" > /tmp/curl.log
-
+	sudo systemctl daemon-reload
     check
     
-    sudo curl -s -X "POST" "http://127.0.0.1:3000/api/datasources" \
-        -H "Content-Type: application/json" \
-        -u "admin:admin" \
-        --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log
-        
+    sudo systemctl enable grafana-server
+    check
+    
+    sudo systemctl restart grafana-server
     check
     
     if [ ! -z $ELASTIC_SEARCH_MEMORY ]; then
@@ -218,9 +211,7 @@ EOF
         sudo sed -i "/.*-Xms.*/c\-Xms${ELASTIC_SEARCH_MEMORY}" /etc/elasticsearch/jvm.options
            
     fi
-    
-    sudo systemctl daemon-reload
-    check
+   
     
     echo "Enabling Logstash"
     sudo systemctl enable logstash.service
@@ -256,6 +247,29 @@ EOF
     
     echo "Starting Logstash"
     sudo systemctl restart logstash
+    check
+    
+    
+    # We create this panel creation here because we need some time to make grafana get started 
+    wget -q $DASHBOARD_URL -O /tmp/antmediaserver.json
+    check
+    wget -q $DATASOURCE_URL -O /tmp/antmedia-datasource.json
+    check
+
+    echo "Creating Ant Media Server Grafana Panel"
+    sudo curl -s "http://127.0.0.1:3000/api/dashboards/db" \
+        -u "admin:admin" \
+        -H "Content-Type: application/json" \
+        --data-binary "@/tmp/antmediaserver.json" 
+
+    check
+    
+    echo "Creating Elastich Search DataSource for Ant Media Server Grafana Panel"
+    sudo curl -s -X "POST" "http://127.0.0.1:3000/api/datasources" \
+        -H "Content-Type: application/json" \
+        -u "admin:admin" \
+        --data-binary "@/tmp/antmedia-datasource.json"
+        
     check
 }
 echo "Installing Ant Media Server Monitor Tools"
