@@ -116,7 +116,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 20.10, Ubuntu 21.04 and Centos 8"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 20.10, Ubuntu 21.04, Ubuntu 21.10 and Centos 8"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -136,7 +136,8 @@ distro () {
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
       fi
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "21.04" ] && [ "$VERSION_ID" != "8" ]; then
+
+      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "21.04" ] && [ "$VERSION_ID" != "21.10"] && [ "$VERSION_ID" != "8" ]; then
          echo $msg
          exit 1
             fi
