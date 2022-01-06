@@ -204,27 +204,6 @@ EOF
     
     sudo systemctl restart grafana-server
     check
-
-    wget -q $DASHBOARD_URL -O /tmp/antmediaserver.json
-    check
-    wget -q $DATASOURCE_URL -O /tmp/antmedia-datasource.json
-    check
-
-    sleep 5
-
-    sudo curl -s "http://127.0.0.1:3000/api/dashboards/db" \
-        -u "admin:admin" \
-        -H "Content-Type: application/json" \
-        --data-binary "@/tmp/antmediaserver.json" > /tmp/curl.log
-
-    check
-    
-    sudo curl -s -X "POST" "http://127.0.0.1:3000/api/datasources" \
-        -H "Content-Type: application/json" \
-        -u "admin:admin" \
-        --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log
-        
-    check
     
     if [ ! -z $ELASTIC_SEARCH_MEMORY ]; then
        
@@ -268,6 +247,29 @@ EOF
     
     echo "Starting Logstash"
     sudo systemctl restart logstash
+    check
+    
+    
+    # We create this panel creation here because we need some time to make grafana get started 
+    wget -q $DASHBOARD_URL -O /tmp/antmediaserver.json
+    check
+    wget -q $DATASOURCE_URL -O /tmp/antmedia-datasource.json
+    check
+
+    echo "Creating Ant Media Server Grafana Panel"
+    sudo curl -s "http://127.0.0.1:3000/api/dashboards/db" \
+        -u "admin:admin" \
+        -H "Content-Type: application/json" \
+        --data-binary "@/tmp/antmediaserver.json" 
+
+    check
+    
+    echo "Creating Elastich Search DataSource for Ant Media Server Grafana Panel"
+    sudo curl -s -X "POST" "http://127.0.0.1:3000/api/datasources" \
+        -H "Content-Type: application/json" \
+        -u "admin:admin" \
+        --data-binary "@/tmp/antmedia-datasource.json"
+        
     check
 }
 echo "Installing Ant Media Server Monitor Tools"
