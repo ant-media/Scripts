@@ -169,6 +169,45 @@ Parameters:
       - r5a.4xlarge
       - r5a.12xlarge
       - r5a.24xlarge
+  MonitorInstanceType:
+    Description: Monitor Server EC2 instance type (If you have the monitoring section enabled, please select Instace Type.)
+    Type: String
+    Default: t2.large
+    AllowedValues:
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. If there is no value here, you must create an ssh key (EC2 > Key Pairs).
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -242,6 +281,13 @@ Parameters:
     Type: Number
     MinValue: '10'
     MaxValue: '1000'
+  Monitor:
+    Description: If you want to install Monitoring Instance, please select True
+    Default: false
+    Type: String
+    AllowedValues:
+      - true
+      - false
   RTMP: 
     Description: If you want to install RTMP Load balancer, please select True
     Default: false
@@ -253,6 +299,10 @@ Conditions:
   CreateRTMPResources: !Equals 
     - !Ref RTMP
     - true
+  CreateMonitor: !Equals
+    - !Ref Monitor
+    - true
+
 
 Resources:
   DescribeImagesRole:
@@ -580,6 +630,38 @@ Resources:
       Parameters:
         Location:
           Fn::Sub: s3://ams-cloudformation/mongodb.yaml
+
+  MonitorSecurityGroup:
+    Condition: CreateMonitor
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: Monitor SecurityGroup
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '3000'
+          ToPort: '3000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9092'
+          ToPort: '9092'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9093'
+          ToPort: '9093'
+          CidrIp: 0.0.0.0/0 
+
+  MonitorInstance:
+    Condition: CreateMonitor
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/monitor.yaml
 
 Outputs:
     Fn::Transform:
