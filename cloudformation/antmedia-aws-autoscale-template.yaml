@@ -673,6 +673,8 @@ Resources:
           Value: lb_cookie
         - Key: stickiness.lb_cookie.duration_seconds
           Value: '30'
+        - Key: load_balancing.algorithm.type
+          Value: least_outstanding_requests
   ALBTargetGroupEdge:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     DependsOn:
@@ -692,6 +694,8 @@ Resources:
           Value: lb_cookie
         - Key: stickiness.lb_cookie.duration_seconds
           Value: '30'
+        - Key: load_balancing.algorithm.type
+          Value: least_outstanding_requests
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
