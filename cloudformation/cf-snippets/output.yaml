@@ -1,0 +1,77 @@
+Username:
+  Description: Dashboard Username 
+  Value:
+    Ref: DashboardUsername
+
+Password:
+  Description: Dashboard Password
+  Value:
+    Ref: DashboardPassword
+
+OriginHTTPS:
+  Description: HTTPS URL of the Ant Media Origin Servers
+  Value:
+    Fn::Join:   
+      - ''
+      - - 'https://'
+        - Fn::GetAtt: 
+          - ApplicationLoadBalancer
+          - DNSName
+
+EdgeHTTPS:
+  Description: HTTPS URL of the Ant Media Edge Servers
+  Value:
+    Fn::Join: 
+      - ''
+      - - 'https://'
+        - Fn::GetAtt:
+          - ApplicationLoadBalancer
+          - DNSName
+        - ':5443'
+
+OriginHTTP:
+  Description: HTTP URL of the Ant Media Origin Servers
+  Value:
+    Fn::Join: 
+      - ''
+      - - 'http://'
+        - Fn::GetAtt: 
+          - ApplicationLoadBalancer
+          - DNSName
+
+EdgeHTTP:
+  Description: HTTP URL of the Ant Media Edge Servers
+  Value:
+    Fn::Join: 
+      - ''
+      - - 'http://'
+        - Fn::GetAtt:
+          - ApplicationLoadBalancer
+          - DNSName
+        - ':5080'       
+
+RTMP:
+  Condition: CreateRTMPResources
+  Description: RTMP URL of the Ant Media Server
+  Value:
+    Fn::Join:  
+      - ''
+      - - 'rtmp://'
+        - Fn::GetAtt: 
+          - RTMPLoadBalancer
+          - DNSName 
+MonitorURL:
+  Condition: CreateMonitor
+  Description: "Grafana Default Username and Password: admin/admin"
+  Value:
+    Fn::Join: 
+      - ''
+      - - 'http://'
+        - Fn::GetAtt:
+          - MonitorInstance
+          - PublicIp
+        - ':3000'
+
+            
+
+    

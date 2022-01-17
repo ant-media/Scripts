@@ -1,0 +1,20 @@
+Type: 'AWS::EC2::Instance'
+Properties:
+  KeyName: antmedia-test
+  ImageId:
+    Ref: UbuntuAmi
+  InstanceType:
+    Ref: MonitorInstanceType 
+  SubnetId:
+    Fn::Select: [ 0, Ref: Subnets ] 
+  SecurityGroupIds: 
+    - Fn::GetAtt: [ MonitorSecurityGroup, GroupId ]
+  Tags:
+  - Key: Name
+    Value: Antmedia-Monitor
+  UserData:
+   Fn::Base64:
+    Fn::Sub: |
+      #!/bin/bash -xe
+      wget https://raw.githubusercontent.com/ant-media/Scripts/master/install-monitoring-tools.sh
+      bash install-monitoring-tools.sh -y
