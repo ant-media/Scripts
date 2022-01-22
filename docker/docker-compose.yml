@@ -6,13 +6,13 @@ services:
       dockerfile: ./Dockerfile
       args:
         BranchName: 'master'
-        AntMediaServer: 'ant-media-server-enterprise-2.4.1-20211124_1803.zip'
-        #AntMediaServer: '<Replace_With_Ant_Media_Server_Zip_File>' 
+        AntMediaServer: '<Replace_With_Ant_Media_Server_Zip_File>' 
+        #AntMediaServer: 'ant-media-server-enterprise-2.4.1-20211124_1803.zip'
     container_name: antmedia
     restart: unless-stopped
     entrypoint: /usr/local/antmedia/start.sh
     network_mode: host
-#    volumes:
+#   volumes:
 #      - antmedia_vol:/usr/local/antmedia/
 #volumes:
 #  antmedia_vol:
