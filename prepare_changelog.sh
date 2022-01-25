@@ -50,7 +50,7 @@ get_change_log()
   DATE_OF_THE_TAG=`git log -1 --date=iso-strict --pretty=format:%ad $TAG`
 
   echo "<h3>$FOLDER</h3>" >> $CHANGE_LOG
-  gh pr list --state merged --search "created:>$DATE_OF_THE_TAG" -L 1000 --json title,body,number --template "{{range .}} <li> <a href='$PULL_REQUEST_BASE_URL/pull/{{.number}}'>{{.number}}</a> {{.title}} - <a href='{{.body}}'>{{.body}}</a></li>{{end}}" >> $CHANGE_LOG
+  gh pr list --state merged --search "closed:>$DATE_OF_THE_TAG" -L 1000 --json title,body,number --template "{{range .}} <li> <a href='$PULL_REQUEST_BASE_URL/pull/{{.number}}'>{{.number}}</a> {{.title}} - <a href='{{.body}}'>{{.body}}</a></li>{{end}}" >> $CHANGE_LOG
 
   cd ..
  
@@ -72,7 +72,7 @@ fi
 echo "<h3>Ant-Media-Enterprise</h3>" >> $CHANGE_LOG
 
 DATE_OF_THE_TAG=`git log -1 --date=iso-strict --pretty=format:%ad $TAG`
-curl --location --request GET "https://gitlab.com/api/v4/projects/5032874/merge_requests?state=merged&view=simple&per_page=100&created_after=$DATE_OF_THE_TAG" --header "Authorization: Bearer $GITLAB_TOKEN" 2>/dev/null  | jq -r ' .[] | "<li>\(.title)- <a href=\(.description)) >\(.description)</a></li>"' >> $CHANGE_LOG
+curl --location --request GET "https://gitlab.com/api/v4/projects/5032874/merge_requests?state=merged&view=simple&per_page=100&updated_after=$DATE_OF_THE_TAG" --header "Authorization: Bearer $GITLAB_TOKEN" 2>/dev/null  | jq -r ' .[] | "<li>\(.title)- <a href=\(.description)) >\(.description)</a></li>"' >> $CHANGE_LOG
 
 # "StreamApp"
 export GH_REPO=ant-media/StreamApp
