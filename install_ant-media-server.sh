@@ -322,6 +322,12 @@ cat << EOF > /etc/logrotate.d/antmedia
     maxsize 500M
     compress
     delaycompress
+    copytruncate
+    notifempty
+    sharedscripts
+    postrotate
+       reload rsyslog >/dev/null 2>&1 || true
+    endscript
 }
 EOF
 
