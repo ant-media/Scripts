@@ -9,7 +9,7 @@ ARG AntMediaServer
 ARG BranchName=master
 
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get install -y curl libcap2 wget net-tools iproute2
+RUN apt-get update && apt-get install -y curl libcap2 wget net-tools iproute2 cron logrotate
 
 ADD ./${AntMediaServer} /home
 
