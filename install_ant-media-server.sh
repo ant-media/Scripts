@@ -313,6 +313,24 @@ then
     $SUDO mkdir $LOG_DIRECTORY
 fi
 
+# create a logrotate config file
+cat << EOF > /etc/logrotate.d/antmedia
+/var/log/antmedia/antmedia-error.log {
+    daily
+    create 644 antmedia antmedia
+    rotate 7
+    maxsize 500M
+    compress
+    delaycompress
+    copytruncate
+    notifempty
+    sharedscripts
+    postrotate
+       reload rsyslog >/dev/null 2>&1 || true
+    endscript
+}
+EOF
+
 $SUDO ln -sf $LOG_DIRECTORY $AMS_BASE/log
 check
 
