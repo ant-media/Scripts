@@ -205,12 +205,6 @@ if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
     check
   fi
-  #update-java-alternatives -s java-1.8.0-openjdk-amd64
-  openjfxExists=`apt-cache search openjfx | wc -l`
-  if [ "$openjfxExists" -gt "0" ];
-    then
-      $SUDO apt install openjfx=11.0.2+1-1~18.04.2 libopenjfx-java=11.0.2+1-1~18.04.2 libopenjfx-jni=11.0.2+1-1~18.04.2 -y -qq --allow-downgrades
-  fi
 elif [ "$ID" == "centos" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install java-11-openjdk java-11-openjdk-devel unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
