@@ -696,6 +696,34 @@ Resources:
           Value: '30'
         - Key: load_balancing.algorithm.type
           Value: least_outstanding_requests
+  OriginRule:
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupOrigin
+      Conditions:
+        - Field: query-string
+          QueryStringConfig:
+            Values:
+              - Key: target
+                Value: origin
+      ListenerArn: !Ref ALBListener443
+      Priority: 1
+  EdgeRule:
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupEdge
+      Conditions:
+        - Field: query-string
+          QueryStringConfig:
+            Values:
+              - Key: target
+                Value: edge
+      ListenerArn: !Ref ALBListener443
+      Priority: 2
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
