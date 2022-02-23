@@ -38,5 +38,8 @@ RUN cd home \
 # -u: MongoDB username
 #
 # -p: MongoDB password
+#
+# Example Usage: ENTRYPOINT ["/usr/local/antmedia/start.sh", "-m cluster", "-h mongodb_ip_address"]
+#
 
 ENTRYPOINT ["/usr/local/antmedia/start.sh"]
