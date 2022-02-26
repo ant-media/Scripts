@@ -169,6 +169,45 @@ Parameters:
       - r5a.4xlarge
       - r5a.12xlarge
       - r5a.24xlarge
+  MonitorInstanceType:
+    Description: Monitor Server EC2 instance type (If you have the monitoring section enabled, please select Instace Type.)
+    Type: String
+    Default: t2.large
+    AllowedValues:
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. If there is no value here, you must create an ssh key (EC2 > Key Pairs).
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -242,6 +281,13 @@ Parameters:
     Type: Number
     MinValue: '10'
     MaxValue: '1000'
+  Monitor:
+    Description: If you want to install Monitoring Instance, please select True
+    Default: false
+    Type: String
+    AllowedValues:
+      - true
+      - false
   RTMP: 
     Description: If you want to install RTMP Load balancer, please select True
     Default: false
@@ -253,6 +299,10 @@ Conditions:
   CreateRTMPResources: !Equals 
     - !Ref RTMP
     - true
+  CreateMonitor: !Equals
+    - !Ref Monitor
+    - true
+
 
 Resources:
   DescribeImagesRole:
@@ -322,13 +372,13 @@ Resources:
     Properties:
       ServiceToken: !Sub ${GetLatestAMI.Arn}
       Owner: "099720109477"
-      Name: "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
+      Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
       Architecture: "x86_64"
 
   NotificationTopic:
     Type: 'AWS::SNS::Topic'
     DependsOn:
-      - DBInstance
+      - MongoDBInstance
     Properties:
       Subscription:
         - Endpoint: !Ref Email
@@ -367,216 +417,32 @@ Resources:
           Description: Allow 1935. Port for Origin Instances
 
   OriginGroup:
-      Type: 'AWS::AutoScaling::AutoScalingGroup'
-      DependsOn:
-      - LaunchConfigOrigin
-      Properties:
-        VPCZoneIdentifier: !Ref Subnets
-        LaunchConfigurationName: !Ref LaunchConfigOrigin
-        MinSize: !Ref AntMediaOriginCapacity
-        MaxSize: !Ref AntMediaOriginCapacityMax
-        DesiredCapacity: !Ref AntMediaOriginCapacity
-        TargetGroupARNs:
-          - !Ref ALBTargetGroupOrigin
-        LoadBalancerNames: 
-           - !If [CreateRTMPResources, !Ref RTMPLoadBalancer, !Ref "AWS::NoValue"]
-        Tags:
-        - Key: Name
-          Value: Antmedia-Origin
-          PropagateAtLaunch: 'true'
-      CreationPolicy:
-        ResourceSignal:
-          Timeout: PT15M
-          Count: !Ref AntMediaOriginCapacity
-      UpdatePolicy:
-        AutoScalingRollingUpdate:
-          MinInstancesInService: '1'
-          MaxBatchSize: '1'
-          PauseTime: PT15M
-          WaitOnResourceSignals: 'true'
-        NotificationConfiguration:
-          TopicARN: !Ref NotificationTopic
-          NotificationTypes:
-            - 'autoscaling:EC2_INSTANCE_LAUNCH'
-            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
-  LaunchConfigOrigin:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    DependsOn:
-      - ApplicationLoadBalancer
-    Metadata:
-      Comment: Install a simple application
-      'AWS::CloudFormation::Init':
-        configSets:
-          setup:
-            - "configure_cfn"
-        configure_cfn:
-          files:
-            /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-                verbose=true
-                interval=5
-              mode: "000400"
-              owner: root
-              group: root
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfigOrigin.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigOrigin --configsets setup --region ${AWS::Region}
-              mode: "000400"
-              owner: root
-              group: root
-            /lib/systemd/system/cfn-hup.service:
-              content: !Sub |
-                [Unit]
-                Description=cfn-hup daemon
-                
-                [Service]
-                Type=simple
-                ExecStart=/opt/aws/bin/cfn-hup
-                Restart=always
-                
-                [Install]
-                WantedBy=multi-user.target
-              mode: "000400"
-              owner: root
-              group: root
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/origin.yaml
 
-    Properties:
-      KeyName: !Ref KeyName
-      ImageId: !Ref AntMediaAmi
-      SecurityGroups:
-        - !Ref InstanceSecurityGroup
-      InstanceType: !Ref OriginInstanceType
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: !Ref DiskSize
-            VolumeType: gp2
-            DeleteOnTermination: true
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-          apt-get update -y
-          apt-get install -y python3-pip
-          apt-get install -y python3-setuptools
-          mkdir -p /opt/aws/bin
-          wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-          python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigOrigin --configsets setup --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+  LaunchConfigOrigin:
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/origin-launch-config.yaml
 
   EdgeGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-    DependsOn:
-      - LaunchConfigEdge
-    Properties:
-      VPCZoneIdentifier: !Ref Subnets
-      LaunchConfigurationName: !Ref LaunchConfigEdge
-      MinSize: !Ref AntMediaEdgeCapacity
-      MaxSize: !Ref AntMediaEdgeCapacityMax
-      DesiredCapacity: !Ref AntMediaEdgeCapacity
-      TargetGroupARNs:
-        - !Ref ALBTargetGroupEdge
-      Tags:
-        - Key: Name
-          Value: Antmedia-Edge
-          PropagateAtLaunch: 'true'
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT15M
-        Count: !Ref AntMediaEdgeCapacity
-    UpdatePolicy:
-      AutoScalingRollingUpdate:
-        MinInstancesInService: '1'
-        MaxBatchSize: '1'
-        PauseTime: PT15M
-        WaitOnResourceSignals: 'true'
-      NotificationConfiguration:
-          TopicARN: !Ref NotificationTopic
-          NotificationTypes:
-            - 'autoscaling:EC2_INSTANCE_LAUNCH'
-            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
-  LaunchConfigEdge:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    DependsOn:
-      - ApplicationLoadBalancer
-    Metadata:
-      Comment: Install a simple application
-      'AWS::CloudFormation::Init':
-        configSets:
-          setup:
-            - "configure_cfn"
-        configure_cfn:
-          files:
-            /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-                verbose=true
-                interval=5
-              mode: "000400"
-              owner: root
-              group: root
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfigEdge.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
-              mode: "000400"
-              owner: root
-              group: root
-            /lib/systemd/system/cfn-hup.service:
-              content: !Sub |
-                [Unit]
-                Description=cfn-hup daemon
-                
-                [Service]
-                Type=simple
-                ExecStart=/opt/aws/bin/cfn-hup
-                Restart=always
-                
-                [Install]
-                WantedBy=multi-user.target
-              mode: "000400"
-              owner: root
-              group: root
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/edge.yaml
 
-    Properties:
-      KeyName: !Ref KeyName
-      ImageId: !Ref AntMediaAmi
-      SecurityGroups:
-        - !Ref InstanceSecurityGroup
-      InstanceType: !Ref EdgeInstanceType
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: !Ref DiskSize
-            VolumeType: gp2
-            DeleteOnTermination: true
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-          apt-get update 
-          apt-get install -y python3-pip
-          apt-get install -y python3-setuptools
-          mkdir -p /opt/aws/bin
-          wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-          python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
+  LaunchConfigEdge:
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/edge-launch-config.yaml
 
   ELBSecurityGroup:
       Type: AWS::EC2::SecurityGroup
@@ -609,7 +475,7 @@ Resources:
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     DependsOn:
-      - DBInstance
+      - MongoDBInstance
     Properties:
       Subnets: !Ref Subnets
       SecurityGroups:
@@ -657,7 +523,7 @@ Resources:
   ALBTargetGroupOrigin:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     DependsOn:
-      - DBInstance
+      - MongoDBInstance
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
@@ -678,7 +544,7 @@ Resources:
   ALBTargetGroupEdge:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     DependsOn:
-      - DBInstance
+      - MongoDBInstance
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
@@ -747,7 +613,7 @@ Resources:
           PredefinedMetricType: ASGAverageCPUUtilization
         TargetValue: !Ref CPUPolicyTargetValue
 
-  DBEC2SecurityGroup:
+  MongoDBSecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
         VpcId: !Ref VpcId
@@ -761,91 +627,52 @@ Resources:
             FromPort: '22'
             ToPort: '22'
             CidrIp: 0.0.0.0/0
-  DBInstance:
-      Type: 'AWS::EC2::Instance'
-      DependsOn:
-        - GetLatestAMI
-        - UbuntuAmi
-        - DescribeImagesRole
-      Properties:
-        KeyName: !Ref KeyName
-        ImageId: !Ref UbuntuAmi
-        InstanceType: !Ref MongoDBInstanceType
-        SubnetId: !Select [ 0, !Ref Subnets ]
-        SecurityGroupIds:
-          - !GetAtt "DBEC2SecurityGroup.GroupId"
-        Tags:
-        - Key: Name
-          Value: Antmedia-MongoDB
-        UserData:
-         Fn::Base64:
-          !Sub |
-            #!/bin/bash -xe
-            wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-            echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu `lsb_release -cs`/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
-            sudo apt-get update
-            sudo apt-get install -y mongodb-org python-pip python-setuptools
-            sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
-            systemctl enable mongod
-            systemctl restart mongod
-            wget -P /tmp/ https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/cloudformation_set_username_password.sh && chmod +x /tmp/cloudformation_set_username_password.sh
-            echo "/tmp/cloudformation_set_username_password.sh ${DashboardUsername} ${DashboardPassword}"| at now + 2 minutes
+
+  MongoDBInstance:
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/mongodb.yaml
+
+  MonitorSecurityGroup:
+    Condition: CreateMonitor
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: Monitor SecurityGroup
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '3000'
+          ToPort: '3000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9092'
+          ToPort: '9092'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '9093'
+          ToPort: '9093'
+          CidrIp: 0.0.0.0/0 
+
+  MonitorInstance:
+    Condition: CreateMonitor
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/monitor.yaml
 
 Outputs:
+    Fn::Transform:
+      Name: AWS::Include
+      Parameters:
+        Location:
+          Fn::Sub: s3://ams-cloudformation/output.yaml
 
-  Username:
-    Description: Dashboard Username 
-    Value: !Ref DashboardUsername
 
-  Password:
-    Description: Dashboard Password
-    Value: !Ref DashboardPassword
-
-  OriginHTTPS:
-    Description: HTTPS URL of the Ant Media Origin Servers
-    Value: !Join 
-      - ''
-      - - 'https://'
-        - !GetAtt 
-          - ApplicationLoadBalancer
-          - DNSName
-    
-  EdgeHTTPS:
-    Description: HTTPS URL of the Ant Media Edge Servers
-    Value: !Join 
-      - ''
-      - - 'https://'
-        - !GetAtt 
-          - ApplicationLoadBalancer
-          - DNSName
-        - ':5443'
-
-  OriginHTTP:
-    Description: HTTP URL of the Ant Media Origin Servers
-    Value: !Join 
-      - ''
-      - - 'http://'
-        - !GetAtt 
-          - ApplicationLoadBalancer
-          - DNSName
-
-  EdgeHTTP:
-    Description: HTTP URL of the Ant Media Edge Servers
-    Value: !Join 
-      - ''
-      - - 'http://'
-        - !GetAtt 
-          - ApplicationLoadBalancer
-          - DNSName
-        - ':5080'       
-
-  RTMP:
-    Condition: CreateRTMPResources
-    Description: RTMP URL of the Ant Media Server
-    Value: !Join 
-      - ''
-      - - 'rtmp://'
-        - !GetAtt 
-          - RTMPLoadBalancer
-          - DNSName 
           
