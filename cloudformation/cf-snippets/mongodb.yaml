@@ -1,0 +1,31 @@
+Type: 'AWS::EC2::Instance'
+DependsOn: MongoDBSecurityGroup
+Properties:
+  KeyName:
+    Ref: KeyName
+  ImageId:
+    Ref: UbuntuAmi
+  InstanceType:
+    Ref: MongoDBInstanceType
+  SubnetId:
+    Fn::Select: [ 0, Ref: Subnets ] 
+  SecurityGroupIds: 
+    - Fn::GetAtt: [ MongoDBSecurityGroup, GroupId ]
+  Tags:
+  - Key: Name
+    Value: Antmedia-MongoDB
+  UserData:
+   Fn::Base64:
+    Fn::Sub: |
+      #!/bin/bash -xe
+      wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+      echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
+      sudo apt-get update
+      sudo apt-get install -y mongodb-org python3-pip python3-setuptools
+      sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
+      systemctl enable mongod
+      systemctl restart mongod
+      wget -P /tmp/ https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/cloudformation_set_username_password.sh && chmod +x /tmp/cloudformation_set_username_password.sh
+      echo "/tmp/cloudformation_set_username_password.sh ${DashboardUsername} ${DashboardPassword}"| at now + 2 minutes
+
+

@@ -1,0 +1,81 @@
+Type: 'AWS::AutoScaling::LaunchConfiguration'
+DependsOn:
+  - ApplicationLoadBalancer
+Metadata:
+  Comment: Install a simple application
+  'AWS::CloudFormation::Init':
+    configSets:
+      setup:
+        - "configure_cfn"
+    configure_cfn:
+      files:
+        /etc/cfn/cfn-hup.conf:
+          content:
+            Fn::Sub: |
+              [main]
+              stack=${AWS::StackId}
+              region=${AWS::Region}
+              verbose=true
+              interval=5
+            mode: "000400"
+            owner: root
+            group: root
+        /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+          content:
+            Fn::Sub: |
+              [cfn-auto-reloader-hook]
+              triggers=post.update
+              path=Resources.LaunchConfigEdge.Metadata.AWS::CloudFormation::Init
+              action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
+          mode: "000400"
+          owner: root
+          group: root
+        /lib/systemd/system/cfn-hup.service:
+          content:
+            Fn::Sub: |
+              [Unit]
+              Description=cfn-hup daemon
+              
+              [Service]
+              Type=simple
+              ExecStart=/opt/aws/bin/cfn-hup
+              Restart=always
+              
+              [Install]
+              WantedBy=multi-user.target
+            mode: "000400"
+            owner: root
+            group: root
+
+Properties:
+  KeyName:
+    Ref: KeyName
+  ImageId:
+    Ref: AntMediaAmi
+  SecurityGroups:
+    - Ref: InstanceSecurityGroup
+  InstanceType:
+    Ref: EdgeInstanceType
+  BlockDeviceMappings:
+    - DeviceName: /dev/sda1
+      Ebs:
+        VolumeSize:
+          Ref: DiskSize
+        VolumeType: gp2
+        DeleteOnTermination: true
+  UserData:
+    Fn::Base64:
+      Fn::Sub: |
+        #!/bin/bash
+        if [ ${Monitor} == "true" ]; then
+          sudo sed -i "s/server.kafka_brokers=.*/server.kafka_brokers=${MonitorInstance.PrivateIp}:9092/g" /usr/local/antmedia/conf/red5.properties
+        fi
+        bash /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBInstance.PrivateIp}
+        apt-get update 
+        apt-get install -y python3-pip
+        apt-get install -y python3-setuptools
+        mkdir -p /opt/aws/bin
+        wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+        python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
+        /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
+        /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}

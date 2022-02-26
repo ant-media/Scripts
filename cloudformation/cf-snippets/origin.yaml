@@ -1,0 +1,41 @@
+Type: 'AWS::AutoScaling::AutoScalingGroup'
+DependsOn:
+- LaunchConfigOrigin
+Properties:
+  VPCZoneIdentifier: 
+    Ref: Subnets
+  LaunchConfigurationName:
+    Ref: LaunchConfigOrigin
+  MinSize:
+    Ref: AntMediaOriginCapacity
+  MaxSize:
+    Ref: AntMediaOriginCapacityMax
+  DesiredCapacity:
+    Ref: AntMediaOriginCapacity
+  TargetGroupARNs:
+    - Ref: ALBTargetGroupOrigin
+  LoadBalancerNames:
+    - Fn::If: [CreateRTMPResources, Ref: RTMPLoadBalancer, "AWS::NoValue"] 
+  Tags:
+  - Key: Name
+    Value: Antmedia-Origin
+    PropagateAtLaunch: 'true'
+CreationPolicy:
+  ResourceSignal:
+    Timeout: PT15M
+    Count:
+      Ref: AntMediaOriginCapacity
+UpdatePolicy:
+  AutoScalingRollingUpdate:
+    MinInstancesInService: '1'
+    MaxBatchSize: '1'
+    PauseTime: PT15M
+    WaitOnResourceSignals: 'true'
+  NotificationConfiguration:
+    TopicARN:
+      Ref: NotificationTopic
+    NotificationTypes:
+      - 'autoscaling:EC2_INSTANCE_LAUNCH'
+      - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
+      - 'autoscaling:EC2_INSTANCE_TERMINATE'
+      - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
