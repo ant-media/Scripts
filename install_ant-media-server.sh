@@ -19,7 +19,10 @@ OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
+TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
+BACKUP_DIR_SIZE=$(($(du -sm /usr/local/antmedia/ | cut -f 1)*2))
 ARCH=`uname -m`
+
 
 usage() {
   echo ""
@@ -40,6 +43,15 @@ usage() {
   echo ""
 }
 
+disk_usage(){
+  if [ ! -z $SAVE_SETTINGS ]; then
+    if [ $BACKUP_DIR_SIZE -ge $TOTAL_DISK_SPACE ]; then
+      echo "Disk space is not enough."
+      exit 1
+    fi
+  fi
+}
+disk_usage
 # Restore settings
 restore_settings() {
   webapps=("LiveApp" "WebRTC*" "root")
@@ -110,7 +122,6 @@ restore_settings() {
     echo "Settings are not restored. Please send the log of this console to support@antmedia.io"
   fi
 }
-
 #Get the linux distribution
 distro () {
   os_release="/etc/os-release"
