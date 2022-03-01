@@ -44,7 +44,7 @@ usage() {
 }
 
 disk_usage(){
-  if [ ! -z $SAVE_SETTINGS ]; then
+  if [ -z $SAVE_SETTINGS ]; then
     if [ $AMS_SIZE -ge $TOTAL_DISK_SPACE ]; then
       echo "Disk space is not enough."
       exit 1
