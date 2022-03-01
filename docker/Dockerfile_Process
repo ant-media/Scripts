@@ -8,8 +8,8 @@ ARG AntMediaServer
 
 ARG BranchName=master
 
-#Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get install -y curl libcap2 wget net-tools iproute2 cron logrotate
+# Running update and install makes the builder not to use cache which resolves some updates
+RUN apt-get update && apt-get install -y curl libcap2 wget net-tools iproute2 cron logrotate iptables
 
 ADD ./${AntMediaServer} /home
 
@@ -22,6 +22,8 @@ RUN cd home \
     && pwd \
     && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
 
+# Enabling SSL with LetsEncrypt
+RUN if [ ! -z ${DomainName} ] ; then /usr/local/antmedia/enable_ssl.sh -d ${DomainName} ; fi
 
 # Options 
 # -g: Use global(Public) IP in network communication. Its value can be true or false. Default value is false.
