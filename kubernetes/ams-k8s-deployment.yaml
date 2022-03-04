@@ -1,3 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ant-media-server
+spec:
+  selector:
+    app: ant-media
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5080 
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,18 +17,32 @@ metadata:
 spec:
   selector:
     matchLabels:
-      run: ant-media-server
+      app: ant-media
   replicas: 1
   template:
     metadata:
       labels:
-        run: ant-media-server
+        app: ant-media
     spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - ant-media
+            topologyKey: "kubernetes.io/hostname"
       hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: ant-media-server
-        imagePullPolicy: IfNotPresent  # change this value accordingly. It can be Never, Always or IfNotPresent
-        image: ant-media-server-enterprise-k8s:test  #change this value according to your image.
-# You basically need to update the mongodb server url(-h) below. You may also need to add -u and -p parameters for
-# specifying mongodb username and passwords respectively 
-        args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "127.0.0.1"]  
+        imagePullPolicy: Always
+        image: your_ams_image_repository_url
+        args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
+        resources:
+          requests:
+             cpu: 1000m
+ #     imagePullSecrets:
+ #     - name: docker
