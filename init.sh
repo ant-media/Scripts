@@ -27,7 +27,7 @@ then
   export INSTANCE_ID=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
 
   ## Add Initial User with curl
-  RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users`
+  RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
 
   echo ${RESULT} | grep --quiet ":true"  
 
