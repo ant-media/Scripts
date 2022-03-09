@@ -38,8 +38,11 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: ant-media-server
-        imagePullPolicy: Always
-        image: your_ams_image_repository_url
+        imagePullPolicy: IfNotPresent # change this value accordingly. It can be Never, Always or IfNotPresent
+        image: ant-media-server-enterprise-k8s:test #change this value according to your image.
+# By default, mongodb deployment is used. If you're using mongodb somewhere else, specify it  with server url(-h) below. 
+# You may also need to add -u and -p parameters for
+# specifying mongodb username and passwords respectively         
         args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
         resources:
           requests:
