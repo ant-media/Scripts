@@ -18,7 +18,7 @@ ELASTIC_SEARCH_MEMORY=
 check() {
   OUT=$?
   if [ $OUT -ne 0 ]; then
-    sudo journalctl -xe
+    #sudo journalctl -xe
     echo "There is a problem in installing the monitoring tools. Please take a look at the logs above to understand the problem. If you need help, please send the log of this console to support@antmedia.io"
     exit $OUT
   fi
