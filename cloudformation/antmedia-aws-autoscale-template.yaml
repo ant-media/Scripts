@@ -459,10 +459,11 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          touch /usr/local/antmedia/conf/initialized
           wget https://gist.githubusercontent.com/mekya/f8b85706e2ccbc24d6cfea29d64a042e/raw/init.sh -O /usr/local/antmedia/conf/init.sh
           sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
-          bash /usr/local/antmedia/conf/init.sh
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+          rm -rf /usr/local/antmedia/conf/initialized
           apt-get update -y
           apt-get install -y python3-pip
           apt-get install -y python3-setuptools
@@ -567,9 +568,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          wget https://gist.githubusercontent.com/mekya/f8b85706e2ccbc24d6cfea29d64a042e/raw/init.sh -O /usr/local/antmedia/conf/init.sh
-          sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
-          bash /usr/local/antmedia/conf/init.sh
+          touch /usr/local/antmedia/conf/initialized
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
           apt-get update 
           apt-get install -y python3-pip
