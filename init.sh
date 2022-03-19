@@ -31,12 +31,16 @@ then
 
   echo ${RESULT} | grep --quiet ":true"  
 
-  if [ $? = 1 ]
-  then
-    echo "Cannot create initial user"
-    echo "sleep 3 ; /usr/local/antmedia/conf/init.sh"  | at now
-    exit $OUT
-  fi
+  if [ ! $1 ]; then
+    echo ${RESULT} | grep --quiet ":true"
+    if [ $? = 1 ]; then
+      echo "Cannot create initial user"
+      echo "sleep 3 ; /usr/local/antmedia/conf/init.sh"  | at now
+      exit $OUT
+    else
+      echo ${RESULT} | grep --quiet ":true"
+    fi
 
+  fi
   touch $INITIALIZED
 fi
