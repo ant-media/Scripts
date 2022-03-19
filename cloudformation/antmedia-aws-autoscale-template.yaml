@@ -464,7 +464,7 @@ Resources:
           sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
           rm -rf /usr/local/antmedia/conf/initialized
-          bash /usr/local/antmedia/conf/init.sh
+          bash /usr/local/antmedia/conf/init.sh cf
           apt-get update -y
           apt-get install -y python3-pip
           apt-get install -y python3-setuptools
