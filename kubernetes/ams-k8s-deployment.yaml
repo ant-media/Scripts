@@ -43,7 +43,7 @@ spec:
 # By default, mongodb deployment is used. If you're using mongodb somewhere else, specify it  with server url(-h) below. 
 # You may also need to add -u and -p parameters for
 # specifying mongodb username and passwords respectively         
-        args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
+        args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
         resources:
           requests:
              cpu: 1000m
