@@ -51,7 +51,6 @@ disk_usage(){
     fi
   fi
 }
-disk_usage
 # Restore settings
 restore_settings() {
   webapps=("LiveApp" "WebRTC*" "root")
