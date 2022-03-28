@@ -44,7 +44,7 @@ usage() {
 }
 
 disk_usage(){
-  if [ -z $SAVE_SETTINGS ]; then
+  if [ $SAVE_SETTINGS == "true" ]; then
     if [ $AMS_SIZE -ge $TOTAL_DISK_SPACE ]; then
       echo "Disk space is not enough."
       exit 1
@@ -182,7 +182,7 @@ do
    esac
 done
 
-
+disk_usage
 distro
 
 
