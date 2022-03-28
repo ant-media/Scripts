@@ -20,9 +20,7 @@ SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
-AMS_SIZE=$(($(du -sm $AMS_BASE | cut -f 1)*2))
 ARCH=`uname -m`
-
 
 usage() {
   echo ""
@@ -45,7 +43,7 @@ usage() {
 
 disk_usage(){
   if [ $SAVE_SETTINGS == "true" ]; then
-    if [ $AMS_SIZE -ge $TOTAL_DISK_SPACE ]; then
+    if [ $(($(du -sm $AMS_BASE | cut -f 1)*2)) -ge $TOTAL_DISK_SPACE ]; then
       echo "Disk space is not enough."
       exit 1
     fi
