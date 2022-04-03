@@ -321,7 +321,6 @@ Resources:
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
-    Description: 'The NLB that handles network traffic coming into the VPC'
     Properties:
       Subnets: !Ref Subnets
       Type: 'network'
