@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# This script creates user for standalone aws server and cloudformation template.
+#
 INITIALIZED=/usr/local/antmedia/conf/initialized
 if [ ! -f "$INITIALIZED" ]
 then
