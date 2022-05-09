@@ -199,15 +199,15 @@ fi
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   if [ "aarch64" == $ARCH ]; then
-    $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev -y
+    $SUDO apt-get install openjdk-11-jdk unzip libva-drm2 libva-x11-2 libvdpau-dev -y
     check
   else
-    $SUDO apt-get install openjdk-11-jdk unzip jsvc libapr1 libssl-dev libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
+    $SUDO apt-get install openjdk-11-jre unzip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
     check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
   $SUDO yum -y install epel-release
-  $SUDO yum -y install java-11-openjdk java-11-openjdk-devel unzip apr-devel openssl-devel libva-devel libva libvdpau libcrystalhd
+  $SUDO yum -y install java-11-openjdk unzip libva libvdpau libcrystalhd
   check
   
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
