@@ -22,10 +22,11 @@ echo "realm=$IP" >> /etc/turnserver.conf
 echo "user=$USERNAME:$PASSWORD" >> /etc/turnserver.conf
 sudo systemctl enable coturn && sudo systemctl restart coturn
 check
-
-echo "Turn Server Address: $IP"
+echo ""
 echo "Username: $USERNAME"
 echo "Password: $PASSWORD"
-
+echo "Turn Server Address: $IP"
+echo "Please check this guide to enable the Turn Server: https://resources.antmedia.io/docs/turn-server-installation#how-to-add-turn-server-to-ant-media-sample-pages"
+echo ""
 
 
