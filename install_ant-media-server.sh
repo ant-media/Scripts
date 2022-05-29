@@ -32,6 +32,7 @@ usage() {
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
   echo ""
+  echo ""
   echo "Sample usage:"
   echo "$0 -i name-of-the-ant-media-server-zip-file"
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
@@ -291,6 +292,8 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
     if [ "aarch64" == $ARCH ]; then
       $SUDO update-java-alternatives -s java-1.11.*-openjdk-arm64
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$DEFAULT_JAVA_ARM#g" $SERVICE_FILE
+      sed -i -e '/srtAdaptor/ s/./<!--&/' -e '/srtAdaptor/{n;d}' /usr/local/antmedia/conf/red5-common.xml
+      sed -i -e '/srtAdaptor.*/a </bean> -->' /usr/local/antmedia/conf/red5-common.xml
     fi
     $SUDO systemctl daemon-reload
     $SUDO systemctl enable antmedia
