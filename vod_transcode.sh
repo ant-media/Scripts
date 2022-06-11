@@ -1,18 +1,16 @@
 #!/bin/bash
 #
-#  This bash script converts your VoD files to HLS format.
+#  This bash script converts your VoD files to HLS format. (720p,480p,240p)
 #
 #  Installation Instructions
-#
+#  sudo apt-get update && sudo apt-get install ffmpeg -y
 #  vim [AMS-DIR]/webapps/applications(LiveApp or etc.)/WEB-INF/red5-web.properties
 #  settings.vodUploadFinishScript=/Script-DIR/vod_transcode.sh
 #  sudo service antmedia restart
 #
 
-# Check if the ffmpeg tool is installed.
-if ! [ -x "$(command -v ffmpeg)" ]; then
-  sudo apt-get update && sudo apt-get install ffmpeg -y
-fi
+# Don't forget to change the Ant Media Server App Name
+AMS_APP_NAME="WebRTCAppEE"
 
 file=$1
 file_name=$(basename $file .mp4)
@@ -26,7 +24,6 @@ b=("640x480" "1500k")
 c=("320x240" "800k")
 
 
-cd /usr/local/antmedia/webapps/WebRTCAppEE/streams/
+cd /usr/local/antmedia/webapps/$AMS_APP_NAME/streams/
 
 $(command -v ffmpeg) -i $file -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -s:v:0 ${a[0]} -c:v:0 libx264 -b:v:0 ${a[1]} -s:v:1 ${b[0]} -c:v:1 libx264 -b:v:1 ${b[1]} -s:v:2 ${c[0]} -c:v:2 libx264 -b:v:2 ${c[1]} -c:a aac -f hls -hls_playlist_type vod -master_pl_name ${file_name}.m3u8 -hls_segment_filename ${file_name}_%v/${file_name}%03d.ts -use_localtime_mkdir 1 -var_stream_map "v:0,a:0,name:720p v:1,a:1,name:480p v:2,a:2,name:360p" ${file_name}_%v.m3u
-
