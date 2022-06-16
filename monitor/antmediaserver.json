@@ -92,7 +92,7 @@
         ],
         "timeFrom": null,
         "timeShift": null,
-        "title": "Number of WebRTC Viewer",
+        "title": "Number of WebRTC Viewers",
         "type": "gauge"
       },
       {
@@ -167,7 +167,7 @@
         ],
         "timeFrom": null,
         "timeShift": null,
-        "title": "Number of HLS Viewer",
+        "title": "Number of HLS Viewers",
         "type": "gauge"
       },
       {
