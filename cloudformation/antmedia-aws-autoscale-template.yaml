@@ -238,17 +238,6 @@ Parameters:
     Type: Number
     MinValue: '10'
     MaxValue: '1000'
-  RTMP: 
-    Description: If you want to install RTMP Load balancer, please select True
-    Default: false
-    Type: String
-    AllowedValues: 
-      - true
-      - false 
-Conditions:
-  CreateRTMPResources: !Equals 
-    - !Ref RTMP
-    - true
 
 Resources:
   DescribeImagesRole:
@@ -329,38 +318,45 @@ Resources:
       Subscription:
         - Endpoint: !Ref Email
           Protocol: email
-  RTMPLoadBalancer:
-    Condition: CreateRTMPResources
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
-    Properties:        
-      ConnectionDrainingPolicy:
-        Enabled: true
-        Timeout: 60
-      ConnectionSettings:
-        IdleTimeout: 60
-      CrossZone: true
-      Listeners:
-          - InstancePort: 1935
-            InstanceProtocol: TCP
-            LoadBalancerPort: 1935
-            Protocol: TCP          
-      Subnets: !Ref Subnets
-      SecurityGroups:
-        - !GetAtt [ RTMPSecurityGroup, GroupId ]
 
-  RTMPSecurityGroup:
-    Condition: CreateRTMPResources
-    Type: AWS::EC2::SecurityGroup
+  RTMPLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
-      GroupName: Ant Media Server RTMP Load Balancer Security Group
-      GroupDescription: Allows access
+      Subnets: !Ref Subnets
+      Type: 'network'
+  RTMPListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref RTMPTargetGroup
+      LoadBalancerArn: !Ref RTMPLoadBalancer
+      Port: '1935'
+      Protocol: TCP
+  RTMPTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 3
+      Port: 1935
+      Protocol: TCP
+      UnhealthyThresholdCount: 3
       VpcId: !Ref VpcId
+  RTMPSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Ant Media Server RTMP Load Balancer Security Group'
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
-          FromPort: 1935
-          ToPort: 1935
-          Description: Allow 1935. Port for Origin Instances
+        - IpProtocol: tcp
+          FromPort: '1935'
+          ToPort: '1935'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: '0.0.0.0/0'
+      VpcId: !Ref VpcId
 
   OriginGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
@@ -374,8 +370,7 @@ Resources:
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
-        LoadBalancerNames: 
-           - !If [CreateRTMPResources, !Ref RTMPLoadBalancer, !Ref "AWS::NoValue"]
+          - !Ref RTMPTargetGroup
         Tags:
         - Key: Name
           Value: Antmedia-Origin
@@ -459,10 +454,12 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          wget https://gist.githubusercontent.com/mekya/f8b85706e2ccbc24d6cfea29d64a042e/raw/init.sh -O /usr/local/antmedia/conf/init.sh
+          touch /usr/local/antmedia/conf/initialized
+          wget https://raw.githubusercontent.com/ant-media/Scripts/master/init.sh -O /usr/local/antmedia/conf/init.sh
           sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
-          bash /usr/local/antmedia/conf/init.sh
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+          rm -rf /usr/local/antmedia/conf/initialized
+          bash /usr/local/antmedia/conf/init.sh cf
           apt-get update -y
           apt-get install -y python3-pip
           apt-get install -y python3-setuptools
@@ -567,9 +564,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          wget https://gist.githubusercontent.com/mekya/f8b85706e2ccbc24d6cfea29d64a042e/raw/init.sh -O /usr/local/antmedia/conf/init.sh
-          sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
-          bash /usr/local/antmedia/conf/init.sh
+          touch /usr/local/antmedia/conf/initialized
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
           apt-get update 
           apt-get install -y python3-pip
@@ -836,7 +831,6 @@ Outputs:
         - ':5080'       
 
   RTMP:
-    Condition: CreateRTMPResources
     Description: RTMP URL of the Ant Media Server
     Value: !Join 
       - ''
