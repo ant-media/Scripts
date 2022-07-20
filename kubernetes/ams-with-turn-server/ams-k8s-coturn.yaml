@@ -55,7 +55,7 @@ spec:
           args:
           #   - --stun-only
             - -v
-            - --user "ovh36:ovh36"
+            - --user "{username}:{password}"
             - --external-ip="$(detect-external-ip)/$MY_POD_IP"
             - --realm="$(detect-external-ip)"
 
