@@ -202,7 +202,7 @@ if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
     check
   else
-    $SUDO apt-get install openjdk-11-jre unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
+    $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
     check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
