@@ -521,7 +521,6 @@ Resources:
   ELBSecurityGroup:
       Type: AWS::EC2::SecurityGroup
       Properties:
-        GroupName: Ant Media Server LB Security Group
         GroupDescription: Allows access
         VpcId: !Ref VpcId
         SecurityGroupIngress:
