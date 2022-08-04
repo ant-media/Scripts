@@ -278,7 +278,7 @@ Resources:
             try:
               response = boto3.client('ec2').describe_images(
                   Filters=[
-                    {'Name': 'product-code', 'Values': [event['ResourceProperties']['Product']]},
+                    {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductId']]},
                     {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
                     {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
                     {'Name': 'root-device-type', 'Values': ['ebs']},
@@ -333,7 +333,7 @@ Resources:
     Type: Custom::FindAMI
     Properties:
       ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
-      Product: "4wh7rhpic3wfwamyp5905tsbt"
+      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
       Name: "AntMedia-AWS-Marketplace-EE-*"
       Architecture: "x86_64"
 
