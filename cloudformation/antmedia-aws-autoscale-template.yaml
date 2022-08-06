@@ -260,10 +260,44 @@ Resources:
               - Action: ec2:DescribeImages
                 Effect: Allow
                 Resource: "*"
-  GetLatestAMI:
+  AMSGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.6
+      Runtime: python3.8
+      Handler: index.handler
+      Role: !Sub ${DescribeImagesRole.Arn}
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import traceback
+
+          def handler(event, context):
+            try:
+              response = boto3.client('ec2').describe_images(
+                  Filters=[
+                    {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductId']]},
+                    {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
+                    {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
+                    {'Name': 'root-device-type', 'Values': ['ebs']},
+                  ],
+              )
+
+              amis = sorted(response['Images'],
+                            key=lambda x: x['CreationDate'],
+                            reverse=True)
+              id = amis[0]['ImageId']
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, id)
+            except:
+              traceback.print_last()
+              cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+  UbuntuGetLatestAMI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.8
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -294,21 +328,23 @@ Resources:
             except:
               traceback.print_last()
               cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+
   AntMediaAmi:
     Type: Custom::FindAMI
     Properties:
-      ServiceToken: !Sub ${GetLatestAMI.Arn}
-      Owner: "679593333241"
+      ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
+      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
       Name: "AntMedia-AWS-Marketplace-EE-*"
       Architecture: "x86_64"
 
   UbuntuAmi:
     Type: Custom::FindAMI
     Properties:
-      ServiceToken: !Sub ${GetLatestAMI.Arn}
+      ServiceToken: !Sub ${UbuntuGetLatestAMI.Arn}
       Owner: "099720109477"
       Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
       Architecture: "x86_64"
+
 
   NotificationTopic:
     Type: 'AWS::SNS::Topic'
@@ -760,7 +796,7 @@ Resources:
   DBInstance:
       Type: 'AWS::EC2::Instance'
       DependsOn:
-        - GetLatestAMI
+        - AMSGetLatestAMI
         - UbuntuAmi
         - DescribeImagesRole
       Properties:
