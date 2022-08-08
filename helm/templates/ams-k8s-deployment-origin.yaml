@@ -28,7 +28,7 @@ spec:
       containers:
       - name: ant-media-server
         imagePullPolicy: IfNotPresent # change this value accordingly. It can be Never, Always or IfNotPresent
-        image: muratugureminoglu/antmedia:2.4.3-coturn-1 #change this value according to your image.
+        image: antmedia/enterprise:2.4.4-snapshot #change this value according to your image.
 # By default, mongodb deployment is used. If you're using mongodb somewhere else, specify it  with server url(-h) below. 
 # You may also need to add -u and -p parameters for
 # specifying mongodb username and passwords respectively         
