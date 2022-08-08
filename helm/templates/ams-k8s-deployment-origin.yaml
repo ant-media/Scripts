@@ -1,0 +1,41 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ant-media-server-origin
+spec:
+  selector:
+    app: ant-media-origin
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5080 
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ant-media-server-origin
+spec:
+  selector:
+    matchLabels:
+      app: ant-media-origin
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: ant-media-origin
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: ant-media-server
+        imagePullPolicy: IfNotPresent # change this value accordingly. It can be Never, Always or IfNotPresent
+        image: muratugureminoglu/antmedia:2.4.3-coturn-1 #change this value according to your image.
+# By default, mongodb deployment is used. If you're using mongodb somewhere else, specify it  with server url(-h) below. 
+# You may also need to add -u and -p parameters for
+# specifying mongodb username and passwords respectively         
+# args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
+        args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
+        resources:
+          requests:
+             cpu: 500m
+ #     imagePullSecrets:
+ #     - name: docker
