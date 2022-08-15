@@ -20,6 +20,8 @@ SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 ARCH=`uname -m`
+#check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
+VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
 
 usage() {
   echo ""
@@ -196,18 +198,16 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-if [ "$ID" == "ubuntu" ]; then
-  $SUDO apt-get update -y
+if [ "$ID" == "ubuntu" ]; then  
   if [ "aarch64" == $ARCH ]; then
-    $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+    $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
     check
   else
-    $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
+    $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
     check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
-  $SUDO yum -y install epel-release
-  $SUDO yum -y install java-11-openjdk unzip zip libva libvdpau libcrystalhd
+  $SUDO yum -y install java-11-openjdk unzip libva libvdpau libcrystalhd
   check
   
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
@@ -228,6 +228,22 @@ fi
 unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
+VER=`unzip -p ant-media-server/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
+
+if [[ $VER == 2.4* || $VER == 2.3* || $VER == 2.2* ]]; then
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-11-jdk -y
+    check
+  fi
+else
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-11-jre -y
+    check
+  fi
+fi
+
 if ! [ -d $AMS_BASE ]; then
   $SUDO mv ant-media-server $AMS_BASE
   check
@@ -238,8 +254,6 @@ else
   check
 fi
 
-#check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
-VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
 if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]];
 then
   if [ "$ID" == "ubuntu" ];
