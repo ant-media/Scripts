@@ -131,13 +131,13 @@ distro () {
         $SUDO apt-get update && $SUDO apt-get install coreutils
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
       fi
 
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "21.04" ] && [ "$VERSION_ID" != "21.10" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "8.5" ]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 20.10 ]] && [[ $VERSION_ID != 21.04 ]] && [[ $VERSION_ID != 21.10 ]] && [[ $VERSION_ID != 8.* ]]; then
          echo $msg
          exit 1
             fi
@@ -205,7 +205,7 @@ if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
     check
   fi
-elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
+elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install java-11-openjdk unzip zip libva libvdpau libcrystalhd
   check
