@@ -137,7 +137,7 @@ distro () {
         exit 1
       fi
 
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "21.04" ] && [ "$VERSION_ID" != "21.10" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "8.5" ]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 20.10 ]] && [[ $VERSION_ID != 21.04 ]] && [[ $VERSION_ID != 21.10 ]] && [[ $VERSION_ID != 8.* ]]; then
          echo $msg
          exit 1
             fi
