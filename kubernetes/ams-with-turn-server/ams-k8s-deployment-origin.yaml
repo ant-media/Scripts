@@ -36,6 +36,6 @@ spec:
         args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
         resources:
           requests:
-             cpu: 500m
+             cpu: 4000m
  #     imagePullSecrets:
  #     - name: docker
