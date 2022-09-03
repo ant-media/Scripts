@@ -22,6 +22,19 @@ LOG_DIRECTORY="/var/log/antmedia"
 TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
 ARCH=`uname -m`
 
+update_script () {
+  SCRIPT_NAME="$0"
+  remote_file="$(curl -sL https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh | md5sum | cut -d ' ' -f 1)"
+  local_file="$(md5sum $0 | cut -d '' -f 1 )"
+  if [ "$remote_file" != "$local_file" ]; then
+    wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+    chmod +x $0
+    echo "Updated the installation script. Please rerun the script."
+    exit 1
+  fi
+}
+
+
 usage() {
   echo ""
   echo "Usage:"
@@ -32,12 +45,15 @@ usage() {
   echo "  -r -> Restore settings flag. It can accept true or false. Optional. Default value is false"
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
+  echo "  -u -> Update Ant Media Server new installation script. Default value is false"
+
   echo ""
   echo "Sample usage:"
   echo "$0 -i name-of-the-ant-media-server-zip-file"
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
   echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
+  echo "$0 -u"
   echo ""
 }
 
@@ -167,13 +183,14 @@ check() {
 
 # Start
 
-while getopts 'i:s:r:d:h' option
+while getopts 'i:s:r:d:hu' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
     i) ANT_MEDIA_SERVER_ZIP_FILE=${OPTARG};;
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
+    u) UPDATE="true";;
     h) usage
        exit 1;;
    esac
@@ -182,6 +199,9 @@ done
 disk_usage
 distro
 
+if [ "$UPDATE" == "true" ]; then
+  update_script
+fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used.
