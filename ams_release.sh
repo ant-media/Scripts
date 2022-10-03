@@ -135,7 +135,7 @@ CURRENT_PATH=`pwd`
 declare -a arr=(
                  "Ant-Media-Server"
                  "Ant-Media-Enterprise"
-                 "ManagementConsole_AngularApp"
+                 "Ant-Media-Management-Console"
                  "StreamApp"
                  "webrtc-test"
                  "testcluster"
