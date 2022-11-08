@@ -133,7 +133,7 @@ Resources:
   GetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.6
+      Runtime: python3.9
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
