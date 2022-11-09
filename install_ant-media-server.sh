@@ -341,7 +341,7 @@ cat << EOF > /etc/logrotate.d/antmedia
     daily
     create 644 antmedia antmedia
     rotate 7
-    maxsize 500M
+    maxsize 50M
     compress
     delaycompress
     copytruncate
