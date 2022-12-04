@@ -24,6 +24,7 @@ spec:
       labels:
         app: ant-media-origin
     spec:
+      {{ if .Values.hostNetwork }}
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -35,6 +36,7 @@ spec:
                 - ant-media
             topologyKey: "kubernetes.io/hostname"
       hostNetwork: {{ .Values.hostNetwork }}
+      {{end}}
       dnsPolicy: ClusterFirstWithHostNet
       containers:
       - name: ant-media-server
