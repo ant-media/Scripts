@@ -3,22 +3,22 @@ entries:
   antmedia-helm:
   - apiVersion: v2
     appVersion: 1.16.0
-    created: "2022-05-19T14:02:48.76700805+03:00"
+    created: "2022-12-09T20:31:48.484735149+03:00"
     dependencies:
     - name: nginx-ingress
       repository: https://helm.nginx.com/stable
       version: 0.13.0
     description: A Helm chart for Kubernetes
-    digest: eb7c88652bf8ee919b30009efd05e4fbe93662f41b79a37d92eeecd41cd894f5
+    digest: 6e3b4aa1e10cf244c0aa136e749793ef5b753216f63916154bb99534f49788ca
     name: antmedia-helm
     type: application
     urls:
-    - https://muratugureminoglu.github.io/helm/antmedia-helm-2.4.2.tgz
-    version: 2.4.2
+    - https://ant-media.github.io/Scripts/helm/antmedia-helm-2.5.1.tgz
+    version: 2.5.1
   nginx-ingress:
   - apiVersion: v1
     appVersion: 2.2.0
-    created: "2022-05-19T14:02:48.769633708+03:00"
+    created: "2022-12-09T20:31:48.48774465+03:00"
     description: NGINX Ingress Controller
     digest: df5c66786db655c94d4d16904e31962893c9f7d09c44f6d602ba0399025f6497
     home: https://github.com/nginxinc/kubernetes-ingress
@@ -34,6 +34,6 @@ entries:
     sources:
     - https://github.com/nginxinc/kubernetes-ingress/tree/v2.2.0/deployments/helm-chart
     urls:
-    - https://muratugureminoglu.github.io/helm/charts/nginx-ingress-0.13.0.tgz
+    - https://ant-media.github.io/Scripts/helm/charts/nginx-ingress-0.13.0.tgz
     version: 0.13.0
-generated: "2022-05-19T14:02:48.740863618+03:00"
+generated: "2022-12-09T20:31:48.481198181+03:00"
