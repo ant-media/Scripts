@@ -46,6 +46,7 @@ usage() {
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
   echo "  -u -> Update Ant Media Server new installation script. Default value is false"
+  echo "  -l -> Activate the license."
 
   echo ""
   echo "Sample usage:"
@@ -53,6 +54,7 @@ usage() {
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
   echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
+  echo "$0 -i name-of-the-ant-media-server-zip-file -l \"XXXX-XXXX-XXXX\" "
   echo "$0 -u"
   echo ""
 }
@@ -183,7 +185,7 @@ check() {
 
 # Start
 
-while getopts 'i:s:r:d:hu' option
+while getopts 'i:s:r:d:l:hu' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
@@ -191,6 +193,7 @@ do
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
     u) UPDATE="true";;
+    l) LICENSE_KEY=${OPTARG};;
     h) usage
        exit 1;;
    esac
@@ -384,6 +387,11 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   wait $!
   $SUDO service antmedia start
   check
+fi
+
+# set the license key
+if [ ! -z "${LICENSE_KEY}" ]; then
+  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' $AMS_BASE/conf/red5.properties
 fi
 
 if [ $? -eq 0 ]; then
