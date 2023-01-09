@@ -206,6 +206,19 @@ if [ "$UPDATE" == "true" ]; then
   update_script
 fi
 
+if [ ! -z "${LICENSE_KEY}" ]; then
+  check_license=`curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\""`
+  if [ $check_license == 401 ]; then
+    echo "Invalid license key."
+    exit 1
+  else
+    echo "The license key is valid. The latest version of Ant Media Server is downloading."
+    curl -s -o ams_latest.zip -L $check_license
+    ANT_MEDIA_SERVER_ZIP_FILE="ams_latest.zip"
+  fi
+fi
+
+
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used.
   echo "Using old syntax to match the parameters. It's deprecated. Learn the new way by typing $0 -h"
@@ -417,3 +430,4 @@ if [ $? -eq 0 ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
+
