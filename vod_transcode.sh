@@ -31,7 +31,7 @@ cd /usr/local/antmedia/webapps/$AMS_APP_NAME/streams/
 
 
 if [ $HLS == "1" ]; then
-	$(command -v ffmpeg) -i $file -crf 27 -preset veryfast -codec copy -hls_segment_filename ${file_name}_%v/${file_name}%03d.ts -use_localtime_mkdir 1 ${file_name}.m3u8
+	$(command -v ffmpeg) -i $file -codec copy -hls_segment_filename ${file_name}_%v/${file_name}%03d.ts -use_localtime_mkdir 1 ${file_name}.m3u8
 else
 	$(command -v ffmpeg) -i $file -crf 27 -preset veryfast -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -map 0:v:0 -map 0:a:0 -s:v:0 ${a[0]} -c:v:0 libx264 -b:v:0 ${a[1]} -s:v:1 ${b[0]} -c:v:1 libx264 -b:v:1 ${b[1]} -s:v:2 ${c[0]} -c:v:2 libx264 -b:v:2 ${c[1]} -c:a aac -f hls -hls_playlist_type vod -master_pl_name ${file_name}.m3u8 -hls_segment_filename ${file_name}_%v/${file_name}%03d.ts -use_localtime_mkdir 1 -var_stream_map "v:0,a:0,name:720p v:1,a:1,name:480p v:2,a:2,name:240p" ${file_name}_%v.m3u
 fi
