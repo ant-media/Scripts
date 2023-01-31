@@ -99,9 +99,10 @@ install () {
     
     echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-7.x.list
     check
-    wget -qO- https://packages.grafana.com/gpg.key | sudo apt-key add -
+    sudo wget -q -O /usr/share/keyrings/grafana.key https://apt.grafana.com/gpg.key
+
     check
-    sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
+    echo "deb [signed-by=/usr/share/keyrings/grafana.key] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
     check
 
     sudo apt-get update -qq 2> /dev/null 
