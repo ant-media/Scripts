@@ -12,9 +12,6 @@
 # Just convert to HLS 
 HLS="1"
 
-# Don't forget to change the Ant Media Server App Name
-AMS_APP_NAME="WebRTCAppEE"
-
 file=$1
 file_name=$(basename $file .mp4)
 
@@ -26,9 +23,7 @@ b=("640x480" "1500k")
 # 240p
 c=("320x240" "800k")
 
-
-cd /usr/local/antmedia/webapps/$AMS_APP_NAME/streams/
-
+cd ${file%/*}/
 
 if [ $HLS == "1" ]; then
 	$(command -v ffmpeg) -i $file -codec copy -hls_segment_filename ${file_name}_%v/${file_name}%03d.ts -use_localtime_mkdir 1 ${file_name}.m3u8
