@@ -161,7 +161,7 @@ distro () {
         exit 1
       fi
 
-      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 8* ]]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]]; then
          echo $msg
          exit 1
             fi
@@ -224,19 +224,23 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
+VERSION=`unzip -p $ANT_MEDIA_SERVER_ZIP_FILE ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
+REQUIRED_VERSION="2.6"
+
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
-  if [ "aarch64" == $ARCH ]; then
-    $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
-    check
-  else
-    $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
-    check
+  $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+      $SUDO apt-get install libcrystalhd-dev -y
+      check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
-  $SUDO yum -y install java-11-openjdk unzip zip libva libvdpau libcrystalhd
-  check
+  $SUDO yum -y install java-11-openjdk unzip zip libva libvdpau
+  if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+    $SUDO yum -y install libcrystalhd
+    check
+  fi
   
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
     find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
