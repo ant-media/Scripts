@@ -20,8 +20,6 @@ SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 ARCH=`uname -m`
-#check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
-#VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
 
 usage() {
   echo ""
