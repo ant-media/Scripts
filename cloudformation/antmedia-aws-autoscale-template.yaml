@@ -853,23 +853,15 @@ Resources:
         - IpProtocol: tcp
           FromPort: '5080'
           ToPort: '5080'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '5443'
-          ToPort: '5443'
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref VpcCidrBlock
         - IpProtocol: tcp
           FromPort: '1935'
           ToPort: '1935'
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: '0'
-          ToPort: '65535'
-          CidrIp: !Ref VpcCidrBlock
-        - IpProtocol: udp
           FromPort: '5000'
-          ToPort: '65000'
-          CidrIp: 0.0.0.0/0
+          ToPort: '5000'
+          CidrIp: !Ref VpcCidrBlock
       VpcId: !Ref AntMediaVPC
 
   OriginCPUPolicy:
@@ -905,7 +897,7 @@ Resources:
           - IpProtocol: tcp
             FromPort: '22'
             ToPort: '22'
-            CidrIp: 0.0.0.0/0
+            CidrIp: !Ref SSHLocation
   DBInstance:
       Type: 'AWS::EC2::Instance'
       DependsOn:
