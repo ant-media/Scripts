@@ -224,7 +224,7 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-VERSION=`unzip -p $ANT_MEDIA_SERVER_ZIP_FILE ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
+VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
 REQUIRED_VERSION="2.6"
 
 if [ "$ID" == "ubuntu" ]; then
