@@ -981,7 +981,7 @@ Resources:
   MonitorSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref VpcId
+      VpcId: !Ref AntMediaVPC
       GroupDescription: Monitor SecurityGroup
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -1005,9 +1005,9 @@ Resources:
       Type: 'AWS::EC2::Instance'
       Properties:
         KeyName: !Ref KeyName
-        ImageId: !Ref UbuntuAmi20
+        ImageId: !Ref UbuntuAmi
         InstanceType: !Ref MonitorInstanceType
-        SubnetId: !Select [ 0, !Ref Subnets ]
+        SubnetId: !Ref OriginZone
         SecurityGroupIds:
           - !GetAtt MonitorSecurityGroup.GroupId
         Tags:
