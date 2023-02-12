@@ -273,7 +273,7 @@ elif [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
     $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y
     $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
-  elif [ "$ID" == "centos" ]; then
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ]; then
     $SUDO yum -y install java-1.8.0-openjdk
     if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
      ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
