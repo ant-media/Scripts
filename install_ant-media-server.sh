@@ -17,7 +17,6 @@ INSTALL_SERVICE=true
 ANT_MEDIA_SERVER_ZIP_FILE=
 OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
-DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
 ARCH=`uname -m`
@@ -150,10 +149,10 @@ distro () {
                 exit 1
             fi
 
-      read -p "Enter JVM Path (default: $DEFAULT_JAVA): " CUSTOM_JVM
+      read -p "Enter JVM Path (default: $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev): " CUSTOM_JVM
       if [ -z "$CUSTOM_JVM" ]; then
         $SUDO apt-get update && $SUDO apt-get install coreutils
-        CUSTOM_JVM=$DEFAULT_JAVA
+        CUSTOM_JVM=$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
