@@ -13,19 +13,19 @@ jobs:
       - run: sudo service antmedia status 
       - run: cat /usr/local/antmedia/log/antmedia-error.log
       - run: |
-          max_wait_time=20
-          counter=0
-          while [ $counter -lt $max_wait_time ]; do
+         max_wait_time=20
+         counter=0
+         while [ $counter -lt $max_wait_time ]; do
             if [ -f "/usr/local/antmedia/log/ant-media-server.log" ]; then
               break
             fi
             sleep 1
             ((counter++))
-          done
+         done
           
-          if [ $counter -eq $max_wait_time ]; then
+         if [ $counter -eq $max_wait_time ]; then
             echo "The log file did not appear within $max_wait_time seconds."
             exit 1
-          else
+         else
             echo "The log file appeared after $counter seconds."
-          fi
+         fi
