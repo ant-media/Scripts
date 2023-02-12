@@ -260,8 +260,6 @@ fi
 unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
-VERSION=`unzip -p ant-media-server/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
-
 if [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
