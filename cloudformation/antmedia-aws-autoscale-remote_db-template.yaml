@@ -361,8 +361,6 @@ Resources:
 
   NotificationTopic:
     Type: 'AWS::SNS::Topic'
-    DependsOn:
-      - DBInstance
     Properties:
       Subscription:
         - Endpoint: !Ref Email
@@ -656,8 +654,6 @@ Resources:
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
-    DependsOn:
-      - DBInstance
     Properties:
       Subnets:
       - !Ref OriginZone
@@ -706,8 +702,6 @@ Resources:
       Protocol: HTTP
   ALBTargetGroupOrigin:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    DependsOn:
-      - DBInstance
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
@@ -727,8 +721,6 @@ Resources:
           Value: least_outstanding_requests
   ALBTargetGroupEdge:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    DependsOn:
-      - DBInstance
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 5
