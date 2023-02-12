@@ -1,0 +1,14 @@
+{{ if .Values.edge }}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ant-media-server-edge
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ant-media-server-edge
+  minReplicas: {{ .Values.autoscalingEdge.minReplicas }}
+  maxReplicas: {{ .Values.autoscalingEdge.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.autoscalingEdge.targetCPUUtilizationPercentage }}
+{{end}}

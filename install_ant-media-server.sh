@@ -19,7 +19,21 @@ OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
+TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
 ARCH=`uname -m`
+
+update_script () {
+  SCRIPT_NAME="$0"
+  remote_file="$(curl -sL https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh | md5sum | cut -d ' ' -f 1)"
+  local_file="$(md5sum $0 | cut -d '' -f 1 )"
+  if [ "$remote_file" != "$local_file" ]; then
+    wget -O $0 -q https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+    chmod +x $0
+    echo "Updated the installation script. Please rerun the script."
+    exit 1
+  fi
+}
+
 
 usage() {
   echo ""
@@ -31,15 +45,26 @@ usage() {
   echo "  -r -> Restore settings flag. It can accept true or false. Optional. Default value is false"
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
+  echo "  -u -> Update Ant Media Server new installation script. Default value is false"
+
   echo ""
   echo "Sample usage:"
   echo "$0 -i name-of-the-ant-media-server-zip-file"
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
   echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
+  echo "$0 -u"
   echo ""
 }
 
+disk_usage(){
+  if [ $SAVE_SETTINGS == "true" ]; then
+    if [ $(($(du -sm $AMS_BASE | cut -f 1)*2)) -ge $TOTAL_DISK_SPACE ]; then
+      echo "Disk space is not enough."
+      exit 1
+    fi
+  fi
+}
 # Restore settings
 restore_settings() {
   webapps=("LiveApp" "WebRTC*" "root")
@@ -110,13 +135,12 @@ restore_settings() {
     echo "Settings are not restored. Please send the log of this console to support@antmedia.io"
   fi
 }
-
 #Get the linux distribution
 distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 20.10, Ubuntu 21.04, Ubuntu 21.10, Centos 8 and Rocky Linux 8.5"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Centos 8, Rocky Linux 8 and AlmaLinux 8"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -131,13 +155,13 @@ distro () {
         $SUDO apt-get update && $SUDO apt-get install coreutils
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
       fi
 
-      if [ "$VERSION_ID" != "18.04" ] && [ "$VERSION_ID" != "20.04" ] && [ "$VERSION_ID" != "20.10" ] && [ "$VERSION_ID" != "21.04" ] && [ "$VERSION_ID" != "21.10" ] && [ "$VERSION_ID" != "8" ] && [ "$VERSION_ID" != "8.5" ]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]]; then
          echo $msg
          exit 1
             fi
@@ -159,21 +183,25 @@ check() {
 
 # Start
 
-while getopts 'i:s:r:d:h' option
+while getopts 'i:s:r:d:hu' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
     i) ANT_MEDIA_SERVER_ZIP_FILE=${OPTARG};;
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
+    u) UPDATE="true";;
     h) usage
        exit 1;;
    esac
 done
 
-
+disk_usage
 distro
 
+if [ "$UPDATE" == "true" ]; then
+  update_script
+fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used.
@@ -196,17 +224,23 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-if [ "$ID" == "ubuntu" ]; then  
-  if [ "aarch64" == $ARCH ]; then
-    $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
-    check
-  else
-    $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev libcrystalhd-dev -y
+VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+REQUIRED_VERSION="2.6"
+
+if [ "$ID" == "ubuntu" ]; then
+  $SUDO apt-get update -y
+  $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+      $SUDO apt-get install libcrystalhd-dev -y
+      check
+  fi
+elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
+  $SUDO yum -y install epel-release
+  $SUDO yum -y install unzip zip libva libvdpau
+  if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+    $SUDO yum -y install libcrystalhd
     check
   fi
-elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ]; then
-  $SUDO yum -y install java-11-openjdk unzip libva libvdpau libcrystalhd
-  check
   
   if [ ! -L /usr/lib/jvm/java-11-openjdk-amd64 ]; then
     find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i ln -s {} /usr/lib/jvm/java-11-openjdk-amd64
@@ -319,7 +353,7 @@ cat << EOF > /etc/logrotate.d/antmedia
     daily
     create 644 antmedia antmedia
     rotate 7
-    maxsize 500M
+    maxsize 50M
     compress
     delaycompress
     copytruncate

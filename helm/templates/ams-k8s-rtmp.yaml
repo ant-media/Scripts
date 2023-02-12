@@ -11,4 +11,4 @@ spec:
     targetPort: 1935
     protocol: TCP
   selector:
-    app: ant-media-origin
+    app: ant-media

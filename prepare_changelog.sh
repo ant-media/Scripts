@@ -4,7 +4,7 @@
 # Prepare change log clones the following repositories and creates change log since latest tag
 # "Ant-Media-Server"
 # "Ant-Media-Enterprise"
-# "ManagementConsole_AngularApp"
+# "Ant-Media-Management-Console"
 # "StreamApp"
 # "Ant-Media-Server-Parent"
 
@@ -82,6 +82,6 @@ get_change_log https://github.com/ant-media/StreamApp.git StreamApp https://gith
 export GH_REPO=ant-media/ant-media-server-parent
 get_change_log https://github.com/ant-media/ant-media-server-parent.git Ant-Media-Server-Parent https://github.com/ant-media/ant-media-server-parent
 
-# "ManagementConsole_AngularApp"
-export GH_REPO=ant-media/ManagementConsole_AngularApp
-get_change_log https://github.com/ant-media/ManagementConsole_AngularApp.git ManagementConsole_AngularApp https://github.com/ant-media/ManagementConsole_AngularApp
+# "Ant-Media-Management-Console"
+export GH_REPO=ant-media/Ant-Media-Management-Console
+get_change_log https://github.com/ant-media/Ant-Media-Management-Console.git Ant-Media-Management-Console https://github.com/ant-media/Ant-Media-Management-Console

@@ -1,7 +1,8 @@
+{{ if .Values.edge }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ant-media-server
+  name: ant-media-server-edge
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/affinity: "cookie"
@@ -12,18 +13,14 @@ metadata:
     nginx.ingress.kubernetes.io/websocket-services : "ant-media-server"
 spec:
   rules:
-  - host: test.antmedia.cloud
+  - host: {{ .Values.edge }}
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: ant-media-server
+            name: ant-media-server-edge
             port:
               number: 5080
-
-  tls:
-  - secretName: antmedia-cert
-    hosts:
-      - test.antmedia.cloud
+{{end}}

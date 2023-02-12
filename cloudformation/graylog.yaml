@@ -1,7 +1,12 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  STUN/TURN Server Installation
+  Ant Media Server AutoScaling CloudFormation Templates.
+  If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
+  VpcId:
+    Type: 'AWS::EC2::VPC::Id'
+    Description: 'VpcId of your existing Virtual Private Cloud (VPC). The VpcId must be the same as the subnets you choose'
+    ConstraintDescription: 'must be the VPC Id of an existing Virtual Private Cloud. The VpcId must be the same as the subnets you choose.'
   Subnets:
     Type: 'List<AWS::EC2::Subnet::Id>'
     Description: 'You must choose at least 2 subnets from the same VPC network.'
@@ -9,29 +14,14 @@ Parameters:
       must be a list of at least two existing subnets associated with at least
       two different availability zones. They should be residing in the selected
       Virtual Private Cloud.
-  VpcId:
-    Type: 'AWS::EC2::VPC::Id'
-    Description: 'VpcId of your existing Virtual Private Cloud (VPC). The VpcId must be the same as the subnets you choose'
-    ConstraintDescription: 'must be the VPC Id of an existing Virtual Private Cloud. The VpcId must be the same as the subnets you choose.'
-  TurnServerInstanceType:
-    Description: STUN/TURN Server Edge EC2 instance type
+  InstanceType:
+    Description: Ant Media MongoDB EC2 instance type
     Type: String
-    Default: t2.micro
+    Default: c5.xlarge
     AllowedValues:
-      - t1.micro
-      - t2.nano
-      - t2.micro
-      - t2.small
-      - t2.medium
       - t2.large
-      - m1.small
-      - m1.medium
-      - m1.large
-      - m1.xlarge
-      - m2.xlarge
-      - m2.2xlarge
-      - m2.4xlarge
-      - m3.medium
+      - t2.xlarge
+      - t2.2xlarge
       - m3.large
       - m3.xlarge
       - m3.2xlarge
@@ -40,8 +30,13 @@ Parameters:
       - m4.2xlarge
       - m4.4xlarge
       - m4.10xlarge
-      - c1.medium
-      - c1.xlarge
+      - m4.16xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
       - c3.large
       - c3.xlarge
       - c3.2xlarge
@@ -60,39 +55,23 @@ Parameters:
       - c5.12xlarge
       - c5.18xlarge
       - c5.24xlarge
-      - g2.2xlarge
-      - g2.8xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
       - r3.large
       - r3.xlarge
       - r3.2xlarge
       - r3.4xlarge
       - r3.8xlarge
-      - i2.xlarge
-      - i2.2xlarge
-      - i2.4xlarge
-      - i2.8xlarge
-      - d2.xlarge
-      - d2.2xlarge
-      - d2.4xlarge
-      - d2.8xlarge
-      - hi1.4xlarge
-      - hs1.8xlarge
-      - cr1.8xlarge
-      - cc2.8xlarge
-      - cg1.4xlarge
-    ConstraintDescription: must be a valid EC2 instance type.
-  STUNServerAddress:
-    Description: 'STUN/TURN Server Domain Name'
-    Type: String
-    Default: ''
-  UserName:
-    Description: 'STUN/TURN Server Username'
-    Type: String
-    Default: ''
-  Password:
-    Description: 'STUN/TURN Server Password'
-    Type: String
-    Default: ''
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. If there is no value here, you must create an ssh key (EC2 > Key Pairs).
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -100,6 +79,10 @@ Parameters:
     MaxLength: '255'
     AllowedPattern: '[\x20-\x7E]*'
     ConstraintDescription: can contain only ASCII characters.
+  DashboardPassword:
+    Description: 'Web Panel Password'
+    Type: String
+    Default: 'antmedia'  
 
 Resources:
   DescribeImagesRole:
@@ -122,10 +105,10 @@ Resources:
               - Action: ec2:DescribeImages
                 Effect: Allow
                 Resource: "*"
-  GetLatestAMI:
+  UbuntuGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.9
+      Runtime: python3.8
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -160,71 +143,52 @@ Resources:
   UbuntuAmi:
     Type: Custom::FindAMI
     Properties:
-      ServiceToken: !Sub ${GetLatestAMI.Arn}
+      ServiceToken: !Sub ${UbuntuGetLatestAMI.Arn}
       Owner: "099720109477"
       Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
       Architecture: "x86_64"
 
-  TurnServerSecurityGroup:
+  EC2SecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      GroupDescription: Enable SSH access and HTTP access on the configured port
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '3478'
-          ToPort: '3478'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: udp
-          FromPort: '3478'
-          ToPort: '3478'
-          CidrIp: 0.0.0.0/0
       VpcId: !Ref VpcId
-  TurnServerInstance:
-      Type: 'AWS::EC2::Instance'
-      Properties:
-        KeyName: !Ref KeyName
-        ImageId: !Ref UbuntuAmi
-        InstanceType: !Ref TurnServerInstanceType
-        SubnetId: !Select [ 0, !Ref Subnets ]
-        SecurityGroupIds:
-          - !GetAtt "TurnServerSecurityGroup.GroupId"
-        Tags:
-        - Key: Name
-          Value: TurnServer
-        UserData:
-         Fn::Base64:
-          !Sub |
-            #!/bin/bash -xe
-            apt-get update && apt-get install coturn -y
-            sed -i 's/#TURNSERVER.*/TURNSERVER_ENABLED=1/g' /etc/default/coturn
-            cat << EOF > /etc/turnserver.conf
-            listening-port=3478
-            realm=${STUNServerAddress}
-            relay-ip=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-            external-ip=$(curl -s curl http://checkip.amazonaws.com)/$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-            user=${UserName}:${Password}
-            lt-cred-mech
-            fingerprint
-            EOF
-            systemctl enable coturn && systemctl restart coturn
-  ElasticIP:
-    Type: AWS::EC2::EIP
+      GroupDescription: Graylog SecurityGroup
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          Description: Allow 22. Port for SSH 
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 9000
+          ToPort: 9000
+          Description: Allow 9000. Port for Graylog Web Interface
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 5144
+          ToPort: 5144
+          Description: Allow 5144. Port for Graylog
+
+  Instance:
+    Type: 'AWS::EC2::Instance'
+    DependsOn:
+      - UbuntuAmi
+      - DescribeImagesRole
     Properties:
-      Domain: "vpc"
-  ElasticIPAssignment:
-    Type: AWS::EC2::EIPAssociation
-    Properties:
-      EIP: !Ref ElasticIP
-      InstanceId: !Ref TurnServerInstance
-Outputs:
-  TurnServer:
-    Description: "Do not forget to add an A record for your domain address."
-    Value: !Join
-      - ''
-      - - !GetAtt
-          - TurnServerInstance
-          - PublicIp
+      KeyName: !Ref KeyName
+      ImageId: !Ref UbuntuAmi
+      InstanceType: !Ref InstanceType
+      SubnetId: !Select [ 0, !Ref Subnets ]
+      SecurityGroupIds:
+        - !GetAtt "EC2SecurityGroup.GroupId"
+      Tags:
+      - Key: Name
+        Value: Graylog
+      UserData:
+       Fn::Base64:
+        !Sub |
+          #!/bin/bash -xe       
+          wget -O /tmp/install_graylog.sh https://raw.githubusercontent.com/ant-media/Scripts/master/install_graylog.sh
+          sed -i "s/antmedia_password/${DashboardPassword}/g" /tmp/install_graylog.sh
+          sudo bash /tmp/install_graylog.sh

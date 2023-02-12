@@ -133,7 +133,7 @@ Resources:
   GetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.6
+      Runtime: python3.9
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -177,7 +177,7 @@ Resources:
     Properties:
       ServiceToken: !Sub ${GetLatestAMI.Arn}
       Owner: "099720109477"
-      Name: "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
+      Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
       Architecture: "x86_64"
 
   WavelengthVPC:

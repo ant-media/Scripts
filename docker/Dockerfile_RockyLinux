@@ -1,15 +1,10 @@
-# This docker file can be used in kubernetes. 
-# It accepts all cluster related parameters at run time. 
-# It means it's very easy to add new containers to the cluster 
-
-FROM ubuntu:20.04
-
+FROM rockylinux/rockylinux:8.6
 ARG AntMediaServer
 
 ARG BranchName=master
 
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get install -y curl wget iproute2 cron logrotate
+RUN yum install -y curl wget iproute logrotate which findutils which crontabs unzip
 
 ADD ./${AntMediaServer} /home
 

@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ant-media-server
+  name: ant-media-server-origin
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/affinity: "cookie"
@@ -19,11 +19,11 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: ant-media-server
+            name: ant-media-server-origin
             port:
               number: 5080
 
   tls:
-  - secretName: antmedia-cert
+  - secretName: antmedia-cert-origin
     hosts:
       - test.antmedia.cloud
