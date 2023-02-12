@@ -290,6 +290,7 @@ else
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ]; then
     $SUDO yum -y install java-11-openjdk-headless
+    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
