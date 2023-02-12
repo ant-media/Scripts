@@ -346,7 +346,7 @@ then
 fi
 
 # create a logrotate config file
-cat << EOF | $SUDO /etc/logrotate.d/antmedia
+cat << EOF | $SUDO tee /etc/logrotate.d/antmedia
 /var/log/antmedia/antmedia-error.log {
     daily
     create 644 antmedia antmedia
