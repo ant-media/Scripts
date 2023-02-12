@@ -140,7 +140,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Centos 8, Rocky Linux 8 and AlmaLinux 8"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Rocky Linux 8 and AlmaLinux 8"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -286,7 +286,7 @@ elif [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
 else
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
-    $SUDO apt-get install openjdk-11-jre -y
+    $SUDO apt-get install openjdk-11-jre-headless -y
     check
   fi
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc

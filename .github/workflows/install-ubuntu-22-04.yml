@@ -1,0 +1,10 @@
+name: GitHub Actions Demo
+run-name: Install Ubuntu 22.04
+on: [push]
+jobs:
+  Install-Ubuntu-22-04:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
