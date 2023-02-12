@@ -362,6 +362,7 @@ cat << EOF > /etc/logrotate.d/antmedia
     endscript
 }
 EOF
+check
 
 $SUDO ln -sf $LOG_DIRECTORY $AMS_BASE/log
 check
