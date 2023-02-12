@@ -140,7 +140,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Centos 8, Rocky Linux 8 and AlmaLinux 8"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Rocky Linux 8 and AlmaLinux 8"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -229,14 +229,14 @@ REQUIRED_VERSION="2.6"
 
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
-  $SUDO apt-get install openjdk-11-jdk unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
       $SUDO apt-get install libcrystalhd-dev -y
       check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
-  $SUDO yum -y install java-11-openjdk unzip zip libva libvdpau
+  $SUDO yum -y install unzip zip libva libvdpau
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     $SUDO yum -y install libcrystalhd
     check
@@ -260,30 +260,20 @@ fi
 unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
-if ! [ -d $AMS_BASE ]; then
-  $SUDO mv ant-media-server $AMS_BASE
-  check
-else
-  $SUDO mv $AMS_BASE $BACKUP_DIR
-  check
-  $SUDO mv ant-media-server $AMS_BASE
-  check
-fi
-
-#check version. We need to install java 8 for older version(2.1, 2.0 or 1.x versions)
-VERSION=`unzip -p $AMS_BASE/ant-media-server.jar META-INF/MANIFEST.MF | grep "Implementation-Version"|cut -d' ' -f2 | tr -d '\r'`
-if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]];
-then
-  if [ "$ID" == "ubuntu" ];
-  then
-    $SUDO apt-get install openjdk-8-jdk -y
+if [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-11-jdk -y
+    check
+  fi
+elif [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get install openjdk-8-jre -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y
     $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
-
-  elif [ "$ID" == "centos" ];
-  then
+  elif [ "$ID" == "centos" ]; then
     $SUDO yum -y install java-1.8.0-openjdk
     if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
      ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
@@ -294,13 +284,29 @@ then
   $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 
 else
-
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-11-jre-headless -y
+    check
+  fi
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 fi
+
+if ! [ -d $AMS_BASE ]; then
+  $SUDO mv ant-media-server $AMS_BASE
+  check
+else
+  $SUDO mv $AMS_BASE $BACKUP_DIR
+  check
+  $SUDO mv ant-media-server $AMS_BASE
+  check
+fi
+
+
 
 # use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file
 $SUDO mkdir -p $JAVA_HOME/lib/amd64
@@ -340,7 +346,7 @@ then
 fi
 
 # create a logrotate config file
-cat << EOF > /etc/logrotate.d/antmedia
+cat << EOF | $SUDO tee /etc/logrotate.d/antmedia
 /var/log/antmedia/antmedia-error.log {
     daily
     create 644 antmedia antmedia
@@ -356,6 +362,7 @@ cat << EOF > /etc/logrotate.d/antmedia
     endscript
 }
 EOF
+check
 
 $SUDO ln -sf $LOG_DIRECTORY $AMS_BASE/log
 check
