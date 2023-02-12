@@ -235,7 +235,7 @@ if [ "$ID" == "ubuntu" ]; then
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
-  $SUDO yum -y install unzip zip libva libvdpau
+  $SUDO yum -y install busybox unzip zip libva libvdpau
   VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     $SUDO yum -y install libcrystalhd
