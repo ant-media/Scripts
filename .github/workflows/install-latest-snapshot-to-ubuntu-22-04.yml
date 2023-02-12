@@ -15,6 +15,12 @@ jobs:
          echo $LATEST_SNAPSHOT
          wget -O ant-media-server-community.zip "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.antmedia&a=ant-media-server&v=${LATEST_SNAPSHOT}&c=community&e=zip";
       - run: ./install_ant-media-server.sh -i ant-media-server-community.zip
-      - run: sudo service antmedia status 
-      - run: cat /usr/local/antmedia/log/antmedia-error.log
+      - run: sudo service antmedia status
+      - run: sleep 30
       - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
+      - run: cat /usr/local/antmedia/log/antmedia-error.log

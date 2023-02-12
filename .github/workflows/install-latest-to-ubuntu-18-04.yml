@@ -13,5 +13,10 @@ jobs:
       - run: sudo service antmedia status 
       - run: sleep 30
       - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
       - run: cat /usr/local/antmedia/log/antmedia-error.log
      
