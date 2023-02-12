@@ -1,0 +1,12 @@
+name:  Install v2.5 to Ubuntu 20.04
+on: [push]
+jobs:
+  Install-Ubuntu-20-04:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: wget -O ant-media-server-community.zip "https://oss.sonatype.org/service/local/repositories/releases/content/io/antmedia/ant-media-server/2.5.2/ant-media-server-2.5.2-community.zip";
+      - run: ./install_ant-media-server.sh -i ant-media-server-community.zip
+      - run: cat /usr/local/antmedia/log/ant-media-server.log
