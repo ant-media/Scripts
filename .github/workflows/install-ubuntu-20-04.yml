@@ -1,5 +1,4 @@
 name:  Install Ubuntu 20.04
-run-name: Install Ubuntu 20.04
 on: [push]
 jobs:
   Install-Ubuntu-20-04:

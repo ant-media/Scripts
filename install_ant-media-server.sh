@@ -176,10 +176,6 @@ distro () {
 check() {
   OUT=$?
   if [ $OUT -ne 0 ]; then
-    if [ -n "$1" ]; then
-        #print out error message
-        echo $1;
-    fi
     echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
     exit $OUT
   fi
@@ -236,16 +232,13 @@ if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
       $SUDO apt-get install libcrystalhd-dev -y
-      ERROR_MESSAGE="libcrystalhd-dev is not available. You can try Ant Media Server v$REQUIRED_VERSION or later for your distro. Because libcrystalhd-dev dependency has been removed after v$REQUIRED_VERSION"
-      #Error happens when one try to install older version to 22.04
-      check $ERROR_MESSAGE
+      check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install unzip zip libva libvdpau
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     $SUDO yum -y install libcrystalhd
-    ERROR_MESSAGE="libcrystalhd is not available to install. You can try Ant Media Server v$REQUIRED_VERSION or later for your distro. Because libcrystalhd dependency has been removed after v$REQUIRED_VERSION"
     check
   fi
   
