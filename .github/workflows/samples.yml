@@ -1,0 +1,39 @@
+name: Python Selenium Script
+
+on:
+    schedule:
+    - cron: '0 */12 * * *'
+
+jobs:
+  run-selenium:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python 3
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.x
+    
+    - name: Install dependencies
+      run: |
+        pip install selenium
+        
+    - name: Install Chrome
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable
+        
+    - name: Install ChromeDriver
+      run: |
+        wget https://chromedriver.storage.googleapis.com/109.0.5414.74/chromedriver_linux64.zip
+        unzip chromedriver_linux64.zip
+        sudo mv chromedriver /usr/bin/chromedriver
+        sudo chown root:root /usr/bin/chromedriver
+        sudo chmod +x /usr/bin/chromedriver
+    
+    - name: Run Selenium script
+      run: |
+        python antmedia-samples.py
