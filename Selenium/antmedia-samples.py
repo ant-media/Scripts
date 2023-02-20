@@ -3,6 +3,25 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 import time
+import json
+import requests
+import os
+
+#Function to send notification to Slack
+def send_slack_message(webhook_url, message, icon_emoji=":x:"):
+    payload = {
+        "text": message,
+        "icon_emoji": icon_emoji
+    }
+    response = requests.post(webhook_url, data={"payload": json.dumps(payload)})
+
+    if response.status_code != 200:
+        print("Error sending Slack message: ", response.text)
+    else:
+        print("Slack message sent successfully!")
+
+webhook_url = os.environ['WEBHOOK_URL']
+icon_emoji = ":x:"
 
 options = Options()
 options.add_argument('--headless')
@@ -32,7 +51,8 @@ for i in range(2):
 
     except:
         if i==1:
-            print("An error occurred in Vitual background test case.")
+            message = "Virtual background test is failed and this is for testing-> https://antmedia.io/webrtc-samples/webrtc-virtual-background/"
+            send_slack_message(webhook_url, message, icon_emoji)
             continue
 
 #Testing WebRTC and HLS Comparison Live Demo Page
@@ -47,7 +67,8 @@ try:
     print("Live demo is successful")
 
 except:
-    print("An error occurred in live demo test case.")
+    message = "Livedemo test is failed, check -> https://antmedia.io/live-demo/"
+    send_slack_message(webhook_url, message, icon_emoji)
 
 #Testing WebRTC publlish Sample Page
 try:
@@ -63,7 +84,8 @@ try:
     print("WebRTC publish is successful")
 
 except:
-    print("An error occurred in WebRTC publish test case.")
+    message = "WebRTC publish test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-publish-webrtc-play/"
+    send_slack_message(webhook_url, message, icon_emoji)
 
 #Testing WebRTC audio publish sample page
 try:
@@ -79,7 +101,8 @@ try:
     print("WebRTC audio publish is successful")
 
 except:
-    print("An error occurred in audio publish test case.")
+    message = "WebRTC audio publish test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-audio-publish-play/"
+    send_slack_message(webhook_url, message, icon_emoji)
 
 #Testing WebRTC data channel sample page
 try:
@@ -89,16 +112,17 @@ try:
     driver.switch_to.frame(0)
     time.sleep(3)
     driver.find_element(By.XPATH,"/html/body/div/div/div[6]/button[1]").click()
-    time.sleep(3)
+    time.sleep(5)
     text = driver.find_element(By.ID,'dataTextbox') 
     text.send_keys("Hello, how are you ?")
     driver.find_element(By.XPATH,"/html/body/div/div/div[3]/div/div[2]/button").click()
-    time.sleep(15)
+    time.sleep(20)
     driver.find_element(By.XPATH,"/html/body/div/div/div[6]/button[2]").click()
     time.sleep(3)
     print("WebRTC data channel is successful")
 
 except:
-    print("An error occurred in data channel test case.")
+    message = "WebRTC data channel test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-data-channel-only/"
+    send_slack_message(webhook_url, message, icon_emoji)
 
 driver.quit()
