@@ -224,12 +224,12 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
 REQUIRED_VERSION="2.6"
 
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
       $SUDO apt-get install libcrystalhd-dev -y
       check
@@ -237,6 +237,8 @@ if [ "$ID" == "ubuntu" ]; then
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install unzip zip libva libvdpau
+  $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
+  VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     $SUDO yum -y install libcrystalhd
     check
@@ -288,7 +290,10 @@ else
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
-  fi
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ]; then
+    $SUDO yum -y install java-11-openjdk-headless
+    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
+  fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
