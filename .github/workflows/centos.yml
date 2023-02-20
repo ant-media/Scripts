@@ -5,9 +5,9 @@ jobs:
     runs-on: ubuntu-20.04
     container: centos:8
     steps:
-      - uses: ant-media/Scripts/.github/actions/deploy-centos@main
+      - uses: ant-media/Scripts/.github/actions/deploy-centos@master
 #  Centos9:
 #    runs-on: ubuntu-20.04
 #    container: centos:9
 #    steps:
-#      - uses: ant-media/Scripts/.github/actions/deploy-centos@main
+#      - uses: ant-media/Scripts/.github/actions/deploy-centos@master
