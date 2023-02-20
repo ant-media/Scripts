@@ -5,9 +5,11 @@ jobs:
     runs-on: ubuntu-20.04
     container: rockylinux:8
     steps:
-      - uses: ant-media/Scripts/.github/actions/deploy-rockylinux@master
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-rockylinux
 #  RockyLinux9:
 #    runs-on: ubuntu-20.04
 #    container: rockylinux:9
 #    steps:
-#      - uses: ant-media/Scripts/.github/actions/deploy-rockylinux@master
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/deploy-rockylinux

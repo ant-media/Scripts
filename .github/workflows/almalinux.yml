@@ -5,9 +5,11 @@ jobs:
     runs-on: ubuntu-20.04
     container: almalinux:8
     steps:
-      - uses: ant-media/Scripts/.github/actions/deploy-almalinux@master
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-almalinux
 #  Almalinux9:
 #    runs-on: ubuntu-20.04
 #    container: almalinux:9
 #    steps:
-#      - uses: ant-media/Scripts/.github/actions/deploy-almalinux@master
+#      - uses: actions/checkout@v3
+#      - uses: ./.github/actions/deploy-almalinux
