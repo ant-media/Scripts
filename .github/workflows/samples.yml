@@ -1,12 +1,15 @@
-name: Python Selenium Script
+name: Python Selenium Samples Test Script
 
-on:
-    schedule:
-    - cron: '0 */12 * * *'
+on: 
+     schedule:
+     - cron: '0 */12 * * *'
 
 jobs:
   run-selenium:
     runs-on: ubuntu-latest
+    
+    env:
+      WEBHOOK_URL: ${{ secrets.WEBHOOK }}
     
     steps:
     - name: Checkout code
@@ -20,6 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         pip install selenium
+        pip install requests
         
     - name: Install Chrome
       run: |
