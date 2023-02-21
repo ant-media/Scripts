@@ -7,9 +7,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/deploy-centos
-#  Centos9:
-#    runs-on: ubuntu-20.04
-#    container: centos:9
-#    steps:
-#      - uses: actions/checkout@v3
-#      - uses: ./.github/actions/deploy-centos
+  Centos9:
+    runs-on: ubuntu-20.04
+    container: centos:9
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-centos
