@@ -412,8 +412,8 @@ if [ -n "${LICENSE_KEY}" ]; then
   sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' "$AMS_BASE/conf/red5.properties"
 fi
 
-if [ $? -eq 0 ]; then
-  if [ $SAVE_SETTINGS == "true" ]; then
+if [ "$?" -eq "0" ]; then
+  if [ "$SAVE_SETTINGS" == "true" ]; then
     sleep 5
     restore_settings
     check
