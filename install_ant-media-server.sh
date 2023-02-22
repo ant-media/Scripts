@@ -409,7 +409,7 @@ fi
 
 # set the license key
 if [ -n "${LICENSE_KEY}" ]; then
-  sed -i "$SED_COMPATIBILITY" 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' "$AMS_BASE/conf/red5.properties"
+  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' $AMS_BASE/conf/red5.properties
 fi
 
 if [ "$?" -eq "0" ]; then
@@ -435,3 +435,4 @@ if [ "$?" -eq "0" ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
+
