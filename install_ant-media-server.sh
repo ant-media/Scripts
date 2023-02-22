@@ -218,7 +218,7 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
       exit 1
     else
       echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
-      curl --progress-bar -o ams_enterprise.zip $check_license
+      curl --progress-bar -o ams_enterprise.zip "$check_license"
       ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
     fi
   fi
@@ -409,7 +409,7 @@ fi
 
 # set the license key
 if [ -n "${LICENSE_KEY}" ]; then
-  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' $AMS_BASE/conf/red5.properties
+  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' "$AMS_BASE/conf/red5.properties"
 fi
 
 if [ $? -eq 0 ]; then
