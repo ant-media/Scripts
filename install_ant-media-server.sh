@@ -206,18 +206,23 @@ if [ "$UPDATE" == "true" ]; then
   update_script
 fi
 
-if [ ! -z "${LICENSE_KEY}" ]; then
-  check_license=`curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\""`
-  if [ $check_license == 401 ]; then
-    echo "Invalid license key."
-    exit 1
-  else
-    echo "The license key is valid. The latest version of Ant Media Server is downloading."
-    curl -s -o ams_latest.zip -L $check_license
-    ANT_MEDIA_SERVER_ZIP_FILE="ams_latest.zip"
+if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
+  if [ -z "${LICENSE_KEY}" ]; then
+    echo "Downloading the latest version of Ant Media Server Community Edition."
+    curl --progress-bar -o ams_community.zip -L $(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')   
+    ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
+  elif [ ! -z "${LICENSE_KEY}" ]; then
+    check_license=`curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\""`
+    if [ $check_license == 401 ]; then
+      echo "Invalid license key. Please check your license key."
+      exit 1
+    else
+      echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
+      curl --progress-bar -o ams_enterprise.zip $check_license
+      ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
+    fi
   fi
 fi
-
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   # it means the previous parameters are used.
