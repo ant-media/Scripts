@@ -213,7 +213,7 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
     ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
   elif [ -n "${LICENSE_KEY}" ]; then
     check_license=$(curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
-    if [ $check_license == 401 ]; then
+    if [ "$check_license" == "401" ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
     else
@@ -409,7 +409,7 @@ fi
 
 # set the license key
 if [ -n "${LICENSE_KEY}" ]; then
-  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' "$AMS_BASE/conf/red5.properties"
+  sed -i "$SED_COMPATIBILITY" 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' "$AMS_BASE/conf/red5.properties"
 fi
 
 if [ "$?" -eq "0" ]; then
@@ -435,4 +435,3 @@ if [ "$?" -eq "0" ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
-
