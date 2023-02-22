@@ -212,7 +212,7 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
     curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')"   
     ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
   elif [ -n "${LICENSE_KEY}" ]; then
-    check_license=`curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\""`
+    check_license=$(curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
     if [ $check_license == 401 ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
