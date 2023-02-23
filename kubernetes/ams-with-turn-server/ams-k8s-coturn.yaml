@@ -1,4 +1,3 @@
-{{ if not .Values.hostNetwork }}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -75,4 +74,3 @@ spec:
        app.kubernetes.io/name: coturn
        app.kubernetes.io/instance: coturn
        app.kubernetes.io/version: 0.0.1
-{{end}}
