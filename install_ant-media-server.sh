@@ -21,6 +21,8 @@ DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
 ARCH=`uname -m`
+RED='\033[0;31m'
+NC='\033[0m' 
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -172,6 +174,17 @@ distro () {
   fi
 }
 
+check_version() {
+  if [ $VERSION_ID = 22.04 ]; then
+      echo -e "${RED}You can install AMS v2.6 or higher on Ubuntu 22.04${NC}"
+      exit 1
+  fi
+  if [ $VERSION_ID = 9 ]; then
+      echo -e "${RED}You can install AMS v2.6 or higher on Centos/AlmaLinux/RockyLinux 9${NC}"
+      exit 1
+  fi
+}
+
 #Just checks if the latest ioperation is successfull
 check() {
   OUT=$?
@@ -231,6 +244,7 @@ if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
   VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+      check_version
       $SUDO apt-get install libcrystalhd-dev -y
       check
   fi
@@ -240,6 +254,7 @@ elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; 
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+    check_version
     $SUDO yum -y install libcrystalhd
     check
   fi
