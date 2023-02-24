@@ -175,11 +175,11 @@ distro () {
 }
 
 check_version() {
-  if [ $VERSION_ID = 22.04 ]; then
+  if [ "$VERSION_ID" = "22.04" ]; then
       echo -e "${RED}You can install AMS v2.6 or higher on Ubuntu 22.04${NC}"
       exit 1
   fi
-  if [ $VERSION_ID = 9 ]; then
+  if [ "$VERSION_ID" = "9" ]; then
       echo -e "${RED}You can install AMS v2.6 or higher on Centos/AlmaLinux/RockyLinux 9${NC}"
       exit 1
   fi
