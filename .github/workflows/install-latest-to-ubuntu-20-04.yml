@@ -21,3 +21,39 @@ jobs:
            exit 1;
          fi;
       - run: cat /usr/local/antmedia/log/antmedia-error.log
+  Auto-Install-Community-:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      #Get latest version
+      - run: wget https://raw.githubusercontent.com/ant-media/Scripts/4ce6a9b5fe7e1f226178d84d26e2883289e3c482/install_ant-media-server.sh && chmod 777 install_ant-media-server.sh
+      - run: wget -O ant-media-server-community.zip "https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=io.antmedia&a=ant-media-server&v=LATEST&c=community&e=zip";
+      - run: ./install_ant-media-server.sh
+      - run: sleep 30
+      - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
+      - run: cat /usr/local/antmedia/log/antmedia-error.log
+  Auto-Install-Enterprise-:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      #Get latest version
+      - run: wget https://raw.githubusercontent.com/ant-media/Scripts/4ce6a9b5fe7e1f226178d84d26e2883289e3c482/install_ant-media-server.sh && chmod 777 install_ant-media-server.sh
+      - run: wget -O ant-media-server-community.zip "https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=io.antmedia&a=ant-media-server&v=LATEST&c=community&e=zip";
+      - run: ./install_ant-media-server.sh -l"${{ secrets.ENTERPRISE_LICENSE }}"
+      - run: sleep 30
+      - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
+      - run: cat /usr/local/antmedia/log/antmedia-error.log
