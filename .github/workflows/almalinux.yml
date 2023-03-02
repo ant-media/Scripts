@@ -1,8 +1,9 @@
 name: AlmaLinux
-on:
-  push:
-    paths:
-      - 'install_ant-media-server.sh'
+on: [push]
+#on:
+#  push:
+#    paths:
+#      - 'install_ant-media-server.sh'
 jobs:
   Almalinux8:
     runs-on: ubuntu-20.04
