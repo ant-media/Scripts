@@ -1,9 +1,8 @@
 name: Centos
-on: [push]
-#on:
-#  push:
-#    paths:
-#      - 'install_ant-media-server.sh'
+on:
+  push:
+    paths:
+      - 'install_ant-media-server.sh'
 jobs:
   Centos8:
     runs-on: ubuntu-20.04
