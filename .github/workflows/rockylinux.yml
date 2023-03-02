@@ -16,4 +16,4 @@ jobs:
     container: rockylinux:9
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-rockylinux
+      - uses: ./.github/actions/deploy-rockylinux-9
