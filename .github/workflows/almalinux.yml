@@ -16,4 +16,4 @@ jobs:
     container: almalinux:9
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-almalinux
+      - uses: ./.github/actions/deploy-almalinux-9
