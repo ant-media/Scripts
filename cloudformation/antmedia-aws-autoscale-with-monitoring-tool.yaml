@@ -3,17 +3,28 @@ Description: >-
   Ant Media Server AutoScaling CloudFormation Templates.
   If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
-  VpcId:
-    Type: 'AWS::EC2::VPC::Id'
-    Description: 'VpcId of your existing Virtual Private Cloud (VPC). The VpcId must be the same as the subnets you choose'
-    ConstraintDescription: 'must be the VPC Id of an existing Virtual Private Cloud. The VpcId must be the same as the subnets you choose.'
-  Subnets:
-    Type: 'List<AWS::EC2::Subnet::Id>'
-    Description: 'You must choose at least 2 subnets from the same VPC network.'
-    ConstraintDescription: >-
-      must be a list of at least two existing subnets associated with at least
-      two different availability zones. They should be residing in the selected
-      Virtual Private Cloud.
+  VpcCidrBlock:
+    Description: 'CIDR value for Wavelength Network'
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 10.0.0.0/16
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  OriginCidrBlock:
+    Description: 'CIDR value of Origin'
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 10.0.1.0/24
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+  EdgeCidrBlock:
+    Description: 'CIDR value of Edge'
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 10.0.2.0/24
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
   MonitorInstanceType:
     Description: Ant Media Server EC2 instance type
     Type: String
@@ -230,14 +241,10 @@ Parameters:
     AllowedPattern: >-
       ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
     ConstraintDescription: must be a valid email address.
-  VpcCidrBlock:
-    Description: 'This CIDR value must be the same as VPC Network(VpcId).'
+  DashboardPassword:
+    Description: 'Web Panel Password'
     Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: 172.31.0.0/16
-    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+    Default: ''
   AntMediaOriginCapacity:
     Default: '1'
     Description: The initial number of Ant Media Origin instances
@@ -268,13 +275,12 @@ Parameters:
     Description: 'Amazon Resource Name (ARN) of the certificate to associate with the load balancer. If you do not have the SSL certificate, please check this guide: https://antmedia.io/ant-media-server-cloudformation-installation/ '
     Type: String
     Default: ''
-  RTMP:
-    Description: If you want to install RTMP Load balancer, please select True
-    Default: false
-    Type: String
-    AllowedValues:
-      - true
-      - false
+  DiskSize:
+    Default: '10'
+    Description: Disk size of instances
+    Type: Number
+    MinValue: '10'
+    MaxValue: '1000'
   ElasticIPAddress:
     Description: If you want to assign an Elastic IP Address, please select True
     Default: false
@@ -282,11 +288,7 @@ Parameters:
     AllowedValues:
       - true
       - false
-
 Conditions:
-  CreateRTMPResources: !Equals
-    - !Ref RTMP
-    - true
   CreateIP: !Equals
     - !Ref ElasticIPAddress
     - true
@@ -312,7 +314,41 @@ Resources:
               - Action: ec2:DescribeImages
                 Effect: Allow
                 Resource: "*"
-  GetLatestAMI:
+  AMSGetLatestAMI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.8
+      Handler: index.handler
+      Role: !Sub ${DescribeImagesRole.Arn}
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import traceback
+
+          def handler(event, context):
+            try:
+              response = boto3.client('ec2').describe_images(
+                  Filters=[
+                    {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductId']]},
+                    {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
+                    {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
+                    {'Name': 'root-device-type', 'Values': ['ebs']},
+                  ],
+              )
+
+              amis = sorted(response['Images'],
+                            key=lambda x: x['CreationDate'],
+                            reverse=True)
+              id = amis[0]['ImageId']
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, id)
+            except:
+              traceback.print_last()
+              cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+  UbuntuGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
       Runtime: python3.8
@@ -346,29 +382,100 @@ Resources:
             except:
               traceback.print_last()
               cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+
   AntMediaAmi:
     Type: Custom::FindAMI
     Properties:
-      ServiceToken: !Sub ${GetLatestAMI.Arn}
-      Owner: "679593333241"
+      ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
+      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
       Name: "AntMedia-AWS-Marketplace-EE-*"
       Architecture: "x86_64"
 
   UbuntuAmi:
     Type: Custom::FindAMI
     Properties:
-      ServiceToken: !Sub ${GetLatestAMI.Arn}
-      Owner: "099720109477"
-      Name: "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"
-      Architecture: "x86_64"
-
-  UbuntuAmi20:
-    Type: Custom::FindAMI
-    Properties:
-      ServiceToken: !Sub ${GetLatestAMI.Arn}
+      ServiceToken: !Sub ${UbuntuGetLatestAMI.Arn}
       Owner: "099720109477"
       Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
       Architecture: "x86_64"
+
+  AntMediaVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-VPC
+
+  OriginZone:
+    Type: AWS::EC2::Subnet
+    DependsOn: AntMediaVPC
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      CidrBlock: !Ref OriginCidrBlock
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Origin-Subnet
+
+  EdgeZone:
+    Type: AWS::EC2::Subnet
+    DependsOn: AntMediaVPC
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      CidrBlock: !Ref EdgeCidrBlock
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Edge-Subnet
+
+  DefaultGateway:
+    Type: AWS::EC2::InternetGateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref DefaultGateway
+      VpcId: !Ref AntMediaVPC
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Route-Table
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      GatewayId: !Ref DefaultGateway
+      DestinationCidrBlock: 0.0.0.0/0
+
+  SubnetRouteTableAssociationOrigin:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref OriginZone
+
+  SubnetRouteTableAssociationEdge:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref EdgeZone
+
 
   NotificationTopic:
     Type: 'AWS::SNS::Topic'
@@ -378,53 +485,61 @@ Resources:
       Subscription:
         - Endpoint: !Ref Email
           Protocol: email
-  RTMPLoadBalancer:
-    Condition: CreateRTMPResources
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
-    Properties:
-      ConnectionDrainingPolicy:
-        Enabled: true
-        Timeout: 60
-      ConnectionSettings:
-        IdleTimeout: 60
-      CrossZone: true
-      Listeners:
-          - InstancePort: 1935
-            InstanceProtocol: TCP
-            LoadBalancerPort: 1935
-            Protocol: TCP
-      Subnets: !Ref Subnets
-      SecurityGroups:
-        - !GetAtt [ RTMPSecurityGroup, GroupId ]
 
-  RTMPSecurityGroup:
-    Condition: CreateRTMPResources
-    Type: AWS::EC2::SecurityGroup
+  RTMPLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
     Properties:
-      GroupName: Ant Media Server RTMP Load Balancer Security Group
-      GroupDescription: Allows access
-      VpcId: !Ref VpcId
+      Subnets:
+      - !Ref OriginZone
+      Type: 'network'
+  RTMPListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref RTMPTargetGroup
+      LoadBalancerArn: !Ref RTMPLoadBalancer
+      Port: '1935'
+      Protocol: TCP
+  RTMPTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 3
+      Port: 1935
+      Protocol: TCP
+      UnhealthyThresholdCount: 3
+      VpcId: !Ref AntMediaVPC
+  RTMPSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: 'Ant Media Server RTMP Load Balancer Security Group'
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
-          FromPort: 1935
-          ToPort: 1935
-          Description: Allow 1935. Port for Origin Instances
+        - IpProtocol: tcp
+          FromPort: '1935'
+          ToPort: '1935'
+          CidrIp: '0.0.0.0/0'
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: '0.0.0.0/0'
+      VpcId: !Ref AntMediaVPC
 
   OriginGroup:
       Type: 'AWS::AutoScaling::AutoScalingGroup'
       DependsOn:
       - LaunchConfigOrigin
       Properties:
-        VPCZoneIdentifier: !Ref Subnets
+        VPCZoneIdentifier: 
+          - !Ref OriginZone
         LaunchConfigurationName: !Ref LaunchConfigOrigin
         MinSize: !Ref AntMediaOriginCapacity
         MaxSize: !Ref AntMediaOriginCapacityMax
         DesiredCapacity: !Ref AntMediaOriginCapacity
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
-        LoadBalancerNames:
-           - !If [CreateRTMPResources, !Ref RTMPLoadBalancer, !Ref "AWS::NoValue"]
+          - !Ref RTMPTargetGroup
         Tags:
         - Key: Name
           Value: Antmedia-Origin
@@ -449,7 +564,7 @@ Resources:
   LaunchConfigOrigin:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     DependsOn:
-      - ApplicationLoadBalancer 
+      - ApplicationLoadBalancer
     Metadata:
       Comment: Install a simple application
       'AWS::CloudFormation::Init':
@@ -481,12 +596,12 @@ Resources:
               content: !Sub |
                 [Unit]
                 Description=cfn-hup daemon
-
+                
                 [Service]
                 Type=simple
                 ExecStart=/opt/aws/bin/cfn-hup
                 Restart=always
-
+                
                 [Install]
                 WantedBy=multi-user.target
               mode: "000400"
@@ -499,11 +614,22 @@ Resources:
       SecurityGroups:
         - !Ref InstanceSecurityGroup
       InstanceType: !Ref OriginInstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref DiskSize
+            VolumeType: gp2
+            DeleteOnTermination: true
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          touch /usr/local/antmedia/conf/initialized
+          wget https://raw.githubusercontent.com/ant-media/Scripts/master/init.sh -O /usr/local/antmedia/conf/init.sh
+          sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
           sudo sed -i "s/server.kafka_brokers=.*/server.kafka_brokers=${MonitorInstance.PrivateIp}:9092/g" /usr/local/antmedia/conf/red5.properties
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+          rm -rf /usr/local/antmedia/conf/initialized
+          bash /usr/local/antmedia/conf/init.sh cf
           apt-get update -y
           apt-get install -y python3-pip
           apt-get install -y python3-setuptools
@@ -518,7 +644,8 @@ Resources:
     DependsOn:
       - LaunchConfigEdge
     Properties:
-      VPCZoneIdentifier: !Ref Subnets
+      VPCZoneIdentifier: 
+        - !Ref EdgeZone
       LaunchConfigurationName: !Ref LaunchConfigEdge
       MinSize: !Ref AntMediaEdgeCapacity
       MaxSize: !Ref AntMediaEdgeCapacityMax
@@ -581,12 +708,12 @@ Resources:
               content: !Sub |
                 [Unit]
                 Description=cfn-hup daemon
-
+                
                 [Service]
                 Type=simple
                 ExecStart=/opt/aws/bin/cfn-hup
                 Restart=always
-
+                
                 [Install]
                 WantedBy=multi-user.target
               mode: "000400"
@@ -599,12 +726,19 @@ Resources:
       SecurityGroups:
         - !Ref InstanceSecurityGroup
       InstanceType: !Ref EdgeInstanceType
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: !Ref DiskSize
+            VolumeType: gp2
+            DeleteOnTermination: true
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          touch /usr/local/antmedia/conf/initialized
           sudo sed -i "s/server.kafka_brokers=.*/server.kafka_brokers=${MonitorInstance.PrivateIp}:9092/g" /usr/local/antmedia/conf/red5.properties
           bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-          apt-get update
+          apt-get update 
           apt-get install -y python3-pip
           apt-get install -y python3-setuptools
           mkdir -p /opt/aws/bin
@@ -617,13 +751,13 @@ Resources:
       Type: AWS::EC2::SecurityGroup
       Properties:
         GroupDescription: Allows access
-        VpcId: !Ref VpcId
+        VpcId: !Ref AntMediaVPC
         SecurityGroupIngress:
           - CidrIp: 0.0.0.0/0
             IpProtocol: tcp
             FromPort: 80
             ToPort: 80
-            Description: Allow 80. Port for Origin Instances
+            Description: Allow 80. Port for Origin Instances 
           - CidrIp: 0.0.0.0/0
             IpProtocol: tcp
             FromPort: 443
@@ -645,7 +779,9 @@ Resources:
     DependsOn:
       - DBInstance
     Properties:
-      Subnets: !Ref Subnets
+      Subnets:
+      - !Ref OriginZone
+      - !Ref EdgeZone
       SecurityGroups:
         - !GetAtt [ ELBSecurityGroup, GroupId ]
   ALBListener443:
@@ -699,7 +835,7 @@ Resources:
       Port: 5080
       Protocol: HTTP
       UnhealthyThresholdCount: 5
-      VpcId: !Ref VpcId
+      VpcId: !Ref AntMediaVPC
       TargetGroupAttributes:
         - Key: stickiness.enabled
           Value: 'true'
@@ -707,6 +843,8 @@ Resources:
           Value: lb_cookie
         - Key: stickiness.lb_cookie.duration_seconds
           Value: '30'
+        - Key: load_balancing.algorithm.type
+          Value: least_outstanding_requests
   ALBTargetGroupEdge:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     DependsOn:
@@ -718,7 +856,7 @@ Resources:
       Port: 5080
       Protocol: HTTP
       UnhealthyThresholdCount: 5
-      VpcId: !Ref VpcId
+      VpcId: !Ref AntMediaVPC
       TargetGroupAttributes:
         - Key: stickiness.enabled
           Value: 'true'
@@ -726,6 +864,36 @@ Resources:
           Value: lb_cookie
         - Key: stickiness.lb_cookie.duration_seconds
           Value: '30'
+        - Key: load_balancing.algorithm.type
+          Value: least_outstanding_requests
+  OriginRule:
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupOrigin
+      Conditions:
+        - Field: query-string
+          QueryStringConfig:
+            Values:
+              - Key: target
+                Value: origin
+      ListenerArn: !Ref ALBListener443
+      Priority: 1
+  EdgeRule:
+    Type: 'AWS::ElasticLoadBalancingV2::ListenerRule'
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupEdge
+      Conditions:
+        - Field: query-string
+          QueryStringConfig:
+            Values:
+              - Key: target
+                Value: edge
+      ListenerArn: !Ref ALBListener443
+      Priority: 2
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -738,24 +906,20 @@ Resources:
         - IpProtocol: tcp
           FromPort: '5080'
           ToPort: '5080'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '5443'
-          ToPort: '5443'
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref VpcCidrBlock
         - IpProtocol: tcp
           FromPort: '1935'
           ToPort: '1935'
           CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '0'
-          ToPort: '65535'
-          CidrIp: !Ref VpcCidrBlock
         - IpProtocol: udp
-          FromPort: '5000'
-          ToPort: '65000'
+          FromPort: '50000'
+          ToPort: '60000'
           CidrIp: 0.0.0.0/0
-      VpcId: !Ref VpcId
+        - IpProtocol: tcp
+          FromPort: '5000'
+          ToPort: '5000'
+          CidrIp: !Ref VpcCidrBlock
+      VpcId: !Ref AntMediaVPC
 
   OriginCPUPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
@@ -780,7 +944,7 @@ Resources:
   DBEC2SecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
       Properties:
-        VpcId: !Ref VpcId
+        VpcId: !Ref AntMediaVPC
         GroupDescription: MongoDB SecurityGroup
         SecurityGroupIngress:
           - IpProtocol: tcp
@@ -790,18 +954,18 @@ Resources:
           - IpProtocol: tcp
             FromPort: '22'
             ToPort: '22'
-            CidrIp: 0.0.0.0/0
+            CidrIp: !Ref SSHLocation
   DBInstance:
       Type: 'AWS::EC2::Instance'
       DependsOn:
-        - GetLatestAMI
+        - AMSGetLatestAMI
         - UbuntuAmi
         - DescribeImagesRole
       Properties:
         KeyName: !Ref KeyName
         ImageId: !Ref UbuntuAmi
         InstanceType: !Ref MongoDBInstanceType
-        SubnetId: !Select [ 0, !Ref Subnets ]
+        SubnetId: !Ref OriginZone
         SecurityGroupIds:
           - !GetAtt "DBEC2SecurityGroup.GroupId"
         Tags:
@@ -811,17 +975,17 @@ Resources:
          Fn::Base64:
           !Sub |
             #!/bin/bash -xe
-            wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-            echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu `lsb_release -cs`/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+            wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
+            echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
             sudo apt-get update
-            sudo apt-get install -y mongodb-org python-pip python-setuptools
+            sudo apt-get install -y mongodb-org python3-pip python3-setuptools
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
   MonitorSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
-      VpcId: !Ref VpcId
+      VpcId: !Ref AntMediaVPC
       GroupDescription: Monitor SecurityGroup
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -845,9 +1009,9 @@ Resources:
       Type: 'AWS::EC2::Instance'
       Properties:
         KeyName: !Ref KeyName
-        ImageId: !Ref UbuntuAmi20
+        ImageId: !Ref UbuntuAmi
         InstanceType: !Ref MonitorInstanceType
-        SubnetId: !Select [ 0, !Ref Subnets ]
+        SubnetId: !Ref OriginZone
         SecurityGroupIds:
           - !GetAtt MonitorSecurityGroup.GroupId
         Tags:
@@ -989,53 +1153,57 @@ Resources:
       InstanceId: !Ref MonitorInstance
 
 Outputs:
+  Password:
+    Description: Dashboard Password
+    Value: !Ref DashboardPassword
+
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
-    Value: !Join
+    Value: !Join 
       - ''
       - - 'https://'
-        - !GetAtt
+        - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
-
+    
   EdgeHTTPS:
     Description: HTTPS URL of the Ant Media Edge Servers
-    Value: !Join
+    Value: !Join 
       - ''
       - - 'https://'
-        - !GetAtt
+        - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
         - ':5443'
 
   OriginHTTP:
     Description: HTTP URL of the Ant Media Origin Servers
-    Value: !Join
+    Value: !Join 
       - ''
       - - 'http://'
-        - !GetAtt
+        - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
 
   EdgeHTTP:
     Description: HTTP URL of the Ant Media Edge Servers
-    Value: !Join
+    Value: !Join 
       - ''
       - - 'http://'
-        - !GetAtt
+        - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
-        - ':5080'
+        - ':5080'       
 
   RTMP:
-    Condition: CreateRTMPResources
     Description: RTMP URL of the Ant Media Server
-    Value: !Join
+    Value: !Join 
       - ''
       - - 'rtmp://'
-        - !GetAtt
+        - !GetAtt 
           - RTMPLoadBalancer
-          - DNSName
+          - DNSName 
+          
 
   MonitorURL:
     Description: "Grafana Default Username and Password: admin/admin"
