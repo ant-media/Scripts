@@ -1,8 +1,6 @@
 name: Install Latest Snapshot to Ubuntu 22.04
-on:
-  push:
-    paths:
-      - 'install_ant-media-server.sh'
+on: [push]
+
 jobs:
   Install-Ubuntu-22-04:
     runs-on: ubuntu-22.04
