@@ -1,8 +1,6 @@
 name:  Install v2.4 to Ubuntu 20.04
-on:
-  push:
-    paths:
-      - 'install_ant-media-server.sh'
+on: [push]
+
 jobs:
   Install-Ubuntu-20-04:
     runs-on: ubuntu-20.04
