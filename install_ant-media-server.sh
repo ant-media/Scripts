@@ -21,6 +21,8 @@ DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
 TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
 ARCH=`uname -m`
+RED='\033[0;31m'
+NC='\033[0m' 
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -140,7 +142,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Rocky Linux 8 and AlmaLinux 8"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Centos 9, RockyLinux 8, RockyLinux 9, AlmaLinux 8 and AlmaLinux 9"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -161,7 +163,7 @@ distro () {
         exit 1
       fi
 
-      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]]; then
          echo $msg
          exit 1
             fi
@@ -169,6 +171,17 @@ distro () {
       echo $msg
       exit 1
     fi
+  fi
+}
+
+check_version() {
+  if [ "$VERSION_ID" = "22.04" ]; then
+      echo -e "${RED}You can install AMS v2.6 or higher on Ubuntu 22.04${NC}"
+      exit 1
+  fi
+  if [ "$VERSION_ID" = "9" ]; then
+      echo -e "${RED}You can install AMS v2.6 or higher on Centos/AlmaLinux/RockyLinux 9${NC}"
+      exit 1
   fi
 }
 
@@ -224,20 +237,24 @@ if ! [ -x "$(command -v sudo)" ]; then
   SUDO=""
 fi
 
-VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
 REQUIRED_VERSION="2.6"
 
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+      check_version
       $SUDO apt-get install libcrystalhd-dev -y
       check
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install unzip zip libva libvdpau
+  $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
+  VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
+    check_version
     $SUDO yum -y install libcrystalhd
     check
   fi
@@ -288,7 +305,10 @@ else
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
-  fi
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ]; then
+    $SUDO yum -y install java-11-openjdk-headless
+    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
+  fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
