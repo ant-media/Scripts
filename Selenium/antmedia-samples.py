@@ -24,16 +24,11 @@ def send_slack_message(webhook_url, message, icon_emoji=":x:"):
 def publish_with_ffmpeg(output, rtmp_url):
 
 # Start FFmpeg process
-  valid_outputs = ['flv', 'mpegts']  # list of valid output formats
-
-if output in valid_outputs:
     ffmpeg_command = ['ffmpeg', '-re', '-f', 'lavfi', '-i', 'smptebars', '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency', '-profile:v', 'baseline']
     ffmpeg_command += ['-c:a', 'aac', '-b:a', '128k', '-t', '30', '-f', output, rtmp_url]
 
-    ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ffmpeg_process = subprocess.run(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = ffmpeg_process.communicate()
-else:
-    print("Invalid output format specified")
 
 #Function to close the old tab and open new one
 def switch_to_first_tab(driver):
