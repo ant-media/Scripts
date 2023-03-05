@@ -1,8 +1,6 @@
 name: RockyLinux
-on:
-  push:
-    paths:
-      - 'install_ant-media-server.sh'
+on: [push]
+
 jobs:
   RockyLinux8:
     runs-on: ubuntu-20.04
