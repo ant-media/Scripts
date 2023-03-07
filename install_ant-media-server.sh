@@ -19,7 +19,7 @@ OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
 DEFAULT_JAVA="$(readlink -f $(which java) 2> /dev/null | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
-TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
+TOTAL_DISK_SPACE="$(df / --total -k -m --output=avail | tail -1 | xargs)"
 ARCH=`uname -m`
 RED='\033[0;31m'
 NC='\033[0m' 
