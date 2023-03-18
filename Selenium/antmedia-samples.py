@@ -2,6 +2,7 @@
 import os
 import time
 import json
+import shlex
 import requests
 import subprocess
 from selenium import webdriver
@@ -27,15 +28,16 @@ def send_slack_message(webhook_url, message, icon_emoji=":x:"):
 def publish_with_ffmpeg(output, url, protocol='rtmp'):
     if protocol == 'rtmp':
         # Start FFmpeg process for RTMP streaming
-        ffmpeg_command = ['ffmpeg', '-re', '-f', 'lavfi', '-i', 'smptebars', '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'zerolatency', '-profile:v', 'baseline']
-        ffmpeg_command += ['-c:a', 'aac', '-b:a', '128k', '-t', '30', '-f', output, url]
-        ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ffmpeg_command = 'ffmpeg -re -f lavfi -i smptebars -c:v libx264 -preset veryfast -tune zerolatency -profile:v baseline -c:a aac -b:a 128k -t 30 -f ' + output + ' ' + url
+        ffmpeg_args = shlex.split(ffmpeg_command)
+        ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = ffmpeg_process.communicate()
 
     elif protocol == 'srt':
         # Start FFmpeg process for SRT streaming
-        ffmpeg_command = ['ffmpeg', '-f', 'lavfi', '-re', '-i', 'smptebars=duration=60:size=1280x720:rate=30', '-f', 'lavfi', '-re', '-i', 'sine=frequency=1000:duration=60:sample_rate=44100', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-b:v', '1000k', '-g', '30', '-keyint_min', '120', '-profile:v', 'baseline', '-preset', 'veryfast', '-t', '30', '-f', output, 'udp://127.0.0.1:5000?pkt_size=1316']
-        ffmpeg_process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ffmpeg_command = 'ffmpeg -f lavfi -re -i smptebars=duration=60:size=1280x720:rate=30 -f lavfi -re -i sine=frequency=1000:duration=60:sample_rate=44100 -pix_fmt yuv420p -c:v libx264 -b:v 1000k -g 30 -keyint_min 120 -profile:v baseline -preset veryfast -t 30 -f ' + output + ' udp://127.0.0.1:5000?pkt_size=1316'
+        ffmpeg_args = shlex.split(ffmpeg_command)
+        ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         srt_command = ['srt-live-transmit', 'udp://127.0.0.1:5000', '-t', '30', url]
         srt_process = subprocess.Popen(srt_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = ffmpeg_process.communicate()
