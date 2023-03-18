@@ -5,6 +5,7 @@ import json
 import shlex
 import requests
 import subprocess
+import urllib.parse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -25,20 +26,22 @@ def send_slack_message(webhook_url, message, icon_emoji=":x:"):
         print("Slack message sent successfully!")
 
 #Function to start FFMPEG process
-def publish_with_ffmpeg(output, url, protocol='rtmp'):
+def publish_with_ffmpeg(url, protocol='rtmp'):
     if protocol == 'rtmp':
         # Start FFmpeg process for RTMP streaming
-        ffmpeg_command = 'ffmpeg -re -f lavfi -i smptebars -c:v libx264 -preset veryfast -tune zerolatency -profile:v baseline -c:a aac -b:a 128k -t 30 -f ' + output + ' ' + url
+        quoted_url = shlex.quote(url)
+        ffmpeg_command = 'ffmpeg -re -f lavfi -i smptebars -c:v libx264 -preset veryfast -tune zerolatency -profile:v baseline -c:a aac -b:a 128k -t 30 -f flv' + ' ' + quoted_url
         ffmpeg_args = shlex.split(ffmpeg_command)
         ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = ffmpeg_process.communicate()
 
     elif protocol == 'srt':
         # Start FFmpeg process for SRT streaming
-        ffmpeg_command = 'ffmpeg -f lavfi -re -i smptebars=duration=60:size=1280x720:rate=30 -f lavfi -re -i sine=frequency=1000:duration=60:sample_rate=44100 -pix_fmt yuv420p -c:v libx264 -b:v 1000k -g 30 -keyint_min 120 -profile:v baseline -preset veryfast -t 30 -f ' + output + ' udp://127.0.0.1:5000?pkt_size=1316'
+        quoted_url = urllib.parse.quote(url, safe=':/?=')
+        ffmpeg_command = 'ffmpeg -f lavfi -re -i smptebars=duration=60:size=1280x720:rate=30 -f lavfi -re -i sine=frequency=1000:duration=60:sample_rate=44100 -pix_fmt yuv420p -c:v libx264 -b:v 1000k -g 30 -keyint_min 120 -profile:v baseline -preset veryfast -t 30 -f mpegts udp://127.0.0.1:5000?pkt_size=1316'
         ffmpeg_args = shlex.split(ffmpeg_command)
         ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        srt_command = ['srt-live-transmit', 'udp://127.0.0.1:5000', '-t', '30', url]
+        srt_command = ['srt-live-transmit', 'udp://127.0.0.1:5000', '-t', '30', quoted_url]
         srt_process = subprocess.Popen(srt_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = ffmpeg_process.communicate()
         srt_stdout, srt_stderr = srt_process.communicate()
@@ -196,8 +199,7 @@ try:
    switch_window_and_frame(driver)
    rtmp_element = driver.find_element(By.XPATH,"/html/body/div/div/div[3]/div[1]/div")
    url = rtmp_element.text
-   output= 'flv'
-   publish_with_ffmpeg(output, url, protocol='rtmp')
+   publish_with_ffmpeg(url, protocol='rtmp')
    print("RTMP to WebRTC is successful")
 
 except:
@@ -212,8 +214,7 @@ try:
     switch_window_and_frame(driver)
     rtmp_element = driver.find_element(By.XPATH,"/html/body/div/div/div[3]/div[1]/div")
     url = rtmp_element.text
-    output= 'flv'
-    publish_with_ffmpeg(output, url, protocol='rtmp')
+    publish_with_ffmpeg(url, protocol='rtmp')
     print("RTMP to HLS is successful")
 
 except:
@@ -228,8 +229,7 @@ try:
     switch_window_and_frame(driver)
     srt_element = driver.find_element(By.XPATH,"/html/body/div/div/div[3]/div[1]/div")
     url = srt_element.text
-    output= 'mpegts'
-    srt_exit_code = publish_with_ffmpeg(output, url, protocol='srt')
+    srt_exit_code = publish_with_ffmpeg(url, protocol='srt')
     if srt_exit_code == 0:
         print("SRT to WebRTC is successful")
     else:
@@ -247,8 +247,7 @@ try:
     switch_window_and_frame(driver)
     srt_element = driver.find_element(By.XPATH,"/html/body/div/div/div[3]/div[1]/div")
     url = srt_element.text
-    output= 'mpegts'
-    srt_exit_code = publish_with_ffmpeg(output, url, protocol='srt')
+    srt_exit_code = publish_with_ffmpeg(url, protocol='srt')
     if srt_exit_code == 0:
         print("SRT to HLS is successful")
     else:
