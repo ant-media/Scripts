@@ -17,9 +17,9 @@ INSTALL_SERVICE=true
 ANT_MEDIA_SERVER_ZIP_FILE=
 OTHER_DISTRO=false
 SERVICE_FILE=/etc/systemd/system/antmedia.service
-DEFAULT_JAVA="$(readlink -f $(which java) | rev | cut -d "/" -f3- | rev)"
+DEFAULT_JAVA="$(readlink -f "$(which java)" 2> /dev/null | rev | cut -d "/" -f3- | rev)"
 LOG_DIRECTORY="/var/log/antmedia"
-TOTAL_DISK_SPACE=$(df / --total -k -m --output=avail | tail -1 | xargs)
+TOTAL_DISK_SPACE="$(df / --total -k -m --output=avail | tail -1 | xargs)"
 ARCH=`uname -m`
 RED='\033[0;31m'
 NC='\033[0m' 
@@ -157,7 +157,7 @@ distro () {
         $SUDO apt-get update && $SUDO apt-get install coreutils
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
@@ -248,7 +248,7 @@ if [ "$ID" == "ubuntu" ]; then
       $SUDO apt-get install libcrystalhd-dev -y
       check
   fi
-elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
+elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install unzip zip libva libvdpau
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
@@ -305,7 +305,7 @@ else
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
-  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ]; then
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-11-openjdk-headless
     ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
   fi 
