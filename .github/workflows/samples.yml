@@ -1,4 +1,4 @@
-name: Python Selenium Samples Test Script
+name: Selenium-Samples-Test-Script
 
 on: 
      schedule:
@@ -29,15 +29,26 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y ffmpeg
+    
+    - name: Install SRT
+      run: |
+        git clone https://github.com/Haivision/srt.git
+        cd srt
+        sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
+        ./configure
+        make
+        sudo make install
+        cd ..
         
     - name: Install Chrome
       run: |
-        sudo apt-get update
-        sudo apt-get install -y google-chrome-stable
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb
         
     - name: Install ChromeDriver
       run: |
-        wget https://chromedriver.storage.googleapis.com/109.0.5414.74/chromedriver_linux64.zip
+        latest_version=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        wget "https://chromedriver.storage.googleapis.com/$latest_version/chromedriver_linux64.zip"
         unzip chromedriver_linux64.zip
         sudo mv chromedriver /usr/bin/chromedriver
         sudo chown root:root /usr/bin/chromedriver
