@@ -32,7 +32,7 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         quoted_url = shlex.quote(url)
         ffmpeg_command = 'ffmpeg -re -f lavfi -i smptebars -c:v libx264 -preset veryfast -tune zerolatency -profile:v baseline -c:a aac -b:a 128k -t 30 -f flv' + ' ' + quoted_url
         ffmpeg_args = shlex.split(ffmpeg_command)
-        ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = ffmpeg_process.communicate()
 
     elif protocol == 'srt':
@@ -40,9 +40,9 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         quoted_url = urllib.parse.quote(url, safe=':/?=')
         ffmpeg_command = 'ffmpeg -f lavfi -re -i smptebars=duration=60:size=1280x720:rate=30 -f lavfi -re -i sine=frequency=1000:duration=60:sample_rate=44100 -pix_fmt yuv420p -c:v libx264 -b:v 1000k -g 30 -keyint_min 120 -profile:v baseline -preset veryfast -t 30 -f mpegts udp://127.0.0.1:5000?pkt_size=1316'
         ffmpeg_args = shlex.split(ffmpeg_command)
-        ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        ffmpeg_process = subprocess.Popen(ffmpeg_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         srt_command = ['srt-live-transmit', 'udp://127.0.0.1:5000', '-t', '30', quoted_url]
-        srt_process = subprocess.Popen(srt_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+        srt_process = subprocess.Popen(srt_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = ffmpeg_process.communicate()
         srt_stdout, srt_stderr = srt_process.communicate()
         srt_exit_code = srt_process.returncode
