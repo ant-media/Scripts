@@ -1,4 +1,3 @@
-# Used to import the webdriver from selenium
 import os
 import time
 import json
