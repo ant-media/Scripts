@@ -11,7 +11,8 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-#Function to send notification to Slack
+
+# Function to send notification to Slack
 def send_slack_message(webhook_url, message, icon_emoji=":x:"):
     payload = {
         "text": message,
@@ -24,7 +25,8 @@ def send_slack_message(webhook_url, message, icon_emoji=":x:"):
     else:
         print("Slack message sent successfully!")
 
-#Function to start FFMPEG process
+
+# Function to start FFMPEG process
 def publish_with_ffmpeg(url, protocol='rtmp'):
     if protocol == 'rtmp':
         # Start FFmpeg process for RTMP streaming
@@ -47,19 +49,21 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         srt_exit_code = srt_process.returncode
         return srt_exit_code
 
-#Function to close the previous tabs before starting the new test                          
+
+# Function to close the previous tabs before starting the new test
 def switch_to_first_tab(driver):
     if len(driver.window_handles) > 1:
         driver.close()
         driver.switch_to.window(driver.window_handles[0])
 
-#Function to remove advertisement from sample pages                          
+
+# Function to remove advertisement from sample pages
 def remove_ad(driver):
     wait = WebDriverWait(driver, 10)
     button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/button")))
-    button.click()
-       
-#Function to switch to new window and close the advertisement block        
+    button.click()  
+
+# Function to switch to new window and close the advertisement block
 def switch_window_and_frame(driver):
     driver.switch_to.window(driver.window_handles[1])
     time.sleep(2)
@@ -67,7 +71,7 @@ def switch_window_and_frame(driver):
     time.sleep(15)
     driver.switch_to.frame(0)
     time.sleep(3)
-    
+
 webhook_url = os.environ['WEBHOOK_URL']
 icon_emoji = ":x:"
 
@@ -81,7 +85,7 @@ driver.maximize_window()
 driver.get("https://antmedia.io/webrtc-samples/")
 remove_ad(driver)
 
-#Testing Virtual Background Sample Page
+# Testing Virtual Background Sample Page
 for i in range(2):
     try:
         driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-virtual-background/', '_blank');")
@@ -108,7 +112,7 @@ for i in range(2):
 
 switch_to_first_tab(driver)
 
-#Testing WebRTC and HLS Comparison Live Demo Page
+# Testing WebRTC and HLS Comparison Live Demo Page
 try:
     driver.execute_script("window.open('https://antmedia.io/live-demo/', '_blank');")
     driver.switch_to.window(driver.window_handles[1])
@@ -127,7 +131,7 @@ except:
 
 switch_to_first_tab(driver)
 
-#Testing WebRTC to WebRTC Sample Page
+# Testing WebRTC to WebRTC Sample Page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-publish-webrtc-play/', '_blank');")
     switch_window_and_frame(driver)
@@ -147,7 +151,7 @@ driver.close()
 driver.switch_to.window(driver.window_handles[1])
 switch_to_first_tab(driver)
 
-#Testing WebRTC to HLS Sample Page
+# Testing WebRTC to HLS Sample Page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-publish-hls-play/', '_blank');")
     switch_window_and_frame(driver)
@@ -167,7 +171,7 @@ driver.close()
 driver.switch_to.window(driver.window_handles[1])
 switch_to_first_tab(driver)
 
-#Testing WebRTC audio publish sample page
+# Testing WebRTC audio publish sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-audio-publish-play/', '_blank');")
     switch_window_and_frame(driver)
@@ -192,7 +196,7 @@ driver.close()
 driver.switch_to.window(driver.window_handles[1])
 switch_to_first_tab(driver)
 
-#Testing RTMP to WebRTC sample page
+# Testing RTMP to WebRTC sample page
 try:
    driver.execute_script("window.open('https://antmedia.io/webrtc-samples/rtmp-publish-webrtc-play/', '_blank');")
    switch_window_and_frame(driver)
@@ -207,7 +211,7 @@ except:
 
 switch_to_first_tab(driver)
 
-#Testing RTMP to HLS sample page
+# Testing RTMP to HLS sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/rtmp-publish-hls-play/', '_blank');")
     switch_window_and_frame(driver)
@@ -221,8 +225,8 @@ except:
     send_slack_message(webhook_url, message, icon_emoji)
 
 switch_to_first_tab(driver)
-                          
-#Testing SRT to WebRTC sample page
+
+# Testing SRT to WebRTC sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/srt-publish-webrtc-play/', '_blank');")
     switch_window_and_frame(driver)
@@ -239,8 +243,8 @@ except:
     send_slack_message(webhook_url, message, icon_emoji)
                           
 switch_to_first_tab(driver)
-                          
-#Testing SRT to HLS sample page
+                  
+# Testing SRT to HLS sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/srt-publish-hls-play/', '_blank');")
     switch_window_and_frame(driver)
@@ -251,20 +255,20 @@ try:
         print("SRT to HLS is successful")
     else:
         raise Exception("SRT to HLS test is failed")
-              
+  
 except:
     message = "SRT to HLS test is failed, check -> https://antmedia.io/webrtc-samples/srt-publish-hls-play/"
     send_slack_message(webhook_url, message, icon_emoji)
 
 switch_to_first_tab(driver)
 
-#Testing WebRTC data channel sample page
+# Testing WebRTC data channel sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-data-channel-only/', '_blank');")
     switch_window_and_frame(driver)
     driver.find_element(By.XPATH,"/html/body/div/div/div[6]/button[1]").click()
     time.sleep(5)
-    text = driver.find_element(By.ID,'dataTextbox') 
+    text = driver.find_element(By.ID,'dataTextbox')
     text.send_keys("Hello, how are you ?")
     driver.find_element(By.XPATH,"/html/body/div/div/div[3]/div/div[2]/button").click()
     time.sleep(20)
@@ -275,5 +279,5 @@ try:
 except:
     message = "WebRTC data channel test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-data-channel-only/"
     send_slack_message(webhook_url, message, icon_emoji)
-                          
+      
 driver.quit()
