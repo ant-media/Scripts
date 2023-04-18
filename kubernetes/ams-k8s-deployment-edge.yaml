@@ -32,7 +32,8 @@ spec:
               - key: app
                 operator: In
                 values:
-                - ant-media
+                - ant-media-edge
+                - ant-media-origin
             topologyKey: "kubernetes.io/hostname"
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
