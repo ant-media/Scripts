@@ -57,17 +57,9 @@ def switch_to_first_tab(driver):
         driver.switch_to.window(driver.window_handles[0])
 
 
-# Function to remove advertisement from sample pages
-def remove_ad(driver):
-    wait = WebDriverWait(driver, 10)
-    button = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[2]/div/button")))
-    button.click()
-
 # Function to switch to new window and close the advertisement block
 def switch_window_and_frame(driver):
     driver.switch_to.window(driver.window_handles[1])
-    time.sleep(2)
-    remove_ad(driver)
     time.sleep(15)
     driver.switch_to.frame(0)
     time.sleep(3)
@@ -83,15 +75,12 @@ driver = webdriver.Chrome(options=options)
 driver.maximize_window()
 
 driver.get("https://antmedia.io/webrtc-samples/")
-remove_ad(driver)
 
 # Testing Virtual Background Sample Page
 for i in range(2):
     try:
         driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-virtual-background/', '_blank');")
         driver.switch_to.window(driver.window_handles[1])
-        time.sleep(2)
-        remove_ad(driver)
         time.sleep(20)
         driver.switch_to.frame(0)
         time.sleep(3)
@@ -116,8 +105,6 @@ switch_to_first_tab(driver)
 try:
     driver.execute_script("window.open('https://antmedia.io/live-demo/', '_blank');")
     driver.switch_to.window(driver.window_handles[1])
-    time.sleep(2)
-    remove_ad(driver)
     time.sleep(15)
     driver.find_element(By.XPATH, "/html/body/div/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
     time.sleep(15)
