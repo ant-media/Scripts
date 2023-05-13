@@ -350,6 +350,7 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
       $SUDO update-java-alternatives -s java-1.11.*-openjdk-arm64
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$DEFAULT_JAVA_ARM#g" $SERVICE_FILE
     fi
+    $SUDO echo 'antmedia ALL=(ALL) NOPASSWD: /bin/bash enable_ssl.sh*' > /etc/sudoers.d/antmedia
     $SUDO systemctl daemon-reload
     $SUDO systemctl enable antmedia
     check
