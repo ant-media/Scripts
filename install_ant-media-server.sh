@@ -245,8 +245,10 @@ if [ "$ID" == "ubuntu" ]; then
   VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
       check_version
-      $SUDO apt-get install libcrystalhd-dev -y
-      check
+      if [ "x86_64" == $ARCH ]; then
+        $SUDO apt-get install libcrystalhd-dev -y
+        check
+      fi
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
   $SUDO yum -y install epel-release
