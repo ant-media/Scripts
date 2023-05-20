@@ -48,6 +48,7 @@ usage() {
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
   echo "  -u -> Update Ant Media Server new installation script. Default value is false"
+  echo "  -l -> Activate the license."
 
   echo ""
   echo "Sample usage:"
@@ -55,6 +56,7 @@ usage() {
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
   echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
+  echo "$0 -i name-of-the-ant-media-server-zip-file -l \"XXXX-XXXX-XXXX\" "
   echo "$0 -u"
   echo ""
 }
@@ -196,7 +198,7 @@ check() {
 
 # Start
 
-while getopts 'i:s:r:d:hu' option
+while getopts 'i:s:r:d:l:hu' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
@@ -204,6 +206,7 @@ do
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
     u) UPDATE="true";;
+    l) LICENSE_KEY=${OPTARG};;
     h) usage
        exit 1;;
    esac
@@ -214,6 +217,24 @@ distro
 
 if [ "$UPDATE" == "true" ]; then
   update_script
+fi
+
+if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
+  if [ -z "${LICENSE_KEY}" ]; then
+    echo "Downloading the latest version of Ant Media Server Community Edition."
+    curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')"   
+    ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
+  elif [ -n "${LICENSE_KEY}" ]; then
+    check_license=$(curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
+    if [ "$check_license" == "401" ]; then
+      echo "Invalid license key. Please check your license key."
+      exit 1
+    else
+      echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
+      curl --progress-bar -o ams_enterprise.zip "$check_license"
+      ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
+    fi
+  fi
 fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
@@ -420,8 +441,13 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   check
 fi
 
-if [ $? -eq 0 ]; then
-  if [ $SAVE_SETTINGS == "true" ]; then
+# set the license key
+if [ -n "${LICENSE_KEY}" ]; then
+  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' $AMS_BASE/conf/red5.properties
+fi
+
+if [ "$?" -eq "0" ]; then
+  if [ "$SAVE_SETTINGS" == "true" ]; then
     sleep 5
     restore_settings
     check
@@ -443,3 +469,4 @@ if [ $? -eq 0 ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
+
