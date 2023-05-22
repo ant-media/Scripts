@@ -108,7 +108,7 @@ restore_settings() {
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
   #we have removed the copying jee-container.xml from backup directory because new version(2.6.0) does not have TokenGenerator anymore
   #I also think that no need to copy jee-container.xml from backup to new version any more - mekya May 22, 23
-  cp -p $BACKUP_DIR/conf/{red5.properties,instanceId} $AMS_BASE/conf
+  cp -p "$BACKUP_DIR/conf/"{red5.properties,instanceId} "$AMS_BASE/conf"
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
