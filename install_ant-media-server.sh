@@ -23,6 +23,8 @@ TOTAL_DISK_SPACE="$(df / --total -k -m --output=avail | tail -1 | xargs)"
 ARCH=`uname -m`
 RED='\033[0;31m'
 NC='\033[0m' 
+#version that is being installed. It's get filled below
+VERSION= 
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -106,9 +108,16 @@ restore_settings() {
 
   
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
-  #we have removed the copying jee-container.xml from backup directory because new version(2.6.0) does not have TokenGenerator anymore
-  #I also think that no need to copy jee-container.xml from backup to new version any more - mekya May 22, 23
-  cp -p "$BACKUP_DIR/conf/"{red5.properties,instanceId} "$AMS_BASE/conf"
+  #jee-container holds beans. SSL restoring and cluster restorign require coping
+  cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml,instanceId} "$AMS_BASE/conf"
+  
+  #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
+  TOKEN_GENERATOR_REMOVED_VERSION=2.6
+  if [ "$(printf '%s\n' "$TOKEN_GENERATOR_REMOVED_VERSION" "$VERSION" | sort -V | head -n1)" == "$TOKEN_GENERATOR_REMOVED_VERSION" ]; then
+  	#remove token generator from jee-container.xml
+  	$SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+	$SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+  fi
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
