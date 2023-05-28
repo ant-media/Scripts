@@ -12,15 +12,17 @@ origin_server_ips=()
 edge_server_ips=()
 domain="yourdomain.com"
 email=""
+ssl_enabled=""
 
 # Function to display the script usage
 function display_usage() {
-  echo "Usage: $0 [-o origin_server_ips] [-e edge_server_ips] [-d domain_name] [-m email_address] [-c]"
+  echo "Usage: $0 [-o origin_server_ips] [-e edge_server_ips] [-d domain_name] [-m email_address] [-s] [-c]"
   echo "Options:"
   echo "  -o origin_server_ips       Set origin server IP array (e.g., -o \"10.0.1.1,10.0.1.2,10.0.1.3\")"
   echo "  -e edge_server_ips         Set edge server IP array (e.g., -e \"10.0.0.1,10.0.0.2,10.0.0.3\")"
   echo "  -d domain_name             Set domain name (e.g., -d example.com)"
   echo "  -m email_address           Set email address for Let's Encrypt notifications (optional)"
+  echo "  -s                         Enable SSL certificate installation. If domain name and email_address is defined, it becomes enabled"
   echo "  -c                         Create Nginx configuration only, without installing Nginx or SSL"
   echo ""
   echo "Usage Examples:"
@@ -28,12 +30,19 @@ function display_usage() {
   echo "1. Create Nginx configuration only:"
   echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com -c"
   echo ""
-  echo "2. Install Nginx and generate Nginx configuration:"
+  echo "2. Create Nginx configuration only with making SSL enabled in the Nginx configuration:"
+  echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com -c -s"
+  echo ""
+  echo "3. Install Nginx and generate Nginx configuration without installing SSL and without making SSL enabled in the Nginx configuration:"
   echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com"
   echo ""
-  echo "3. Install Nginx, generate Nginx configuration, and install SSL certificate:"
+  echo "4. Install Nginx, generate Nginx configuration, and install SSL certificate:"
   echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com -m user@example.com"
+  echo ""
+  echo "5. Install Nginx, generate Nginx configuration, and install SSL certificate:"
+  echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com -s -c"
 }
+
 
 # Function to update Nginx configuration
 update_nginx_config() {
@@ -76,6 +85,11 @@ update_nginx_config() {
   sudo sed -i "s/{{ORIGIN_SRT_SERVER_BLOCKS}}/$srt_origin_server_blocks/g" $nginx_config
   sudo sed -i "s/{{EDGE_SERVER_BLOCKS}}/$edge_server_blocks/g" $nginx_config
   sudo sed -i "s/{{YOUR_DOMAIN}}/$domain/g" $nginx_config
+  
+  # Check if a ssl enabled name is provided
+  if [[ -n "$ssl_enabled"  ]]; then
+    sudo sed -i 's/#ssl-disabled//g' $nginx_config
+  fi
 
   echo "Nginx configuration updated."
 }
@@ -148,6 +162,9 @@ while getopts ":o:e:d:m:c" opt; do
     m)
       email=$OPTARG
       ;;
+    s)
+      ssl_enabled=true
+      ;;
     c)
       update_nginx_config
       echo "Nginx configuration created successfully."
@@ -188,20 +205,22 @@ else
   echo "Nginx is already installed. Skipping installation."
 fi
 
-# Update Nginx configuration
-update_nginx_config
 
 # Check if a domain name is provided
 if [[ -n "$domain" && -n "$email" ]]; then
   # Install Certbot and SSL certificate
   install_certbot
   install_ssl $domain $email
+  ssl_enabled=true
 
   # Add crontab job for SSL renewal if it doesn't exist
   add_crontab_job "0 0 */80 * * certbot renew --nginx >/dev/null 2>&1"
 else
   echo "No domain name and email address specified. Skipping SSL certificate installation."
 fi
+
+# Update Nginx configuration
+update_nginx_config
 
 # Copy updated Nginx configuration to system's nginx.conf path
 sudo cp "nginx.conf" "/etc/nginx/nginx.conf"
