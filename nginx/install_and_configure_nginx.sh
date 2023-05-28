@@ -84,7 +84,7 @@ update_nginx_config() {
 
   edge_server_blocks=""
   for ip in "${edge_server_ips[@]}"; do
-    edge_server_blocks+="\n    server $ip;\n"
+    edge_server_blocks+="\n    server $ip:$HTTP_PORT;\n"
   done
 
   sudo sed -i "s/{{ORIGIN_SERVER_BLOCKS}}/$origin_server_blocks/g" $nginx_config
