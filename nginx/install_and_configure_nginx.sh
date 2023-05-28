@@ -50,7 +50,15 @@ update_nginx_config() {
   local nginx_original="nginx.conf.original"
 
   if [ ! -f $nginx_original ]; then
-    wget $NGINX_BASE_FILE_URL -O $nginx_original
+  	
+  	if wget -q --spider "$NGINX_BASE_FILE_URL"; then
+	  echo "$NGINX_BASE_FILE_URL is available. Downloading..."
+	  wget $NGINX_BASE_FILE_URL -O $nginx_original
+	else
+	  echo "$NGINX_BASE_FILE_URL Resource not found."
+	  exit 1
+	fi
+   
   else
     echo "Original nginx configuration already exists. Skipping download."
   fi
