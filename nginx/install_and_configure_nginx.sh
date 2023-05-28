@@ -10,7 +10,7 @@ NGINX_BASE_FILE_URL=https://raw.githubusercontent.com/ant-media/Scripts/master/n
 # Define default values for options
 origin_server_ips=()
 edge_server_ips=()
-domain="yourdomain.com"
+domain=""
 email=""
 ssl_enabled=""
 
@@ -156,7 +156,7 @@ if [[ $# -eq 0 ]]; then
 fi
 
 # Parse command-line options
-while getopts ":o:e:d:m:c" opt; do
+while getopts ":o:e:d:m:cs" opt; do
   case $opt in
     o)
       IFS=',' read -ra origin_server_ips <<< "$OPTARG"
