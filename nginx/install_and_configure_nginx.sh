@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 HTTP_PORT=5080
 RTMP_PORT=1935
 SRT_PORT=4200
@@ -13,6 +11,7 @@ edge_server_ips=()
 domain=""
 email=""
 ssl_enabled=""
+only_nginx_configuration=""
 
 # Function to display the script usage
 function display_usage() {
@@ -174,9 +173,7 @@ while getopts ":o:e:d:m:cs" opt; do
       ssl_enabled=true
       ;;
     c)
-      update_nginx_config
-      echo "Nginx configuration created successfully."
-      exit 0
+      only_nginx_configuration=true
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -199,11 +196,12 @@ if [[ -z "${origin_server_ips[@]}" || -z "${edge_server_ips[@]}" ]]; then
 fi
 
 
-if [[ -z "${origin_server_ips[@]}" || -z "${edge_server_ips[@]}" ]]; then
-  echo "Missing required options: -o origin_server_ips and -e edge_server_ips." >&2
-  display_usage
-  exit 1
+if [[ -n "$only_nginx_configuration" ]]; then
+  update_nginx_config
+  echo "Nginx configuration created successfully."
+  exit 0
 fi
+
 
 # Check if Nginx is installed
 if ! dpkg-query -W -f='${Status}' nginx | grep -q "installed"; then
