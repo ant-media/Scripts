@@ -38,8 +38,6 @@ function display_usage() {
   echo "4. Install Nginx, generate Nginx configuration, and install SSL certificate:"
   echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com -m user@example.com"
   echo ""
-  echo "5. Install Nginx, generate Nginx configuration, and install SSL certificate:"
-  echo "   $0 -o \"10.0.1.1,10.0.1.2,10.0.1.3\" -e \"10.0.0.1,10.0.0.2,10.0.0.3\" -d example.com -s -c"
 }
 
 
