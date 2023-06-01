@@ -40,7 +40,7 @@ do
                 if [[ $i =~ ^(([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))\.){3}([1-9]?[0-9]|1[0-9][0-9]|2([0-4][0-9]|5[0-5]))$ ]]; then
                         check=$(grep -o $i $NGINX_CONF|wc -l)
                         
-                        #Scale-In
+                        #Scale-Out
                         if [ "$check" == "0" ]; then
                                 if [ `netmask $i/24 -c` == "$ORIGIN_NETWORK" ]; then
                                         logger "Ant Media Cluster Origin IP Added: $i"
@@ -53,7 +53,7 @@ do
                                 fi                      
                         fi
 
-                        #Scale-Out
+                        #Scale-In
                         SCALE_OUT=$(diff <(cat $NGINX_CONF| grep -Eo "$REGEX" | sort | uniq) <(check_amscluster) --changed-group-format='%<' --unchanged-group-format='')
                         for out in $SCALE_OUT; do 
                                 if [ "$SCALE_OUT|wc -l" != "0" ]; then
