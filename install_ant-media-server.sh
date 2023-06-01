@@ -63,6 +63,11 @@ usage() {
   echo ""
 }
 
+SUDO="sudo"
+if ! [ -x "$(command -v sudo)" ]; then
+  SUDO=""
+fi
+
 disk_usage(){
   if [ $SAVE_SETTINGS == "true" ]; then
     if [ $(($(du -sm $AMS_BASE | cut -f 1)*2)) -ge $TOTAL_DISK_SPACE ]; then
@@ -233,7 +238,8 @@ fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   if [ "$ID" == "ubuntu" ]; then
-    $SUDO apt-get update && $SUDO apt-get install jq -y
+    $SUDO apt-get update
+    $SUDO apt-get install jq -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install jq
