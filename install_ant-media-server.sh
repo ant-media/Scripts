@@ -232,6 +232,12 @@ if [ "$UPDATE" == "true" ]; then
 fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update && apt-get install jq -y
+    check
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
+    $SUDO yum -y install jq
+  fi
   if [ -z "${LICENSE_KEY}" ]; then
     echo "Downloading the latest version of Ant Media Server Community Edition."
     curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')"   
