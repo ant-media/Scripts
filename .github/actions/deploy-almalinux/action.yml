@@ -8,8 +8,8 @@ runs:
       shell: bash
       run: |
         echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-        yum -y install wget which
-        wget -O ant-media-server-community.zip "https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=io.antmedia&a=ant-media-server&v=LATEST&c=community&e=zip";
+        yum -y install wget which findutils which crontabs unzip
+        curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
         sleep 30
