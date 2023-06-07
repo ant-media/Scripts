@@ -15,12 +15,13 @@ jobs:
         uses: actions/checkout@v3
       - name: Set up MongoDB
         run: |
-          ls -alh 
           bash ./install_mongodb.sh
   mongodb_install_ubuntu_22_04:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
       - name: Set up MongoDB
         run: |
           bash ./install_mongodb.sh
