@@ -9,7 +9,7 @@ jobs:
         uses: actions/checkout@v3
       - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
       #Get latest version
-      - run: wget -O ant-media-server-community.zip "https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=io.antmedia&a=ant-media-server&v=LATEST&c=community&e=zip";
+      - run: curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
       - run: ./install_ant-media-server.sh -i ant-media-server-community.zip
       - run: sleep 30
       - run: cat /usr/local/antmedia/log/ant-media-server.log
