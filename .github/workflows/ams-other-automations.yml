@@ -11,15 +11,15 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
       - name: Set up MongoDB
         run: |
-          sudo wget https://raw.githubusercontent.com/ant-media/Scripts/68c2a4f0c52bd07cfb3454322c8c47c75c26546e/mongodb_installation.sh
-          bash ./mongodb_installation.sh
+          bash ./install_mongodb.sh
   mongodb_install_ubuntu_22_04:
     runs-on: ubuntu-22.04
 
     steps:
       - name: Set up MongoDB
         run: |
-          sudo wget https://raw.githubusercontent.com/ant-media/Scripts/68c2a4f0c52bd07cfb3454322c8c47c75c26546e/mongodb_installation.sh
-          bash ./mongodb_installation.sh
+          bash ./install_mongodb.sh
