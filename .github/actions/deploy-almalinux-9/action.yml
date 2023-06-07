@@ -2,17 +2,15 @@ name: Deploy on AlmaLinux 9
 runs:
   using: composite
   steps:
-    - name: Check out repository code
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Install Ant Media Server
       shell: bash
       run: |
         yum -y install wget which findutils which crontabs unzip
-        wget -O maven-metadata.xml https://oss.sonatype.org/service/local/repositories/snapshots/content/io/antmedia/ant-media-server/maven-metadata.xml
-        echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-        export LATEST_SNAPSHOT=$(cat maven-metadata.xml | grep "<version>" | tail -n 1 |  xargs | cut -c 10-23)
-        echo $LATEST_SNAPSHOT
-        wget -O ant-media-server-community.zip "https://oss.sonatype.org/service/local/artifact/maven/redirect?r=snapshots&g=io.antmedia&a=ant-media-server&v=${LATEST_SNAPSHOT}&c=community&e=zip";
-        wget https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh && chmod 777 install_ant-media-server.sh
-        ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
+        yum -y install wget which findutils which crontabs unzip
+        curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
+        bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
         sleep 40
         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
