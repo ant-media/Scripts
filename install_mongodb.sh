@@ -2,7 +2,7 @@
 #
 # MongoDB Installation Script
 #
-
+export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update
 sudo apt-get install -y curl gnupg2
 curl -fsSL https://pgp.mongodb.com/server-6.0.asc | sudo gpg --dearmor --yes --output /usr/share/keyrings/mongodb-server-6.0.gpg
