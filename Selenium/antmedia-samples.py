@@ -49,7 +49,7 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         srt_exit_code = srt_process.returncode
         return srt_exit_code
 
-#Function to remove advertisement from sample pages
+# Function to remove advertisement from sample pages
 def remove_ad(driver):
     element = driver.find_element(By.XPATH, "/html/body/div[3]/div")
     driver.execute_script("arguments[0].style.display = 'none';", element)
@@ -80,7 +80,6 @@ driver = webdriver.Chrome(options=options)
 driver.maximize_window()
 
 driver.get("https://antmedia.io/webrtc-samples/")
-#remove_ad(driver)
 
 # Testing Virtual Background Sample Page
 for i in range(2):
