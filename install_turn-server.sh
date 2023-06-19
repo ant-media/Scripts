@@ -26,7 +26,7 @@ echo ""
 echo "Username: $USERNAME"
 echo "Password: $PASSWORD"
 echo "Turn Server Address: $IP"
-echo "Please check this guide to enable the Turn Server: https://resources.antmedia.io/docs/turn-server-installation#how-to-add-turn-server-to-ant-media-sample-pages"
+echo "Please check this guide to enable the Turn Server: https://antmedia.io/docs/guides/advanced-usage/turn-and-stun-installation/coTURN-quick-installation/#how-to-add-turn-server-to-ant-media-sample-pages"
 echo ""
 
 

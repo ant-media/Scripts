@@ -2,7 +2,7 @@
 Description=Ant Media Cluster Check Script
 
 [Service]
-ExecStart=/usr/bin/nginx-scale-in.sh
+ExecStart=/usr/bin/nginx-auto-scale.sh
 
 [Install]
 WantedBy=multi-user.target
