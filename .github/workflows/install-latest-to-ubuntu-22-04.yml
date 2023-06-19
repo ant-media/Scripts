@@ -1,9 +1,9 @@
-name:  Install Latest to Ubuntu 20.04
+name:  Install Latest to Ubuntu 22.04
 on: [push]
 
 jobs:
-  Install-Ubuntu-20-04:
-    runs-on: ubuntu-20.04
+  Install-Ubuntu-22-04:
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -20,7 +20,7 @@ jobs:
          fi;
       - run: cat /usr/local/antmedia/log/antmedia-error.log
   Auto-Install-Community-:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
@@ -36,7 +36,7 @@ jobs:
          fi;
       - run: cat /usr/local/antmedia/log/antmedia-error.log
   Auto-Install-Enterprise-:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
