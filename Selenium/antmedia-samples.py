@@ -8,6 +8,8 @@ import urllib.parse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 # Function to send notification to Slack
@@ -47,6 +49,10 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         srt_exit_code = srt_process.returncode
         return srt_exit_code
 
+#Function to remove advertisement from sample pages
+def remove_ad(driver):
+    element = driver.find_element(By.XPATH, "/html/body/div[3]/div")
+    driver.execute_script("arguments[0].style.display = 'none';", element)
 
 # Function to close the previous tabs before starting the new test
 def switch_to_first_tab(driver):
@@ -54,11 +60,12 @@ def switch_to_first_tab(driver):
         driver.close()
         driver.switch_to.window(driver.window_handles[0])
 
-
 # Function to switch to new window and close the advertisement block
 def switch_window_and_frame(driver):
     driver.switch_to.window(driver.window_handles[1])
-    time.sleep(15)
+    time.sleep(10)
+    remove_ad(driver)
+    time.sleep(2)
     driver.switch_to.frame(0)
     time.sleep(3)
 
@@ -73,6 +80,7 @@ driver = webdriver.Chrome(options=options)
 driver.maximize_window()
 
 driver.get("https://antmedia.io/webrtc-samples/")
+#remove_ad(driver)
 
 # Testing Virtual Background Sample Page
 for i in range(2):
@@ -80,6 +88,8 @@ for i in range(2):
         driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-virtual-background/', '_blank');")
         driver.switch_to.window(driver.window_handles[1])
         time.sleep(20)
+        remove_ad(driver)
+        time.sleep(2)
         driver.switch_to.frame(0)
         time.sleep(3)
         driver.find_element(By.XPATH, "/html/body/div/div/div[4]/div[3]/img").click()
@@ -103,10 +113,12 @@ switch_to_first_tab(driver)
 try:
     driver.execute_script("window.open('https://antmedia.io/live-demo/', '_blank');")
     driver.switch_to.window(driver.window_handles[1])
+    time.sleep(20)
+    remove_ad(driver)
+    time.sleep(2)
+    driver.find_element(By.XPATH, "/html/body/div[5]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
     time.sleep(15)
-    driver.find_element(By.XPATH, "/html/body/div/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
-    time.sleep(15)
-    driver.find_element(By.XPATH, "/html/body/div/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[2]").click()
+    driver.find_element(By.XPATH, "/html/body/div[5]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[2]").click()
     time.sleep(3)
     print("Live demo is successful")
 
@@ -243,6 +255,25 @@ try:
 
 except:
     message = "SRT to HLS test is failed, check -> https://antmedia.io/webrtc-samples/srt-publish-hls-play/"
+    send_slack_message(webhook_url, message, icon_emoji)
+
+switch_to_first_tab(driver)
+
+# Testing DeepAR sample page
+try:
+    driver.execute_script("window.open('https://antmedia.io/webrtc-samples/deepar-publish-play/', '_blank');")
+    switch_window_and_frame(driver)
+    driver.find_element(By.XPATH, "/html/body/div/div/select").click()
+    time.sleep(1)
+    driver.find_element(By.XPATH, "/html/body/div[1]/div/select/option[6]").click()
+    time.sleep(1)
+    driver.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/button[1]").click()
+    time.sleep(10)
+    driver.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/button[2]").click()
+    print("WebRTC Deep AR test is successful")
+
+except:
+    message = "WebRTC DeepAR sample test is failed, check -> https://antmedia.io/webrtc-samples/deepar-publish-play/"
     send_slack_message(webhook_url, message, icon_emoji)
 
 switch_to_first_tab(driver)
