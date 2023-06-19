@@ -8,8 +8,6 @@ import urllib.parse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 
 
 # Function to send notification to Slack
@@ -49,16 +47,19 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         srt_exit_code = srt_process.returncode
         return srt_exit_code
 
+
 # Function to remove advertisement from sample pages
 def remove_ad(driver):
     element = driver.find_element(By.XPATH, "/html/body/div[3]/div")
     driver.execute_script("arguments[0].style.display = 'none';", element)
+
 
 # Function to close the previous tabs before starting the new test
 def switch_to_first_tab(driver):
     if len(driver.window_handles) > 1:
         driver.close()
         driver.switch_to.window(driver.window_handles[0])
+
 
 # Function to switch to new window and close the advertisement block
 def switch_window_and_frame(driver):
@@ -68,6 +69,7 @@ def switch_window_and_frame(driver):
     time.sleep(2)
     driver.switch_to.frame(0)
     time.sleep(3)
+
 
 webhook_url = os.environ['WEBHOOK_URL']
 icon_emoji = ":x:"
@@ -194,12 +196,12 @@ switch_to_first_tab(driver)
 
 # Testing RTMP to WebRTC sample page
 try:
-   driver.execute_script("window.open('https://antmedia.io/webrtc-samples/rtmp-publish-webrtc-play/', '_blank');")
-   switch_window_and_frame(driver)
-   rtmp_element = driver.find_element(By.XPATH, "/html/body/div/div/div[3]/div[1]/div")
-   url = rtmp_element.text
-   publish_with_ffmpeg(url, protocol='rtmp')
-   print("RTMP to WebRTC is successful")
+    driver.execute_script("window.open('https://antmedia.io/webrtc-samples/rtmp-publish-webrtc-play/', '_blank');")
+    switch_window_and_frame(driver)
+    rtmp_element = driver.find_element(By.XPATH, "/html/body/div/div/div[3]/div[1]/div")
+    url = rtmp_element.text
+    publish_with_ffmpeg(url, protocol='rtmp')
+    print("RTMP to WebRTC is successful")
 
 except:
     message = "RTMP to WebRTC test is failed, check -> https://antmedia.io/webrtc-samples/rtmp-publish-wertc-play/"
@@ -239,7 +241,7 @@ except:
     send_slack_message(webhook_url, message, icon_emoji)
                           
 switch_to_first_tab(driver)
-                  
+      
 # Testing SRT to HLS sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/srt-publish-hls-play/', '_blank');")
