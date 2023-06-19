@@ -1,0 +1,21 @@
+name: Deploy on Centos
+runs:
+  using: composite
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    - name: Install Ant Media Server
+      shell: bash
+      run: |
+        echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+        sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+        sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+        yum -y install wget which findutils which crontabs unzip
+        curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
+        bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
+        /usr/local/antmedia/antmedia start
+        sleep 30
+        if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+          echo "LiveApp started log does not exist. Check the logs above"
+          exit 1;
+        fi;

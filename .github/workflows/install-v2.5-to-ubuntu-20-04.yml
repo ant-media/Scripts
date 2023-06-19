@@ -1,5 +1,6 @@
 name:  Install v2.5 to Ubuntu 20.04
 on: [push]
+
 jobs:
   Install-Ubuntu-20-04:
     runs-on: ubuntu-20.04
