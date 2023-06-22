@@ -56,7 +56,7 @@ configure_public_ip() {
 echo "Choose the configuration option:"
 echo "1. Behind NAT network (e.g., AWS)"
 echo "2. Directly accessible public IP"
-read -p "Enter your choice (1 or 2): " option
+read -r -p "Enter your choice (1 or 2): " option
 
 case $option in
     1)
