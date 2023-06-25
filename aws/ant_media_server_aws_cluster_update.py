@@ -1,7 +1,34 @@
-import boto3, time
-#
-# This script terminates the existing instances (expect MongoDB) and recreates them with a new image.
-#
+import boto3, time, argparse
+
+"""
+ant_media_server_aws_cluster_update.py
+
+Description: This script terminates the existing instances (except MongoDB) and recreates them with a new image.
+
+Usage:
+  python your_script.py --origin <origin_group_name> --edge <edge_group_name>
+
+Options:
+  -h, --help               Show this help message and exit
+  --origin <group_name>    Specify the name of the origin autoscaling group
+  --edge <group_name>      Specify the name of the edge autoscaling group
+
+Examples:
+  python ant_media_server_aws_cluster_update.py --origin origin-auto-scaling-group --edge edge-auto-scaling-group
+"""
+
+if __name__ == "__main__":
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Your script description')
+    parser.add_argument('--origin', type=str, help='Specify the name of the origin autoscaling group')
+    parser.add_argument('--edge', type=str, help='Specify the name of the edge autoscaling group')
+    args = parser.parse_args()
+
+    # Assign the provided autoscaling group names to the respective variables
+    origin_group_name = args.origin
+    edge_group_name = args.edge
+
+
 ec2_client = boto3.client('ec2')
 autoscaling_client = boto3.client('autoscaling')
 
@@ -9,10 +36,6 @@ autoscaling_client = boto3.client('autoscaling')
 Name="AntMedia-AWS-Marketplace-EE-*"
 Arch="x86_64"
 Owner="679593333241"
-
-# Don't forget to change your autoscale group names
-origin_group_name = 'origin-auto-scaling-group'
-edge_group_name = 'edge-auto-scaling-group'
 
 # Get the latest AMI of Ant Media Server
 def image_id():
