@@ -6,7 +6,7 @@ ant_media_server_aws_cluster_update.py
 Description: This script terminates the existing instances (except MongoDB) and recreates them with a new image.
 
 Usage:
-  python your_script.py --origin <origin_group_name> --edge <edge_group_name>
+  python ant_media_server_aws_cluster_update.py --origin <origin_group_name> --edge <edge_group_name>
 
 Options:
   -h, --help               Show this help message and exit
