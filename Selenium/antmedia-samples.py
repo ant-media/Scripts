@@ -48,12 +48,6 @@ def publish_with_ffmpeg(url, protocol='rtmp'):
         return srt_exit_code
 
 
-# Function to remove advertisement from sample pages
-def remove_ad(driver):
-    element = driver.find_element(By.XPATH, "/html/body/div[3]/div")
-    driver.execute_script("arguments[0].style.display = 'none';", element)
-
-
 # Function to close the previous tabs before starting the new test
 def switch_to_first_tab(driver):
     if len(driver.window_handles) > 1:
@@ -65,8 +59,6 @@ def switch_to_first_tab(driver):
 def switch_window_and_frame(driver):
     driver.switch_to.window(driver.window_handles[1])
     time.sleep(10)
-    remove_ad(driver)
-    time.sleep(2)
     driver.switch_to.frame(0)
     time.sleep(3)
 
@@ -89,8 +81,6 @@ for i in range(2):
         driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-virtual-background/', '_blank');")
         driver.switch_to.window(driver.window_handles[1])
         time.sleep(20)
-        remove_ad(driver)
-        time.sleep(2)
         driver.switch_to.frame(0)
         time.sleep(3)
         driver.find_element(By.XPATH, "/html/body/div/div/div[4]/div[3]/img").click()
@@ -115,11 +105,9 @@ try:
     driver.execute_script("window.open('https://antmedia.io/live-demo/', '_blank');")
     driver.switch_to.window(driver.window_handles[1])
     time.sleep(20)
-    remove_ad(driver)
-    time.sleep(2)
-    driver.find_element(By.XPATH, "/html/body/div[5]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
+    driver.find_element(By.XPATH, "/html/body/div/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
     time.sleep(15)
-    driver.find_element(By.XPATH, "/html/body/div[5]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[2]").click()
+    driver.find_element(By.XPATH, "/html/body/div/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
     time.sleep(3)
     print("Live demo is successful")
 
@@ -275,6 +263,29 @@ try:
 
 except:
     message = "WebRTC DeepAR sample test is failed, check -> https://antmedia.io/webrtc-samples/deepar-publish-play/"
+    send_slack_message(webhook_url, message, icon_emoji)
+
+switch_to_first_tab(driver)
+
+try:
+    driver.execute_script("window.open('https://antmedia.io/webrtc-samples/interactive-whiteboard-publish-play/', '_blank');")
+    switch_window_and_frame(driver)
+    driver.switch_to.frame("webrtc-publish-frame")
+    time.sleep(1)
+    driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[2]/div[6]/button[1]").click()
+    time.sleep(5)
+    driver.switch_to.frame(0)
+    driver.find_element(By.XPATH, "/html/body/section[2]/canvas[4]").click()
+    time.sleep(2)
+    driver.switch_to.default_content()
+    driver.switch_to.frame(0)
+    driver.switch_to.frame("webrtc-play-frame")
+    driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[3]/div[4]/button[1]").click()
+    time.sleep(10)
+    print("WebRTC white board test is successful")
+
+except:
+    message = "WebRTC whiteboard test is failed, check -> https://antmedia.io/webrtc-samples/interactive-whiteboard-publish-play/"
     send_slack_message(webhook_url, message, icon_emoji)
 
 switch_to_first_tab(driver)
