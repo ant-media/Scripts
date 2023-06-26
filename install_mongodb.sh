@@ -24,6 +24,7 @@ echo "use admin;
 db.createUser({ user: '$username', pwd: '$password', roles: ['root'], mechanisms: ['SCRAM-SHA-1'] });" | mongosh
 
 sudo sed -i 's/#security:/security:\n  authorization: "enabled"/g' /etc/mongod.conf
+sudo sed -i 's/bindIp:.*/bindIp: 0.0.0.0/g' /etc/mongod.conf
 sudo systemctl restart mongod
 
 echo "MongoDB username: $username"
