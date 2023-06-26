@@ -16,6 +16,7 @@ password=$(openssl rand -hex 12)
 
 # Start MongoDB and configure authentication
 sudo systemctl restart mongod
+sudo systemctl enable mongod
 
 sleep 10
 
