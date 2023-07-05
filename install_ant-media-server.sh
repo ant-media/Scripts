@@ -23,6 +23,8 @@ TOTAL_DISK_SPACE="$(df / --total -k -m --output=avail | tail -1 | xargs)"
 ARCH=`uname -m`
 RED='\033[0;31m'
 NC='\033[0m' 
+#version that is being installed. It's get filled below
+VERSION= 
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -48,6 +50,7 @@ usage() {
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
   echo "  -u -> Update Ant Media Server new installation script. Default value is false"
+  echo "  -l -> Activate the license."
 
   echo ""
   echo "Sample usage:"
@@ -55,9 +58,15 @@ usage() {
   echo "$0 -i name-of-the-ant-media-server-zip-file -r true -s true"
   echo "$0 -i name-of-the-ant-media-server-zip-file -i false"
   echo "$0 -i name-of-the-ant-media-server-zip-file -d true"
+  echo "$0 -i name-of-the-ant-media-server-zip-file -l \"XXXX-XXXX-XXXX\" "
   echo "$0 -u"
   echo ""
 }
+
+SUDO="sudo"
+if ! [ -x "$(command -v sudo)" ]; then
+  SUDO=""
+fi
 
 disk_usage(){
   if [ $SAVE_SETTINGS == "true" ]; then
@@ -102,8 +111,18 @@ restore_settings() {
     done
   fi
 
+  
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
-  cp -p $BACKUP_DIR/conf/{red5.properties,jee-container.xml,instanceId} $AMS_BASE/conf
+  #jee-container holds beans. SSL restoring and cluster restorign require coping
+  cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml,instanceId} "$AMS_BASE/conf"
+  
+  #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
+  TOKEN_GENERATOR_REMOVED_VERSION=2.6
+  if [ "$(printf '%s\n' "$TOKEN_GENERATOR_REMOVED_VERSION" "$VERSION" | sort -V | head -n1)" == "$TOKEN_GENERATOR_REMOVED_VERSION" ]; then
+  	#remove token generator from jee-container.xml
+  	$SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+	$SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+  fi
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
@@ -196,7 +215,7 @@ check() {
 
 # Start
 
-while getopts 'i:s:r:d:hu' option
+while getopts 'i:s:r:d:l:hu' option
 do
   case "${option}" in
     s) INSTALL_SERVICE=${OPTARG};;
@@ -204,6 +223,7 @@ do
     r) SAVE_SETTINGS=${OPTARG};;
     d) OTHER_DISTRO=${OPTARG};;
     u) UPDATE="true";;
+    l) LICENSE_KEY=${OPTARG};;
     h) usage
        exit 1;;
    esac
@@ -214,6 +234,31 @@ distro
 
 if [ "$UPDATE" == "true" ]; then
   update_script
+fi
+
+if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update
+    $SUDO apt-get install jq -y
+    check
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
+    $SUDO yum -y install jq
+  fi
+  if [ -z "${LICENSE_KEY}" ]; then
+    echo "Downloading the latest version of Ant Media Server Community Edition."
+    curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')"   
+    ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
+  elif [ -n "${LICENSE_KEY}" ]; then
+    check_license=$(curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
+    if [ "$check_license" == "401" ]; then
+      echo "Invalid license key. Please check your license key."
+      exit 1
+    else
+      echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
+      curl --progress-bar -o ams_enterprise.zip "$check_license"
+      ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
+    fi
+  fi
 fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
@@ -243,10 +288,16 @@ if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
   VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+  
+  # If the version is lower than 2.6 and the architecture is x86_64, install the libcrystalhd-dev package. 
+  # Additionally, arm64 architecture does not have libcrystalhd-dev and the following check will fix the installation problem in ARM.
+  # After 2.6, there is no dependency to libcrystalhd-dev
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
       check_version
-      $SUDO apt-get install libcrystalhd-dev -y
-      check
+      if [ "x86_64" == $ARCH ]; then
+        $SUDO apt-get install libcrystalhd-dev -y
+        check
+      fi
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
   $SUDO yum -y install epel-release
@@ -350,6 +401,7 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
       $SUDO update-java-alternatives -s java-1.11.*-openjdk-arm64
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$DEFAULT_JAVA_ARM#g" $SERVICE_FILE
     fi
+    $SUDO echo 'antmedia ALL=(ALL) NOPASSWD: /bin/bash enable_ssl.sh*' > /etc/sudoers.d/antmedia
     $SUDO systemctl daemon-reload
     $SUDO systemctl enable antmedia
     check
@@ -417,8 +469,13 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   check
 fi
 
-if [ $? -eq 0 ]; then
-  if [ $SAVE_SETTINGS == "true" ]; then
+# set the license key
+if [ -n "${LICENSE_KEY}" ]; then
+  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' $AMS_BASE/conf/red5.properties
+fi
+
+if [ "$?" -eq "0" ]; then
+  if [ "$SAVE_SETTINGS" == "true" ]; then
     sleep 5
     restore_settings
     check
@@ -440,3 +497,4 @@ if [ $? -eq 0 ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
+
