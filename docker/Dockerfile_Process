@@ -8,6 +8,9 @@ ARG AntMediaServer
 
 ARG BranchName=master
 
+# Set -Xms and -Xmx
+# ENV JVM_MEMORY_OPTIONS="-Xms1g -Xmx4g"
+
 #Running update and install makes the builder not to use cache which resolves some updates
 RUN apt-get update && apt-get install -y curl wget iproute2 cron logrotate
 
