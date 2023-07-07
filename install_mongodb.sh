@@ -11,7 +11,7 @@ help() {
   echo "  --help         Show this help menu"
 }
 
-if [ $1 == "--help" ]; then
+if [ "$1" == "--help" ]; then
   help
   exit 1
 fi
