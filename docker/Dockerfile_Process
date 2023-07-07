@@ -5,6 +5,7 @@
 FROM ubuntu:20.04
 
 ARG AntMediaServer
+ARG LicenseKey
 
 ARG BranchName=master
 
@@ -20,7 +21,13 @@ RUN cd home \
 
 RUN cd home \
     && pwd \
-    && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
+    && if [ -n "$AntMediaServer" ]; then \
+           ./install_ant-media-server.sh -i ${AntMediaServer} -s false; \
+       fi \
+    && if [ -n "$LicenseKey" ]; then \
+           ./install_ant-media-server.sh -l ${LicenseKey} -s false; \
+       fi
+
 
 
 # Options
