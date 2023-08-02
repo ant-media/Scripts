@@ -433,6 +433,20 @@ cat << EOF | $SUDO tee /etc/logrotate.d/antmedia
        reload rsyslog >/dev/null 2>&1 || true
     endscript
 }
+/var/log/antmedia/0.0.0.0_access*.log {
+    daily
+    create 644 antmedia antmedia
+    rotate 7
+    maxsize 50M
+    compress
+    delaycompress
+    copytruncate
+    notifempty
+    sharedscripts
+    postrotate
+       reload rsyslog >/dev/null 2>&1 || true
+    endscript
+}
 EOF
 check
 
