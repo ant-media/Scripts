@@ -1,4 +1,4 @@
-name: Selenium-Samples-Test-Script
+name: Python Selenium Script
 
 on: 
      schedule:
@@ -47,9 +47,9 @@ jobs:
         
     - name: Install ChromeDriver
       run: |
-        latest_version=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-        wget "https://chromedriver.storage.googleapis.com/$latest_version/chromedriver_linux64.zip"
-        unzip chromedriver_linux64.zip
+        wget "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/116.0.5845.96/linux64/chromedriver-linux64.zip"
+        unzip chromedriver-linux64.zip
+        cd chromedriver-linux64
         sudo mv chromedriver /usr/bin/chromedriver
         sudo chown root:root /usr/bin/chromedriver
         sudo chmod +x /usr/bin/chromedriver
