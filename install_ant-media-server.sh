@@ -357,7 +357,7 @@ else
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install java-11-openjdk-headless
+    $SUDO yum -y install java-11-openjdk-headless tzdata-java
     ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
@@ -418,8 +418,22 @@ then
 fi
 
 # create a logrotate config file
-cat << EOF | $SUDO tee /etc/logrotate.d/antmedia
+cat << EOF | $SUDO tee /etc/logrotate.d/antmedia > /dev/null
 /var/log/antmedia/antmedia-error.log {
+    daily
+    create 644 antmedia antmedia
+    rotate 7
+    maxsize 50M
+    compress
+    delaycompress
+    copytruncate
+    notifempty
+    sharedscripts
+    postrotate
+       reload rsyslog >/dev/null 2>&1 || true
+    endscript
+}
+/var/log/antmedia/0.0.0.0_access*.log {
     daily
     create 644 antmedia antmedia
     rotate 7
