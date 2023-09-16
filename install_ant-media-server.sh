@@ -287,8 +287,9 @@ REQUIRED_VERSION="2.6"
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
-  VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
-  
+  $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
+  VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+    
   # If the version is lower than 2.6 and the architecture is x86_64, install the libcrystalhd-dev package. 
   # Additionally, arm64 architecture does not have libcrystalhd-dev and the following check will fix the installation problem in ARM.
   # After 2.6, there is no dependency to libcrystalhd-dev
@@ -357,7 +358,7 @@ else
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install java-11-openjdk-headless
+    $SUDO yum -y install java-11-openjdk-headless tzdata-java
     ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
@@ -418,8 +419,22 @@ then
 fi
 
 # create a logrotate config file
-cat << EOF | $SUDO tee /etc/logrotate.d/antmedia
+cat << EOF | $SUDO tee /etc/logrotate.d/antmedia > /dev/null
 /var/log/antmedia/antmedia-error.log {
+    daily
+    create 644 antmedia antmedia
+    rotate 7
+    maxsize 50M
+    compress
+    delaycompress
+    copytruncate
+    notifempty
+    sharedscripts
+    postrotate
+       reload rsyslog >/dev/null 2>&1 || true
+    endscript
+}
+/var/log/antmedia/0.0.0.0_access*.log {
     daily
     create 644 antmedia antmedia
     rotate 7
