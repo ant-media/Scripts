@@ -287,8 +287,9 @@ REQUIRED_VERSION="2.6"
 if [ "$ID" == "ubuntu" ]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
-  VERSION=$(unzip -p "$ANT_MEDIA_SERVER_ZIP_FILE" ant-media-server/ant-media-server.jar  | busybox unzip -p - | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
-  
+  $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
+  VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+    
   # If the version is lower than 2.6 and the architecture is x86_64, install the libcrystalhd-dev package. 
   # Additionally, arm64 architecture does not have libcrystalhd-dev and the following check will fix the installation problem in ARM.
   # After 2.6, there is no dependency to libcrystalhd-dev
