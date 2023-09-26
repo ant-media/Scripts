@@ -1,5 +1,6 @@
-import boto3, os
+# This Lambda function calculates the number of instances based on the number of Viewers and Publishers coming from the API and quickly increases the instance in Auto Scaling.
 
+import boto3, os
 
 def lambda_handler(event, context):
     # Get the viewer_count and publisher_count from api gateway
