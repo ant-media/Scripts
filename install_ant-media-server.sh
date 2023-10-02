@@ -119,9 +119,9 @@ restore_settings() {
   #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
   TOKEN_GENERATOR_REMOVED_VERSION=2.6
   if [ "$(printf '%s\n' "$TOKEN_GENERATOR_REMOVED_VERSION" "$VERSION" | sort -V | head -n1)" == "$TOKEN_GENERATOR_REMOVED_VERSION" ]; then
-  	#remove token generator from jee-container.xml
-  	$SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
-	$SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+    #remove token generator from jee-container.xml
+    $SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+  $SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
   fi
 
   #SSL Restore
@@ -176,13 +176,13 @@ distro () {
         $SUDO apt-get update && $SUDO apt-get install coreutils
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ] || [ "$ID" == "amzn" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
       fi
 
-      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 2023 ]]; then
          echo $msg
          exit 1
             fi
@@ -241,7 +241,7 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
     $SUDO apt-get update
     $SUDO apt-get install jq -y
     check
-  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ] || [ "$ID" == "amzn" ] ; then
     $SUDO yum -y install jq
   fi
   if [ -z "${LICENSE_KEY}" ]; then
@@ -300,7 +300,7 @@ if [ "$ID" == "ubuntu" ]; then
         check
       fi
   fi
-elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
+elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ] || [ "$ID" == "amzn" ] ; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install unzip zip libva libvdpau
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
@@ -360,7 +360,10 @@ else
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-11-openjdk-headless tzdata-java
     ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
-  fi 
+  elif [ "$ID" == "amzn" ]; then
+    $SUDO yum -y install java-11-amazon-corretto-headless.x86_64
+    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
+  fi
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
@@ -512,4 +515,3 @@ if [ "$?" -eq "0" ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
-
