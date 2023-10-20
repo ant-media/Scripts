@@ -533,6 +533,7 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
+            bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
             apt-get update 
             apt-get install -y python3-pip
             apt-get install -y python3-setuptools
