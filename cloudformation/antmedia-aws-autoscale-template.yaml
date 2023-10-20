@@ -862,10 +862,6 @@ Resources:
 
 Outputs:
 
-  Password:
-    Description: Dashboard Password
-    Value: !Ref DashboardPassword
-
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
     Value: !Join 
