@@ -533,8 +533,6 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
-            wget https://raw.githubusercontent.com/ant-media/Scripts/master/init.sh -O /usr/local/antmedia/conf/init.sh
-            sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
             apt-get update 
             apt-get install -y python3-pip
             apt-get install -y python3-setuptools
