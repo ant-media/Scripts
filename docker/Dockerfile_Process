@@ -5,6 +5,7 @@
 FROM ubuntu:20.04
 
 ARG AntMediaServer
+ARG LicenseKey
 
 ARG BranchName=master
 
@@ -21,10 +22,16 @@ RUN cd home \
     && wget https://raw.githubusercontent.com/ant-media/Scripts/${BranchName}/install_ant-media-server.sh \
     && chmod 755 install_ant-media-server.sh
 
-RUN cd home \
+RUN cd /home \
     && pwd \
-    && ./install_ant-media-server.sh -i ${AntMediaServer} -s false
-
+    && if [ -n "$AntMediaServer" ]; then \
+           ./install_ant-media-server.sh -i ${AntMediaServer} -s false; \
+       elif [ -n "$LicenseKey" ]; then \
+           ./install_ant-media-server.sh -l ${LicenseKey} -s false; \
+       else \
+           echo "Both AntMediaServer and LicenseKey arguments are not provided. Aborting the build process."; \
+           exit 1; \
+       fi
 
 # Options
 # -g: Use global(Public) IP in network communication. Its value can be true or false. Default value is false.
