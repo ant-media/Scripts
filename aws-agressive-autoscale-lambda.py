@@ -37,7 +37,7 @@ def lambda_handler(event, context):
 
     # Get instance types and current instance counts
     edge_instance_type = edge_autoscaling_group['AutoScalingGroups'][0]['Instances'][0]['InstanceType']
-    origin_instance_type = edge_autoscaling_group['AutoScalingGroups'][0]['Instances'][0]['InstanceType']
+    origin_instance_type = origin_autoscaling_group['AutoScalingGroups'][0]['Instances'][0]['InstanceType']
     edge_current_instance_count = len(edge_autoscaling_group['AutoScalingGroups'][0]['Instances'])
     origin_current_instance_count = len(origin_autoscaling_group['AutoScalingGroups'][0]['Instances'])
 
