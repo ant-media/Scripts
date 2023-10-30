@@ -238,11 +238,12 @@ fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   if [ "$ID" == "ubuntu" ]; then
+    #Added curl package for the minimal OS installations.
     $SUDO apt-get update
-    $SUDO apt-get install jq -y
+    $SUDO apt-get install jq curl -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install jq
+    $SUDO yum -y install jq curl
   fi
   if [ -z "${LICENSE_KEY}" ]; then
     echo "Downloading the latest version of Ant Media Server Community Edition."

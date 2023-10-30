@@ -21,7 +21,7 @@ spec:
             app.kubernetes.io/instance: coturn
             app.kubernetes.io/version: 0.0.1
     spec:
-     # hostNetwork: true
+      hostNetwork: true
       containers:
         - name: coturn
           image: coturn/coturn
@@ -41,11 +41,14 @@ spec:
               hostPort: 3478
               protocol: TCP
           args:
-          #   - --stun-only
-            - -v
-            - --user "{username}:{password}"
-            - --external-ip="$(detect-external-ip)/$MY_POD_IP"
-            - --realm="$(detect-external-ip)"
+          - "-a" 
+          - "-f"
+          - "--user=username:password"
+          - "-p"
+          - "3478"
+          - "-v" 
+          - "--external-ip=$(detect-external-ip)/$MY_POD_IP"
+          - "--realm=$(detect-external-ip)"
 
 --- 
 
