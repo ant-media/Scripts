@@ -711,12 +711,6 @@ Resources:
       UnhealthyThresholdCount: 5
       VpcId: !Ref AntMediaVPC
       TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '30'
         - Key: load_balancing.algorithm.type
           Value: least_outstanding_requests
   OriginRule:
