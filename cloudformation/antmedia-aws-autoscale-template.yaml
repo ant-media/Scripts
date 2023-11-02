@@ -650,6 +650,11 @@ Resources:
             FromPort: 5443
             ToPort: 5443
             Description: Allow 5443. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 4444
+            ToPort: 4444
+            Description: Allow 5443. Port for Edge Instances
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
