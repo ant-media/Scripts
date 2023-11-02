@@ -654,7 +654,7 @@ Resources:
             IpProtocol: tcp
             FromPort: 4444
             ToPort: 4444
-            Description: Allow 5443. Port for Edge Instances
+            Description: Allow 4444. Port for accessing Dashboard
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
