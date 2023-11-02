@@ -619,7 +619,7 @@ Resources:
           - CidrIp: 0.0.0.0/0
             IpProtocol: tcp
             FromPort: 4444
-            ToPort: 444
+            ToPort: 4444
             Description: Allow 4444. Port for accessing Dashboard
 
   ApplicationLoadBalancer:
