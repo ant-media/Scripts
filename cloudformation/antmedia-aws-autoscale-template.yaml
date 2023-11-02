@@ -697,7 +697,7 @@ Resources:
         - Type: forward
           TargetGroupArn: !Ref ALBTargetGroupEdge 
       LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: '5443'
+      Port: '4444'
       Protocol: HTTPS
   ALBListener5080:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
