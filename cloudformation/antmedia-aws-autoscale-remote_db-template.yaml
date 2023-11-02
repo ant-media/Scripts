@@ -616,6 +616,11 @@ Resources:
             FromPort: 5443
             ToPort: 5443
             Description: Allow 5443. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 4444
+            ToPort: 444
+            Description: Allow 4444. Port for accessing Dashboard
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -646,6 +651,17 @@ Resources:
           TargetGroupArn: !Ref ALBTargetGroupEdge
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: '5443'
+      Protocol: HTTPS
+  ALBListener4444:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref LoadBalancerCertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupEdge 
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: '4444'
       Protocol: HTTPS
   ALBListener5080:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
