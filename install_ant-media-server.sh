@@ -349,11 +349,13 @@ if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 
 elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
+	
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jdk -y
     check
-  
+  fi
+ 
 elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7.0* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
@@ -368,7 +370,9 @@ elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7.0* ]]; then
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+
 else
+  # with 2.7.1 we start to use java17 	
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
