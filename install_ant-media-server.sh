@@ -356,7 +356,7 @@ elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
     check
   fi
  
-elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7.0* ]]; then
+elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
@@ -372,7 +372,7 @@ elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7.0* ]]; then
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 
 else
-  # with 2.7.1 we start to use java17 	
+  # with 2.8 we start to use java17 	
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
