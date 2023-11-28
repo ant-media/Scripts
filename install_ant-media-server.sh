@@ -238,11 +238,12 @@ fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   if [ "$ID" == "ubuntu" ]; then
+    #Added curl package for the minimal OS installations.
     $SUDO apt-get update
-    $SUDO apt-get install jq -y
+    $SUDO apt-get install jq curl -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install jq
+    $SUDO yum -y install jq curl
   fi
   if [ -z "${LICENSE_KEY}" ]; then
     echo "Downloading the latest version of Ant Media Server Community Edition."
@@ -329,13 +330,8 @@ fi
 unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
-if [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
-  if [ "$ID" == "ubuntu" ]; then
-    $SUDO apt-get update -y
-    $SUDO apt-get install openjdk-11-jdk -y
-    check
-  fi
-elif [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
+
+if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get install openjdk-8-jre -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
@@ -352,7 +348,15 @@ elif [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   $SUDO sed -i '/JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
   $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 
-else
+elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
+	
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-11-jdk -y
+    check
+  fi
+ 
+elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
@@ -366,6 +370,23 @@ else
   export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+
+else
+  # with 2.8 we start to use java17 	
+  if [ "$ID" == "ubuntu" ]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-17-jre-headless -y
+    check
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
+    $SUDO yum -y install java-17-openjdk-headless tzdata-java
+    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-17-openjdk-amd64
+  fi 
+  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-17-openjdk-amd64/" >>~/.bashrc
+  source ~/.bashrc
+  export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
+  echo "JAVA_HOME : $JAVA_HOME"
+  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-17*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+	
 fi
 
 if ! [ -d $AMS_BASE ]; then
