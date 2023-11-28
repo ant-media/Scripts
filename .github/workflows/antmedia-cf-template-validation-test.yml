@@ -1,11 +1,8 @@
 name: Ant Media Server Cloudformation Deployment
 
 on:
-  push:
-#    branches:
-#      - main
   schedule:
-    - cron: '0 0 * * 1' # Run it every week on Monday
+    - cron: '0 0 * * 1'
 
 jobs:
   deploy_cf_template:
