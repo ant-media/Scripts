@@ -1,9 +1,11 @@
-name: Ant Media Server AWS CloudFormation Deployment
+name: Ant Media Server Cloudformation  Deployment
 
 on:
   push:
-    branches:
-      - main
+#    branches:
+#      - main
+#  schedule:
+#    - cron: '0 0 * * 1'
 
 jobs:
   deploy:
