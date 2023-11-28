@@ -553,7 +553,7 @@ Resources:
   EdgeGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     DependsOn:
-      - LaunchTemplateEdge
+      - OriginGroup
     Properties:
       VPCZoneIdentifier: 
         - !Ref EdgeZone
