@@ -448,6 +448,8 @@ Resources:
       Protocol: TCP
   RTMPTargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    DependsOn:
+      - InternetGatewayAttachment
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthyThresholdCount: 3
@@ -551,7 +553,7 @@ Resources:
   EdgeGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     DependsOn:
-      - LaunchTemplateEdge
+      - OriginGroup
     Properties:
       VPCZoneIdentifier: 
         - !Ref EdgeZone
