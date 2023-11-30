@@ -1,0 +1,80 @@
+name: Ant Media Server Cloudformation Deployment
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+
+jobs:
+  deploy_cf_template:
+    runs-on: ubuntu-latest
+    
+    env:
+      AWS_REGION: eu-west-2
+      STACK_NAME: cf-automation-test-stack
+      ORIGIN_INSTANCE_TYPE: t2.large
+      EDGE_INSTANCE_TYPE: t2.large
+      MONGO_INSTANCE_TYPE: c5.large
+      TEMPLATE_FILE: ${{ github.workspace }}/cloudformation/antmedia-aws-autoscale-template.yaml
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate CloudFormation Template
+        run: |
+          aws cloudformation validate-template --template-body file://${{ env.TEMPLATE_FILE }}
+
+      - name: Deploy Stack
+        run: |
+          aws cloudformation create-stack \
+            --stack-name ${{ env.STACK_NAME }} \
+            --template-body file://${{ env.TEMPLATE_FILE }} \
+            --parameters ParameterKey=Email,ParameterValue=test@antmedia.io \
+                         ParameterKey=KeyName,ParameterValue=${{ secrets.KEY_NAME }} \
+                         ParameterKey=DashboardPassword,ParameterValue=admin \
+                         ParameterKey=OriginInstanceType,ParameterValue=${{ env.ORIGIN_INSTANCE_TYPE }} \
+                         ParameterKey=EdgeInstanceType,ParameterValue=${{ env.EDGE_INSTANCE_TYPE }} \
+                         ParameterKey=MongoDBInstanceType,ParameterValue=${{ env.MONGO_INSTANCE_TYPE }} \
+                         ParameterKey=LoadBalancerCertificateArn,ParameterValue=${{ secrets.SSL_CERTIFICATE_ARN }} \
+                         ParameterKey=AntMediaEdgeCapacity,ParameterValue=1 \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --region ${{ env.AWS_REGION }}
+          timeout=$((SECONDS+420))
+          while [ $SECONDS -lt $timeout ]; do
+            sleep 10
+            stack_status=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].StackStatus' --output text 2>&1)
+            if [ "$stack_status" == "CREATE_COMPLETE" ]; then
+              echo "Stack creation completed successfully."
+              break
+            elif [ "$stack_status" == "ROLLBACK_COMPLETE" ] || [ "$stack_status" == "CREATE_FAILED" ]; then
+              echo "Stack creation failed or rolled back."
+              exit 1
+            fi
+          done
+
+      - name: Display Stack Outputs
+        run: |
+          outputs=$(aws cloudformation describe-stacks --stack-name ${{ env.STACK_NAME }} --query 'Stacks[0].Outputs' 2>&1)
+          status=$?
+          
+          if [ $status -ne 0 ]; then
+            echo "Failed to describe stack: $outputs"
+            exit 1
+          elif [ "$outputs" == "null" ]; then
+            echo "Stack Outputs are null. Deployment failed."
+            exit 1
+          else
+            echo "Stack Outputs: $outputs"
+          fi
+      - name: Delete Stack
+        if: ${{ always() }}
+        run: |
+          aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
+          aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
