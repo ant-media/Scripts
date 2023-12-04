@@ -262,7 +262,7 @@ Resources:
   AMSGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.11
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -296,7 +296,7 @@ Resources:
   UbuntuGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.11
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -433,6 +433,8 @@ Resources:
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:
+      - InternetGatewayAttachment
     Properties:
       Subnets:
       - !Ref OriginZone
@@ -448,8 +450,6 @@ Resources:
       Protocol: TCP
   RTMPTargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    DependsOn:
-      - InternetGatewayAttachment
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthyThresholdCount: 3
@@ -652,6 +652,11 @@ Resources:
             FromPort: 5443
             ToPort: 5443
             Description: Allow 5443. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 4444
+            ToPort: 4444
+            Description: Allow 4444. Port for accessing Dashboard
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -684,6 +689,17 @@ Resources:
           TargetGroupArn: !Ref ALBTargetGroupEdge
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: '5443'
+      Protocol: HTTPS
+  ALBListener4444:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref LoadBalancerCertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupOrigin 
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: '4444'
       Protocol: HTTPS
   ALBListener5080:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
@@ -737,12 +753,6 @@ Resources:
       UnhealthyThresholdCount: 5
       VpcId: !Ref AntMediaVPC
       TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '30'
         - Key: load_balancing.algorithm.type
           Value: least_outstanding_requests
   OriginRule:
@@ -863,6 +873,15 @@ Resources:
             systemctl restart mongod
 
 Outputs:
+
+  Dashboard:
+    Description: Dashboard Login URL 
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
 
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
