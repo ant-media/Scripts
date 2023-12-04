@@ -746,7 +746,7 @@ Resources:
         - CertificateArn: !Ref LoadBalancerCertificateArn
       DefaultActions:
         - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupEdge 
+          TargetGroupArn: !Ref ALBTargetGroupOrigin 
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: '4444'
       Protocol: HTTPS
