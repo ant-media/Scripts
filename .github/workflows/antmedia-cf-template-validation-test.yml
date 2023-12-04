@@ -38,7 +38,6 @@ jobs:
             --template-body file://${{ env.TEMPLATE_FILE }} \
             --parameters ParameterKey=Email,ParameterValue=test@antmedia.io \
                          ParameterKey=KeyName,ParameterValue=${{ secrets.KEY_NAME }} \
-                         ParameterKey=DashboardPassword,ParameterValue=admin \
                          ParameterKey=OriginInstanceType,ParameterValue=${{ env.ORIGIN_INSTANCE_TYPE }} \
                          ParameterKey=EdgeInstanceType,ParameterValue=${{ env.EDGE_INSTANCE_TYPE }} \
                          ParameterKey=MongoDBInstanceType,ParameterValue=${{ env.MONGO_INSTANCE_TYPE }} \
