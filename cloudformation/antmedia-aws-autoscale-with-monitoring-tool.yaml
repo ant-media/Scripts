@@ -484,6 +484,8 @@ Resources:
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:
+      - InternetGatewayAttachment
     Properties:
       Subnets:
       - !Ref OriginZone
@@ -1091,6 +1093,15 @@ Resources:
       InstanceId: !Ref MonitorInstance
 
 Outputs:
+
+  Dashboard:
+    Description: Dashboard Login URL 
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
   
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers

@@ -433,6 +433,8 @@ Resources:
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:
+      - InternetGatewayAttachment
     Properties:
       Subnets:
       - !Ref OriginZone
@@ -448,8 +450,6 @@ Resources:
       Protocol: TCP
   RTMPTargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
-    DependsOn:
-      - InternetGatewayAttachment
     Properties:
       HealthCheckIntervalSeconds: 30
       HealthyThresholdCount: 3
@@ -873,6 +873,15 @@ Resources:
             systemctl restart mongod
 
 Outputs:
+
+  Dashboard:
+    Description: Dashboard Login URL 
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
 
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
