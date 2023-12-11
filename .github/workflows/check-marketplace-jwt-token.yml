@@ -1,4 +1,4 @@
-name: Ant Media Server upgrade.sh Validation Test
+name: Ant Media Server JWT Validation Test
 on: [push]
 
 jobs:
