@@ -1,0 +1,26 @@
+name: Ant Media Server upgrade.sh Validation Test
+on: [push]
+
+jobs:
+  install_and_upgrade_ant_media_server:
+    runs-on: ubuntu-latest
+    env:
+      SCRIPT_URL: https://raw.githubusercontent.com/ant-media/Ant-Media-Server/adc6096c54ee19e0f9aa0ee4e65e1495883ffb27/src/main/server/conf/jwt_marketplace_check.sh
+    name: Install Previous Version of Ant Media Server
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Ant Media Server
+        run: |
+          curl --progress-bar -o ant.zip ${{ secrets.LATEST_URL }} 
+          wget https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+          sudo bash ./install_ant-media-server.sh -i ant.zip
+          sleep 30
+      - name: Upgrade Ant Media Server
+        run: |
+          sudo wget -P /usr/local/antmedia/conf/ ${{ env.SCRIPT_URL }}
+          sudo -s
+          source /usr/local/antmedia/conf/jwt_marketplace_check.sh
+          result_marketplace=$(check_marketplace)
+          echo $result_marketplace
+          
