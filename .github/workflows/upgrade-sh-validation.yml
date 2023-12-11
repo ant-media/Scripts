@@ -4,6 +4,8 @@ on: [push]
 jobs:
   install_and_upgrade_ant_media_server:
     runs-on: ubuntu-latest
+    env:
+      SCRIPT_URL: https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/src/main/server/upgrade.sh
     name: Install Previous Version of Ant Media Server
     steps:
       - name: Check out repository code
@@ -16,4 +18,5 @@ jobs:
           sleep 30
       - name: Upgrade Ant Media Server
         run: |
+          wget ${{ SCRIPT_URL }}
           DIR='/usr/local/antmedia/' sudo bash ./upgrade.sh
