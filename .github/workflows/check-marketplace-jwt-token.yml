@@ -2,11 +2,11 @@ name: Ant Media Server upgrade.sh Validation Test
 on: [push]
 
 jobs:
-  install_and_upgrade_ant_media_server:
+  install_ant_media_server:
     runs-on: ubuntu-latest
     env:
       SCRIPT_URL: https://raw.githubusercontent.com/ant-media/Ant-Media-Server/adc6096c54ee19e0f9aa0ee4e65e1495883ffb27/src/main/server/conf/jwt_marketplace_check.sh
-    name: Install Ant Media Server
+    name: Install Ant Media Server and Check JWT Token
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
