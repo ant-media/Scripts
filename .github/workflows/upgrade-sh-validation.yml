@@ -1,0 +1,19 @@
+name: Ant Media Server upgrade.sh Validation Test
+on: [push]
+
+jobs:
+  install_and_upgrade_ant_media_server:
+    runs-on: ubuntu-latest
+    name: Install Previous Version of Ant Media Server
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install Ant Media Server
+        run: |
+          curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases | jq -r '.[1].assets[0].browser_download_url')"
+          wget https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
+          sudo bash ./install_ant-media-server.sh -i ams_community.zip
+          sleep 30
+      - name: Upgrade Ant Media Server
+        run: |
+          DIR='/usr/local/antmedia/' sudo bash ./upgrade.sh
