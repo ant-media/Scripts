@@ -2,14 +2,14 @@ name: Python 24x7 script
 
 on:
   pull_request:
-    types:
-      - synchronize
+  workflow_dispatch:
   schedule:
     - cron: '*/1 * * * *'
 
 jobs:
   run-selenium:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     
     env:
       WEBHOOK_URL: ${{ secrets.WEBHOOK }}
