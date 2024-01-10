@@ -1,8 +1,6 @@
 name: Python 24x7 script
 
 on:
-  pull_request:
-  workflow_dispatch:
   schedule:
     - cron: '*/5 * * * *'
 
