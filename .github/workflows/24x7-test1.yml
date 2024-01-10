@@ -1,8 +1,11 @@
 name: Python 24x7 script
 
 on:
-     schedule:
-     - cron: '*/1 * * * *'
+  pull_request:
+    types:
+      - synchronize
+  schedule:
+    - cron: '*/1 * * * *'
 
 jobs:
   run-selenium:
