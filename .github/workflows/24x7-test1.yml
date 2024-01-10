@@ -1,8 +1,8 @@
 name: Python 24x7 script
 
-on: [push]
-#     schedule:
-#     - cron: '*/5 * * * *'
+on:
+     schedule:
+     - cron: '*/1 * * * *'
 
 jobs:
   run-selenium:
