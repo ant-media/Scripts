@@ -30,4 +30,4 @@ jobs:
         
     - name: Run staging script
       run: |
-        python 24x7-test1.py
+        python 24x7-testing/24x7-test1.py
