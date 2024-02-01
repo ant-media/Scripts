@@ -26,9 +26,6 @@ def lambda_handler(event, context):
     asg_edge_group_names = [group['AutoScalingGroupName'] for group in asg_edge_name][0]
     asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
 
-    print(asg_edge_name)
-    print(asg_edge_group_names)
-
     # Describe Auto Scaling Groups
     edge_autoscaling_group = autoscaling_client.describe_auto_scaling_groups(
         AutoScalingGroupNames=[asg_edge_group_names])
