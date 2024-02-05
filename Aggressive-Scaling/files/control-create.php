@@ -4,6 +4,7 @@ require 'vendor/autoload.php';
 
 use Aws\ElasticBeanstalk\ElasticBeanstalkClient;
 
+// Function to retrieve the AWS region from EC2 instance metadata
 function getRegion()
 {
     $tokenRequest = curl_init();
@@ -15,6 +16,7 @@ function getRegion()
     $token = curl_exec($tokenRequest);
     curl_close($tokenRequest);
 
+    // Use the token to request the region from the EC2 metadata service
     $regionRequest = curl_init();
     curl_setopt($regionRequest, CURLOPT_URL, "http://169.254.169.254/latest/meta-data/placement/region");
     curl_setopt($regionRequest, CURLOPT_RETURNTRANSFER, 1);
@@ -26,6 +28,7 @@ function getRegion()
     return trim($region); 
 }
 
+// Function to update HTML content with Elastic Beanstalk environment details
 function updateHtmlContentForEnvironments($region)
 {
     $elasticBeanstalkClient = new ElasticBeanstalkClient([
@@ -33,6 +36,7 @@ function updateHtmlContentForEnvironments($region)
         'region' => $region,
     ]);
 
+    // Describe environments and update HTML content for each environment
     $environmentsResult = $elasticBeanstalkClient->describeEnvironments([]);
 
     foreach ($environmentsResult['Environments'] as $environment) {
@@ -42,12 +46,15 @@ function updateHtmlContentForEnvironments($region)
         $htmlFilePath = 'samples/publish_webrtc.html';
         $htmlContent = file_get_contents($htmlFilePath);
 
+        // Replace placeholder in HTML content with the environment's endpoint URL
         $htmlContent = str_replace('aws-elb-web-socket-url', $endpointUrl, $htmlContent);
-
+        
+        // Save the updated HTML content
         file_put_contents($htmlFilePath, $htmlContent);
     }
 }
 
+// Function to check status and create if necessary
 function checkAndCreate($status_url, $create_url) {
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, $status_url);
@@ -56,7 +63,8 @@ function checkAndCreate($status_url, $create_url) {
     $status_data = curl_exec($curl);
 
     $status_data_array = json_decode($status_data, true);
-
+    
+    // If the status is 500, initiate the creation process
     if ($status_data_array && isset($status_data_array['statusCode']) && $status_data_array['statusCode'] == 500) {
         $create_curl = curl_init();
         curl_setopt($create_curl, CURLOPT_URL, $create_url);
@@ -73,12 +81,17 @@ function checkAndCreate($status_url, $create_url) {
     curl_close($curl);
 }
 
+// Get environment variables for status and create URLs from Cloudformation
 $status_url = getenv('STATUS_URL');
 $create_url = getenv('CREATE_URL');
 
+// Get the AWS region
 $region = getRegion();
 
+// Update HTML content for Elastic Beanstalk environments
 updateHtmlContentForEnvironments($region);
+
+// Check status and initiate creation if needed
 checkAndCreate($status_url, $create_url);
 
 ?>
