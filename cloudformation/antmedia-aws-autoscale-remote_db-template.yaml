@@ -165,10 +165,6 @@ Parameters:
     AllowedPattern: >-
       ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
     ConstraintDescription: must be a valid email address.
-  DashboardPassword:
-    Description: 'Web Panel Password'
-    Type: String
-    Default: ''
   AntMediaOriginCapacity:
     Default: '1'
     Description: The initial number of Ant Media Origin instances
@@ -242,7 +238,7 @@ Resources:
   AMSGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.11
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -368,6 +364,8 @@ Resources:
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:
+      - InternetGatewayAttachment
     Properties:
       Subnets:
       - !Ref OriginZone
@@ -441,91 +439,93 @@ Resources:
             - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
             - 'autoscaling:EC2_INSTANCE_TERMINATE'
             - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
-  LaunchConfigOrigin:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    DependsOn:
-      - ApplicationLoadBalancer
-    Metadata:
-      Comment: Install a simple application
-      'AWS::CloudFormation::Init':
-        configSets:
-          setup:
-            - "configure_cfn"
-        configure_cfn:
-          files:
-            /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-                verbose=true
-                interval=5
-              mode: "000400"
-              owner: root
-              group: root
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfigOrigin.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigOrigin --configsets setup --region ${AWS::Region}
-              mode: "000400"
-              owner: root
-              group: root
-            /lib/systemd/system/cfn-hup.service:
-              content: !Sub |
-                [Unit]
-                Description=cfn-hup daemon
-                
-                [Service]
-                Type=simple
-                ExecStart=/opt/aws/bin/cfn-hup
-                Restart=always
-                
-                [Install]
-                WantedBy=multi-user.target
-              mode: "000400"
-              owner: root
-              group: root
+  OriginGroup:
+      Type: 'AWS::AutoScaling::AutoScalingGroup'
+      DependsOn:
+      - LaunchTemplateOrigin
+      Properties:
+        VPCZoneIdentifier: 
+          - !Ref OriginZone
+        LaunchTemplate:
+          LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+          Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
+        MinSize: !Ref AntMediaOriginCapacity
+        MaxSize: !Ref AntMediaOriginCapacityMax
+        DesiredCapacity: !Ref AntMediaOriginCapacity
+        TargetGroupARNs:
+          - !Ref ALBTargetGroupOrigin
+          - !Ref RTMPTargetGroup
+        Tags:
+        - Key: Name
+          Value: Antmedia-Origin
+          PropagateAtLaunch: 'true'
+      CreationPolicy:
+        ResourceSignal:
+          Timeout: PT15M
+          Count: !Ref AntMediaOriginCapacity
+      UpdatePolicy:
+        AutoScalingRollingUpdate:
+          MinInstancesInService: '1'
+          MaxBatchSize: '1'
+          PauseTime: PT15M
+          WaitOnResourceSignals: 'true'
+        NotificationConfiguration:
+          TopicARN: !Ref NotificationTopic
+          NotificationTypes:
+            - 'autoscaling:EC2_INSTANCE_LAUNCH'
+            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
+            - 'autoscaling:EC2_INSTANCE_TERMINATE'
+            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
 
+  LaunchTemplateOrigin:
+    Type: 'AWS::EC2::LaunchTemplate'
     Properties:
-      KeyName: !Ref KeyName
-      ImageId: !Ref AntMediaAmi
-      SecurityGroups:
-        - !Ref InstanceSecurityGroup
-      InstanceType: !Ref OriginInstanceType
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: !Ref DiskSize
-            VolumeType: gp2
-            DeleteOnTermination: true
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          touch /usr/local/antmedia/conf/initialized
-          wget https://raw.githubusercontent.com/ant-media/Scripts/master/init.sh -O /usr/local/antmedia/conf/init.sh
-          sed -i 's/$INSTANCE_ID/${DashboardPassword}/g' /usr/local/antmedia/conf/init.sh
-          bash /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBURL} ${MongoDBUsername} ${MongoDBPassword}
-          rm -rf /usr/local/antmedia/conf/initialized
-          bash /usr/local/antmedia/conf/init.sh cf
-          apt-get update -y
-          apt-get install -y python3-pip
-          apt-get install -y python3-setuptools
-          mkdir -p /opt/aws/bin
-          wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-          python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigOrigin --configsets setup --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+      LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+      LaunchTemplateData:
+        InstanceType: !Ref OriginInstanceType
+        KeyName: !Ref KeyName
+        ImageId: !Ref AntMediaAmi
+        SecurityGroupIds:
+          - !GetAtt "InstanceSecurityGroup.GroupId"
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: !Ref DiskSize
+              VolumeType: gp2
+              DeleteOnTermination: true
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            touch /usr/local/antmedia/conf/initialized
+            bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+            apt-get update 
+            apt-get install -y python3-pip
+            apt-get install -y python3-setuptools
+            mkdir -p /opt/aws/bin
+            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: OriginInstance
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
 
   EdgeGroup:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     DependsOn:
-      - LaunchConfigEdge
+      - LaunchTemplateEdge
     Properties:
       VPCZoneIdentifier: 
         - !Ref EdgeZone
-      LaunchConfigurationName: !Ref LaunchConfigEdge
+      LaunchTemplate:
+        LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateEdge
+        Version: !GetAtt 'LaunchTemplateEdge.LatestVersionNumber'
       MinSize: !Ref AntMediaEdgeCapacity
       MaxSize: !Ref AntMediaEdgeCapacityMax
       DesiredCapacity: !Ref AntMediaEdgeCapacity
@@ -552,78 +552,45 @@ Resources:
             - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
             - 'autoscaling:EC2_INSTANCE_TERMINATE'
             - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
-  LaunchConfigEdge:
-    Type: 'AWS::AutoScaling::LaunchConfiguration'
-    DependsOn:
-      - ApplicationLoadBalancer
-    Metadata:
-      Comment: Install a simple application
-      'AWS::CloudFormation::Init':
-        configSets:
-          setup:
-            - "configure_cfn"
-        configure_cfn:
-          files:
-            /etc/cfn/cfn-hup.conf:
-              content: !Sub |
-                [main]
-                stack=${AWS::StackId}
-                region=${AWS::Region}
-                verbose=true
-                interval=5
-              mode: "000400"
-              owner: root
-              group: root
-            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
-              content: !Sub |
-                [cfn-auto-reloader-hook]
-                triggers=post.update
-                path=Resources.LaunchConfigEdge.Metadata.AWS::CloudFormation::Init
-                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
-              mode: "000400"
-              owner: root
-              group: root
-            /lib/systemd/system/cfn-hup.service:
-              content: !Sub |
-                [Unit]
-                Description=cfn-hup daemon
-                
-                [Service]
-                Type=simple
-                ExecStart=/opt/aws/bin/cfn-hup
-                Restart=always
-                
-                [Install]
-                WantedBy=multi-user.target
-              mode: "000400"
-              owner: root
-              group: root
 
+  LaunchTemplateEdge:
+    Type: 'AWS::EC2::LaunchTemplate'
     Properties:
-      KeyName: !Ref KeyName
-      ImageId: !Ref AntMediaAmi
-      SecurityGroups:
-        - !Ref InstanceSecurityGroup
-      InstanceType: !Ref EdgeInstanceType
-      BlockDeviceMappings:
-        - DeviceName: /dev/sda1
-          Ebs:
-            VolumeSize: !Ref DiskSize
-            VolumeType: gp2
-            DeleteOnTermination: true
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          touch /usr/local/antmedia/conf/initialized
-          bash /usr/local/antmedia/change_server_mode.sh cluster ${MongoDBURL} ${MongoDBUsername} ${MongoDBPassword}
-          apt-get update 
-          apt-get install -y python3-pip
-          apt-get install -y python3-setuptools
-          mkdir -p /opt/aws/bin
-          wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-          python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-          /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
+      LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateEdge
+      LaunchTemplateData:
+        InstanceType: !Ref EdgeInstanceType
+        KeyName: !Ref KeyName
+        ImageId: !Ref AntMediaAmi
+        SecurityGroupIds:
+          - !GetAtt "InstanceSecurityGroup.GroupId"
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: !Ref DiskSize
+              VolumeType: gp2
+              DeleteOnTermination: true
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            touch /usr/local/antmedia/conf/initialized
+            bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+            apt-get update 
+            apt-get install -y python3-pip
+            apt-get install -y python3-setuptools
+            mkdir -p /opt/aws/bin
+            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: EdgeInstance
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateEdge
 
   ELBSecurityGroup:
       Type: AWS::EC2::SecurityGroup
@@ -651,6 +618,11 @@ Resources:
             FromPort: 5443
             ToPort: 5443
             Description: Allow 5443. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 4444
+            ToPort: 4444
+            Description: Allow 4444. Port for accessing Dashboard
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -681,6 +653,17 @@ Resources:
           TargetGroupArn: !Ref ALBTargetGroupEdge
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: '5443'
+      Protocol: HTTPS
+  ALBListener4444:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref LoadBalancerCertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupOrigin 
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: '4444'
       Protocol: HTTPS
   ALBListener5080:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
@@ -730,12 +713,6 @@ Resources:
       UnhealthyThresholdCount: 5
       VpcId: !Ref AntMediaVPC
       TargetGroupAttributes:
-        - Key: stickiness.enabled
-          Value: 'true'
-        - Key: stickiness.type
-          Value: lb_cookie
-        - Key: stickiness.lb_cookie.duration_seconds
-          Value: '30'
         - Key: load_balancing.algorithm.type
           Value: least_outstanding_requests
   OriginRule:
@@ -815,9 +792,14 @@ Resources:
 
 Outputs:
 
-  Password:
-    Description: Dashboard Password
-    Value: !Ref DashboardPassword
+  Dashboard:
+    Description: Dashboard Login URL 
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
 
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers

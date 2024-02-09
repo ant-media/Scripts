@@ -3,223 +3,6 @@ Description: >-
   Ant Media Server AutoScaling CloudFormation Templates.
   If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
-  VpcCidrBlock:
-    Description: 'CIDR value for Wavelength Network'
-    Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: 10.0.0.0/16
-    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
-  OriginCidrBlock:
-    Description: 'CIDR value of Origin'
-    Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: 10.0.1.0/24
-    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-  EdgeCidrBlock:
-    Description: 'CIDR value of Edge'
-    Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: 10.0.2.0/24
-    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-  MonitorInstanceType:
-    Description: Ant Media Server EC2 instance type
-    Type: String
-    Default: t2.large
-    AllowedValues:
-      - t2.large
-      - t2.xlarge
-      - t2.2xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m4.10xlarge
-      - m4.16xlarge
-      - c5d.large
-      - c5d.xlarge
-      - c5d.2xlarge
-      - c5d.4xlarge
-      - c5d.9xlarge
-      - c5d.18xlarge
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5.9xlarge
-      - c5.12xlarge
-      - c5.18xlarge
-      - c5.24xlarge
-      - c4.large
-      - c4.xlarge
-      - c4.2xlarge
-      - c4.4xlarge
-      - c4.8xlarge
-    ConstraintDescription: must be a valid EC2 instance type.
-  EdgeInstanceType:
-    Description: Ant Media Server Edge EC2 instance type
-    Type: String
-    Default: c5.xlarge
-    AllowedValues:
-      - t2.large
-      - t2.xlarge
-      - t2.2xlarge
-      - m3.large
-      - m3.xlarge
-      - m3.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m4.10xlarge
-      - m4.16xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
-      - c3.large
-      - c3.xlarge
-      - c3.2xlarge
-      - c3.4xlarge
-      - c3.8xlarge
-      - c4.large
-      - c4.xlarge
-      - c4.2xlarge
-      - c4.4xlarge
-      - c4.8xlarge
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5.9xlarge
-      - c5.12xlarge
-      - c5.18xlarge
-      - c5.24xlarge
-      - c5d.large
-      - c5d.xlarge
-      - c5d.2xlarge
-      - c5d.4xlarge
-      - c5d.9xlarge
-      - c5d.18xlarge
-      - c5n.large
-      - c5n.xlarge
-      - c5n.2xlarge
-      - c5n.4xlarge
-      - c5n.9xlarge
-      - c5n.18xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
-    ConstraintDescription: must be a valid EC2 instance type.
-
-  OriginInstanceType:
-    Description: Ant Media Server Origin EC2 instance type
-    Type: String
-    Default: c5.xlarge
-    AllowedValues:
-      - t2.large
-      - t2.xlarge
-      - t2.2xlarge
-      - m3.large
-      - m3.xlarge
-      - m3.2xlarge
-      - m4.large
-      - m4.xlarge
-      - m4.2xlarge
-      - m4.4xlarge
-      - m4.10xlarge
-      - m4.16xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
-      - c3.large
-      - c3.xlarge
-      - c3.2xlarge
-      - c3.4xlarge
-      - c3.8xlarge
-      - c4.large
-      - c4.xlarge
-      - c4.2xlarge
-      - c4.4xlarge
-      - c4.8xlarge
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5.9xlarge
-      - c5.12xlarge
-      - c5.18xlarge
-      - c5.24xlarge
-      - c5d.large
-      - c5d.xlarge
-      - c5d.2xlarge
-      - c5d.4xlarge
-      - c5d.9xlarge
-      - c5d.18xlarge
-      - c5n.large
-      - c5n.xlarge
-      - c5n.2xlarge
-      - c5n.4xlarge
-      - c5n.9xlarge
-      - c5n.18xlarge
-      - r3.large
-      - r3.xlarge
-      - r3.2xlarge
-      - r3.4xlarge
-      - r3.8xlarge
-    ConstraintDescription: must be a valid EC2 instance type.
-
-  MongoDBInstanceType:
-    Description: Ant Media MongoDB EC2 instance type
-    Type: String
-    Default: c5.xlarge
-    AllowedValues:
-      - c5.large
-      - c5.xlarge
-      - c5.2xlarge
-      - c5.4xlarge
-      - c5.9xlarge
-      - c5.18xlarge
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
-      - m5.4xlarge
-      - m5.12xlarge
-      - m5.24xlarge
-      - r5.large
-      - r5.xlarge
-      - r5.2xlarge
-      - r5.4xlarge
-      - r5.12xlarge
-      - r5.24xlarge
-      - m5a.large
-      - m5a.xlarge
-      - m5a.2xlarge
-      - m5a.4xlarge
-      - m5a.12xlarge
-      - m5a.24xlarge
-      - r5a.large
-      - r5a.xlarge
-      - r5a.2xlarge
-      - r5a.4xlarge
-      - r5a.12xlarge
-      - r5a.24xlarge
   KeyName:
     Description: Name of an existing EC2 KeyPair to enable SSH access to the instances. If there is no value here, you must create an ssh key (EC2 > Key Pairs).
     Type: 'AWS::EC2::KeyPair::KeyName'
@@ -227,67 +10,10 @@ Parameters:
     MaxLength: '255'
     AllowedPattern: '[\x20-\x7E]*'
     ConstraintDescription: can contain only ASCII characters.
-  SSHLocation:
-    Description: The IP address range that can be used to SSH to the EC2 instances
-    Type: String
-    MinLength: '9'
-    MaxLength: '18'
-    Default: 0.0.0.0/0
-    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
-  Email:
-    Description: EMail address to notify if there are any scaling operations
-    Type: String
-    AllowedPattern: >-
-      ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
-    ConstraintDescription: must be a valid email address.
-  AntMediaOriginCapacity:
-    Default: '1'
-    Description: The initial number of Ant Media Origin instances
-    Type: Number
-    MinValue: '1'
-    MaxValue: '1000'
-  AntMediaOriginCapacityMax:
-    Default: '10'
-    Description: The initial number of Ant Media Origin instances
-    Type: Number
-    ConstraintDescription: must be between 2 and 20 EC2 instances.
-  AntMediaEdgeCapacity:
-    Default: '2'
-    Description: The initial number of Ant Media Edge instances
-    Type: Number
-    MinValue: '1'
-    MaxValue: '1000'
-  AntMediaEdgeCapacityMax:
-    Default: '10'
-    Description: The initial number of Ant Media Edge instances
-    Type: Number
-    ConstraintDescription: must be between 2 and 20 EC2 instances.
-  CPUPolicyTargetValue:
-    Type: Number
-    Default: 60.0
-    Description: This parameter for creates new Instances when CPU load exceed to %60.
   LoadBalancerCertificateArn:
     Description: 'Amazon Resource Name (ARN) of the certificate to associate with the load balancer. If you do not have the SSL certificate, please check this guide: https://antmedia.io/ant-media-server-cloudformation-installation/ '
     Type: String
     Default: ''
-  DiskSize:
-    Default: '10'
-    Description: Disk size of instances
-    Type: Number
-    MinValue: '10'
-    MaxValue: '1000'
-  ElasticIPAddress:
-    Description: If you want to assign an Elastic IP Address, please select True
-    Default: false
-    Type: String
-    AllowedValues:
-      - true
-      - false
-Conditions:
-  CreateIP: !Equals
-    - !Ref ElasticIPAddress
-    - true
 
 Resources:
   DescribeImagesRole:
@@ -398,7 +124,7 @@ Resources:
   AntMediaVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VpcCidrBlock
+      CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags:
@@ -410,7 +136,7 @@ Resources:
     DependsOn: AntMediaVPC
     Properties:
       VpcId: !Ref AntMediaVPC
-      CidrBlock: !Ref OriginCidrBlock
+      CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: true
       AvailabilityZone: 
         Fn::Select: 
@@ -425,7 +151,7 @@ Resources:
     DependsOn: AntMediaVPC
     Properties:
       VpcId: !Ref AntMediaVPC
-      CidrBlock: !Ref EdgeCidrBlock
+      CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: true
       AvailabilityZone: 
         Fn::Select: 
@@ -471,16 +197,6 @@ Resources:
     Properties:
       RouteTableId: !Ref RouteTable
       SubnetId: !Ref EdgeZone
-
-
-  NotificationTopic:
-    Type: 'AWS::SNS::Topic'
-    DependsOn:
-      - DBInstance
-    Properties:
-      Subscription:
-        - Endpoint: !Ref Email
-          Protocol: email
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -534,9 +250,9 @@ Resources:
         LaunchTemplate:
           LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
           Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
-        MinSize: !Ref AntMediaOriginCapacity
-        MaxSize: !Ref AntMediaOriginCapacityMax
-        DesiredCapacity: !Ref AntMediaOriginCapacity
+        MinSize: MinSizeOrigin
+        MaxSize: 100
+        DesiredCapacity: MinSizeOrigin
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
           - !Ref RTMPTargetGroup
@@ -547,27 +263,20 @@ Resources:
       CreationPolicy:
         ResourceSignal:
           Timeout: PT15M
-          Count: !Ref AntMediaOriginCapacity
+          Count: MinSizeOrigin
       UpdatePolicy:
         AutoScalingRollingUpdate:
           MinInstancesInService: '1'
           MaxBatchSize: '1'
           PauseTime: PT15M
           WaitOnResourceSignals: 'true'
-        NotificationConfiguration:
-          TopicARN: !Ref NotificationTopic
-          NotificationTypes:
-            - 'autoscaling:EC2_INSTANCE_LAUNCH'
-            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
 
   LaunchTemplateOrigin:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
       LaunchTemplateData:
-        InstanceType: !Ref OriginInstanceType
+        InstanceType: c5.2xlarge
         KeyName: !Ref KeyName
         ImageId: !Ref AntMediaAmi
         SecurityGroupIds:
@@ -575,7 +284,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
-              VolumeSize: !Ref DiskSize
+              VolumeSize: 10
               VolumeType: gp2
               DeleteOnTermination: true
         UserData:
@@ -611,9 +320,9 @@ Resources:
       LaunchTemplate:
         LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateEdge
         Version: !GetAtt 'LaunchTemplateEdge.LatestVersionNumber'
-      MinSize: !Ref AntMediaEdgeCapacity
-      MaxSize: !Ref AntMediaEdgeCapacityMax
-      DesiredCapacity: !Ref AntMediaEdgeCapacity
+      MinSize: MinSizeEdge
+      MaxSize: 100
+      DesiredCapacity: MinSizeEdge
       TargetGroupARNs:
         - !Ref ALBTargetGroupEdge
       Tags:
@@ -623,27 +332,20 @@ Resources:
     CreationPolicy:
       ResourceSignal:
         Timeout: PT15M
-        Count: !Ref AntMediaEdgeCapacity
+        Count: MinSizeEdge
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: '1'
         MaxBatchSize: '1'
         PauseTime: PT15M
         WaitOnResourceSignals: 'true'
-      NotificationConfiguration:
-          TopicARN: !Ref NotificationTopic
-          NotificationTypes:
-            - 'autoscaling:EC2_INSTANCE_LAUNCH'
-            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
 
   LaunchTemplateEdge:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
       LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateEdge
       LaunchTemplateData:
-        InstanceType: !Ref EdgeInstanceType
+        InstanceType: c5.4xlarge
         KeyName: !Ref KeyName
         ImageId: !Ref AntMediaAmi
         SecurityGroupIds:
@@ -651,7 +353,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
-              VolumeSize: !Ref DiskSize
+              VolumeSize: 10
               VolumeType: gp2
               DeleteOnTermination: true
         UserData:
@@ -703,11 +405,6 @@ Resources:
             FromPort: 5443
             ToPort: 5443
             Description: Allow 5443. Port for Edge Instances
-          - CidrIp: 0.0.0.0/0
-            IpProtocol: tcp
-            FromPort: 4444
-            ToPort: 4444
-            Description: Allow 4444. Port for accessing Dashboard
 
   ApplicationLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
@@ -740,17 +437,6 @@ Resources:
           TargetGroupArn: !Ref ALBTargetGroupEdge
       LoadBalancerArn: !Ref ApplicationLoadBalancer
       Port: '5443'
-      Protocol: HTTPS
-  ALBListener4444:
-    Type: 'AWS::ElasticLoadBalancingV2::Listener'
-    Properties:
-      Certificates:
-        - CertificateArn: !Ref LoadBalancerCertificateArn
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref ALBTargetGroupOrigin 
-      LoadBalancerArn: !Ref ApplicationLoadBalancer
-      Port: '4444'
       Protocol: HTTPS
   ALBListener5080:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
@@ -804,6 +490,12 @@ Resources:
       UnhealthyThresholdCount: 5
       VpcId: !Ref AntMediaVPC
       TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '30'
         - Key: load_balancing.algorithm.type
           Value: least_outstanding_requests
   OriginRule:
@@ -842,11 +534,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: '22'
           ToPort: '22'
-          CidrIp: !Ref SSHLocation
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: '5080'
           ToPort: '5080'
-          CidrIp: !Ref VpcCidrBlock
+          CidrIp: 10.0.0.0/16
         - IpProtocol: tcp
           FromPort: '1935'
           ToPort: '1935'
@@ -858,7 +550,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: '5000'
           ToPort: '5000'
-          CidrIp: !Ref VpcCidrBlock
+          CidrIp: 10.0.0.0/16
       VpcId: !Ref AntMediaVPC
 
   OriginCPUPolicy:
@@ -869,7 +561,7 @@ Resources:
       TargetTrackingConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ASGAverageCPUUtilization
-        TargetValue: !Ref CPUPolicyTargetValue
+        TargetValue: 60.0
 
   EdgeCPUPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
@@ -879,7 +571,7 @@ Resources:
       TargetTrackingConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ASGAverageCPUUtilization
-        TargetValue: !Ref CPUPolicyTargetValue
+        TargetValue: 60.0
 
   DBEC2SecurityGroup:
       Type: 'AWS::EC2::SecurityGroup'
@@ -890,11 +582,11 @@ Resources:
           - IpProtocol: tcp
             FromPort: '27017'
             ToPort: '27017'
-            CidrIp: !Ref VpcCidrBlock
+            CidrIp: 10.0.0.0/16
           - IpProtocol: tcp
             FromPort: '22'
             ToPort: '22'
-            CidrIp: !Ref SSHLocation
+            CidrIp: 0.0.0.0/0
   DBInstance:
       Type: 'AWS::EC2::Instance'
       DependsOn:
@@ -904,7 +596,7 @@ Resources:
       Properties:
         KeyName: !Ref KeyName
         ImageId: !Ref UbuntuAmi
-        InstanceType: !Ref MongoDBInstanceType
+        InstanceType: c5.xlarge
         SubnetId: !Ref OriginZone
         SecurityGroupIds:
           - !GetAtt "DBEC2SecurityGroup.GroupId"
@@ -922,187 +614,9 @@ Resources:
             sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
             systemctl enable mongod
             systemctl restart mongod
-  MonitorSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      VpcId: !Ref AntMediaVPC
-      GroupDescription: Monitor SecurityGroup
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: '22'
-          ToPort: '22'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '3000'
-          ToPort: '3000'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '9092'
-          ToPort: '9092'
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: '9093'
-          ToPort: '9093'
-          CidrIp: 0.0.0.0/0
-
-  MonitorInstance:
-      Type: 'AWS::EC2::Instance'
-      Properties:
-        KeyName: !Ref KeyName
-        ImageId: !Ref UbuntuAmi
-        InstanceType: !Ref MonitorInstanceType
-        SubnetId: !Ref OriginZone
-        SecurityGroupIds:
-          - !GetAtt MonitorSecurityGroup.GroupId
-        Tags:
-        - Key: Name
-          Value: Antmedia-Monitor
-        UserData:
-          Fn::Base64: !Sub |
-            #!/bin/bash
-            apt-get update
-            apt-get install -y python-pip
-            apt-get install -y python-setuptools
-            mkdir -p /opt/aws/bin
-            python /usr/lib/python2.7/dist-packages/easy_install.py --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource TestInstance --region ${AWS::Region}
-            sudo apt-get install apt-transport-https software-properties-common wget -y
-            wget -qO- https://raw.githubusercontent.com/ant-media/Scripts/master/cloudformation/kafka_2.13-2.8.1.tgz | tar -zxvf -  -C /opt/ && mv /opt/kafka* /opt/kafka
-            wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
-            echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
-            wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
-            sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
-            apt-get update && apt-get install elasticsearch logstash grafana openjdk-8-jdk -y
-
-            CPU=$(grep -c 'processor' /proc/cpuinfo)
-            MEMORY=$(awk '/MemTotal/ {print int($2/1024/1024)}' /proc/meminfo)
-            LOCAL_IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
-            PUBLIC_IP=$(curl http://169.254.169.254/latest/meta-data/public-ipv4)
-
-            DASHBOARD_URL="https://raw.githubusercontent.com/ant-media/Scripts/master/monitor/antmediaserver.json"
-            DATASOURCE_URL="https://raw.githubusercontent.com/ant-media/Scripts/master/monitor/datasource.json"
-
-            if [ "$MEMORY" -ge "7" ]; then
-                    sudo sed -i -e 's/-Xms1g/-Xms4g/g' -e 's/-Xmx1g/-Xmx4g/g' /etc/logstash/jvm.options
-            fi
-
-
-            sudo sed -i "s/#.*pipeline.workers: 2/pipeline.workers: $CPU/g" /etc/logstash/logstash.yml
-            sudo sed -i 's/num.partitions=1/num.partitions=4/g' /opt/kafka/config/server.properties
-
-            sudo cat <<EOF >> /lib/systemd/system/kafka.service
-
-            [Unit]
-            Description=Apache Kafka Server
-            Requires=network.target remote-fs.target
-            After=network.target remote-fs.target kafka-zookeeper.service
-
-            [Service]
-            Type=simple
-            Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
-            ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/server.properties
-            ExecStop=/opt/kafka/bin/kafka-server-stop.sh
-
-            [Install]
-            WantedBy=multi-user.target
-
-            EOF
-
-            sudo cat << EOF >> /lib/systemd/system/kafka-zookeeper.service
-
-            [Unit]
-            Description=Apache Zookeeper Server
-            Requires=network.target remote-fs.target
-            After=network.target remote-fs.target
-
-            [Service]
-            Type=simple
-            Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64
-            ExecStart=/opt/kafka/bin/zookeeper-server-start.sh /opt/kafka/config/zookeeper.properties
-            ExecStop=/opt/kafka/bin/zookeeper-server-stop.sh
-
-            [Install]
-            WantedBy=multi-user.target
-
-            EOF
-
-            sudo cat <<EOF >> /etc/logstash/conf.d/logstash.conf
-            input {
-              kafka {
-                bootstrap_servers => "127.0.0.1:9092"
-                client_id => "logstash"
-                group_id => "logstash"
-                consumer_threads => 4
-                topics => ["ams-instance-stats","ams-webrtc-stats","kafka-webrtc-tester-stats"]
-                codec => "json"
-                tags => ["log", "kafka_source"]
-                type => "log"
-              }
-            }
-
-            output {
-              elasticsearch {
-                 hosts => ["127.0.0.1:9200"]
-                 index => "logstash-%{[type]}-%{+YYYY.MM.dd}"
-              }
-            }
-            EOF
-
-            sudo cat <<EOF >> /opt/kafka/config/server.properties
-            advertised.listeners=INTERNAL_PLAINTEXT://$LOCAL_IP:9092,EXTERNAL_PLAINTEXT://$PUBLIC_IP:9093
-            listeners=INTERNAL_PLAINTEXT://0.0.0.0:9092,EXTERNAL_PLAINTEXT://0.0.0.0:9093
-            inter.broker.listener.name=INTERNAL_PLAINTEXT
-            listener.security.protocol.map=INTERNAL_PLAINTEXT:PLAINTEXT,EXTERNAL_PLAINTEXT:PLAINTEXT
-            EOF
-
-            sudo systemctl enable grafana-server && sudo systemctl restart grafana-server
-
-            wget -q $DASHBOARD_URL -O /tmp/antmediaserver.json
-            wget -q $DATASOURCE_URL -O /tmp/antmedia-datasource.json
-
-            sleep 5
-
-            sudo curl "http://127.0.0.1:3000/api/dashboards/db" \
-                -u "admin:admin" \
-                -H "Content-Type: application/json" \
-                --data-binary "@/tmp/antmediaserver.json" > /tmp/curl.log
-
-
-            sudo curl -X "POST" "http://127.0.0.1:3000/api/datasources" \
-                -H "Content-Type: application/json" \
-                -u "admin:admin" \
-                --data-binary "@/tmp/antmedia-datasource.json" >> /tmp/curl.log
-
-
-
-
-            sudo systemctl daemon-reload
-            sudo systemctl enable logstash.service && sudo systemctl enable elasticsearch && sudo systemctl enable kafka && sudo systemctl enable kafka-zookeeper
-            sudo systemctl restart kafka-zookeeper && sudo systemctl restart kafka && sudo systemctl restart logstash && sudo systemctl restart elasticsearch
-
-  ElasticIP:
-    Type: AWS::EC2::EIP
-    Condition: CreateIP
-    Properties:
-      Domain: "vpc"
-  ElasticIPAssignment:
-    Type: AWS::EC2::EIPAssociation
-    Condition: CreateIP
-    Properties:
-      EIP: !Ref ElasticIP
-      InstanceId: !Ref MonitorInstance
 
 Outputs:
 
-  Dashboard:
-    Description: Dashboard Login URL 
-    Value: !Join 
-      - ''
-      - - 'https://'
-        - !GetAtt 
-          - ApplicationLoadBalancer
-          - DNSName
-  
   OriginHTTPS:
     Description: HTTPS URL of the Ant Media Origin Servers
     Value: !Join 
@@ -1151,12 +665,3 @@ Outputs:
           - DNSName 
           
 
-  MonitorURL:
-    Description: "Grafana Default Username and Password: admin/admin"
-    Value: !Join
-      - ''
-      - - 'http://'
-        - !GetAtt
-          - MonitorInstance
-          - PublicIp
-        - ':3000'
