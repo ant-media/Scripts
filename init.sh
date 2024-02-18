@@ -5,6 +5,11 @@
 INITIALIZED=/usr/local/antmedia/conf/initialized
 if [ ! -f "$INITIALIZED" ]
 then
+  # Generate and set JWT Secret Key
+  SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
+  sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
+  sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
+
   ## Local IPV4
 
   export LOCAL_IPv4=`curl -s http://169.254.169.254/latest/meta-data/local-ipv4`
