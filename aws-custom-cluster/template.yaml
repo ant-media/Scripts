@@ -491,6 +491,7 @@ Resources:
                   - "elasticloadbalancing:DescribeRules"
                   - "elasticloadbalancing:DeleteRule"
                   - "elasticloadbalancing:DescribeTargetGroups"
+                  - "elasticloadbalancing:CreateRule"
                 Resource: "*"
         - PolicyName: "CloudWatchLogsPolicy"
           PolicyDocument:
