@@ -1,0 +1,540 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Ant Media Server - AWS API Gateway, ASG, Lambda 
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the AWS Elastic
+      Beanstalk instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  SslCertificate:
+    Type: String
+    Description: "AWS ARN to ACM generated SSL certificate." 
+
+Resources:
+
+  AntMediaVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-VPC
+
+  OriginZone:
+    Type: AWS::EC2::Subnet
+    DependsOn: AntMediaVPC
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Origin-Subnet
+
+  EdgeZone:
+    Type: AWS::EC2::Subnet
+    DependsOn: AntMediaVPC
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Edge-Subnet
+
+  DefaultGateway:
+    Type: AWS::EC2::InternetGateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref DefaultGateway
+      VpcId: !Ref AntMediaVPC
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Route-Table
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      GatewayId: !Ref DefaultGateway
+      DestinationCidrBlock: 0.0.0.0/0
+
+  SubnetRouteTableAssociationOrigin:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref OriginZone
+
+  SubnetRouteTableAssociationEdge:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref EdgeZone
+
+  OriginGroup:
+      Type: 'AWS::AutoScaling::AutoScalingGroup'
+      DependsOn:
+      - LaunchTemplateOrigin
+      Properties:
+        VPCZoneIdentifier: 
+          - !Ref OriginZone
+        LaunchTemplate:
+          LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+          Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
+        MinSize: 0
+        MaxSize: 1
+        DesiredCapacity: 0
+        TargetGroupARNs:
+          - !Ref ALBTargetGroupOrigin 
+        Tags:
+        - Key: Name
+          Value: Ant-Media-Server
+          PropagateAtLaunch: 'true'
+
+  ELBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Allows access
+        VpcId: !Ref AntMediaVPC
+        SecurityGroupIngress:
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            Description: Allow 80. Port for Origin Instances 
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            Description: Allow 443. Port for Origin Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5080
+            ToPort: 5080
+            Description: Allow 5080. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5443
+            ToPort: 5443
+            Description: Allow 5443. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 4444
+            ToPort: 4444
+            Description: Allow 4444. Port for accessing Dashboard          
+
+  ApplicationLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Subnets:
+      - !Ref OriginZone
+      - !Ref EdgeZone
+      SecurityGroups:
+        - !GetAtt [ ELBSecurityGroup, GroupId ]
+
+  ALBTargetGroupOrigin:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 5080
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref AntMediaVPC
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '30'
+
+  ALBTargetGroupLambda:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      Name: ALBTargetGroupLambda
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt LambdaFunctionTrigger.Arn
+
+  ALBListener443:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - CertificateArn: !Ref SslCertificate
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupOrigin
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: '443'
+      Protocol: HTTPS
+
+  ALBListenerRuleWithPath:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupLambda
+      Conditions:
+        - Field: path-pattern
+          Values: [ "*" ]
+      ListenerArn: !Ref ALBListener443
+      Priority: 1
+
+  LaunchTemplateOrigin:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+      LaunchTemplateData:
+        InstanceType: t2.medium
+        KeyName: !Ref KeyName
+        ImageId: ami-05603669082b6ebf0
+        SecurityGroupIds:
+          - !GetAtt "InstanceSecurityGroup.GroupId"
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: 10
+              VolumeType: gp2
+              DeleteOnTermination: true
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            apt-get update 
+            apt-get install -y python3-pip
+            apt-get install -y python3-setuptools
+            mkdir -p /opt/aws/bin
+            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: OriginInstance
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access and HTTP access on the configured port
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5080'
+          ToPort: '5080'
+          CidrIp: 10.0.0.0/16
+        - IpProtocol: tcp
+          FromPort: '1935'
+          ToPort: '1935'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: '50000'
+          ToPort: '60000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5443'
+          ToPort: '5443'
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref AntMediaVPC
+
+  LambdaSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: "Lambda Security Group"
+      GroupDescription: "Lambda Traffic"
+      VpcId: !Ref AntMediaVPC
+      SecurityGroupEgress:
+      - IpProtocol: "-1"
+        CidrIp: "0.0.0.0/0"
+
+  # Lambda function to get Elastic Beanstalk Load Balancer ARN
+  GetEBLoadBalancerArn:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import traceback
+
+          def lambda_handler(event, context):
+              try:
+                  elasticbeanstalk = boto3.client('elasticbeanstalk')
+                  environment_name = event['ResourceProperties']['EnvironmentName']
+
+                  response = elasticbeanstalk.describe_environment_resources(
+                      EnvironmentName=environment_name
+                  )
+
+                  # Load balancer bilgilerini içeren listeyi al
+                  load_balancers = response['EnvironmentResources']['LoadBalancers']
+
+                  if load_balancers:
+                      # İlk yük dengeleyicisinin adını al
+                      load_balancer_name = load_balancers[0].get('Name')
+                      if load_balancer_name:
+                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {"LoadBalancerName": load_balancer_name}, load_balancer_name)
+                      else:
+                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": "Load balancer name not found."})
+                  else:
+                      cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": "No load balancers found for the environment."})
+            
+              except Exception as e:
+                  traceback.print_exc()
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
+      Runtime: python3.12
+      Handler: "index.lambda_handler"
+      Role: !GetAtt LambdaIamRole.Arn
+      Timeout: 60
+
+  # Custom resource to get Elastic Beanstalk Load Balancer information
+ # GetEBLoadBalancer:
+ #   Type: Custom::GetEBLoadBalancer
+ #   Properties:
+ #     ServiceToken: !Sub ${GetEBLoadBalancerArn.Arn}
+ #     EnvironmentName: !Ref AMSEnvironment
+
+  # Lambda Function trigger by Cloudwatch
+  LambdaFunctionTrigger:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+
+          import json, boto3, os
+
+          def lambda_handler(event, context):
+              listener_arn = os.environ['LISTENER_ARN']
+              new_desired_capacity = 1
+              autoscaling_client = boto3.client('autoscaling')
+              ec2_client = boto3.client('ec2')
+              elb_client = boto3.client('elbv2')
+              # Find Auto Scaling Group names with specific prefixes
+              asg_names = autoscaling_client.describe_auto_scaling_groups()
+              asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
+                                 'OriginGroup' in group['AutoScalingGroupName']]
+              asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
+              
+              autoscaling_client = boto3.client('autoscaling')
+              response = autoscaling_client.update_auto_scaling_group(
+                  AutoScalingGroupName=asg_origin_group_names,
+                  DesiredCapacity=new_desired_capacity
+              )
+              
+              listener_response = elb_client.describe_rules(
+              ListenerArn=listener_arn
+              )
+
+              for rule in listener_response['Rules']:
+                  if 'Priority' in rule and rule['Priority'] != 'default':
+                      lambda_rule=rule['RuleArn']
+              
+              delete_response = elb_client.delete_rule(
+              RuleArn=lambda_rule
+              )
+    
+              html_content = """
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta http-equiv="refresh" content="20;url=/">
+                  <title>My Lambda HTML Page</title>
+              </head>
+              <body>
+                  <h1>Hello!</h1>
+                  <p>Your Ant Media Server Cluster will be ready soon. Please wait..</p>
+              </body>
+              </html>
+              """
+              
+              
+
+              # HTTP yanıtı hazırla (HTML içeriği)
+              response = {
+                  "statusCode": 200,
+                  "headers": {
+                      "Content-Type": "text/html",
+                  },
+                  "body": html_content
+              }
+
+              return response
+      Handler: "index.lambda_handler"
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          LISTENER_ARN: !Ref ALBListener443
+          #TARGETGROUP_ARN: !Ref ALBTargetGroupLambda
+
+  LambdaCloudwatchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+
+          def lambda_handler(event, context):
+              listener_arn = os.environ['LISTENER_ARN']
+              autoscaling_client = boto3.client('autoscaling')
+              elb_client = boto3.client('elbv2')
+              asg_names = autoscaling_client.describe_auto_scaling_groups()
+              asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
+                                 'OriginGroup' in group['AutoScalingGroupName']]
+              asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
+              response = autoscaling_client.update_auto_scaling_group(
+                  AutoScalingGroupName=asg_origin_group_names,
+                  MinSize=0,
+                  DesiredCapacity=0
+              )
+
+              target_group_name = elb_client.describe_target_groups(Names=['ALBTargetGroupLambda'])
+              target_group_arn= target_group_name['TargetGroups'][0]['TargetGroupArn']
+
+              create_rule = elb_client.create_rule(
+                  Actions=[
+                      {
+                          'Type': 'forward',
+                          'TargetGroupArn': target_group_arn
+                      }
+                  ],
+                  Conditions=[
+                      {
+                          'Field': 'path-pattern',
+                          'Values': ['*']
+                      }
+                  ],
+                  ListenerArn=listener_arn,
+                  Priority=1
+              )  
+
+              print(response)
+
+              return {
+                  'statusCode': 200,
+                  'body': 'Auto Scaling Group updated successfully!'
+              }
+      #FunctionName: InstanceDeleteFunction
+      Handler: "index.lambda_handler"
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          AUTO_SCALING_GROUP_NAME: !Sub "${AWS::StackName}-OriginGroup"
+          LISTENER_ARN: !Ref ALBListener443 
+
+  # General IAM Role for Lambda Functions
+  LambdaIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "MyLambdaExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "EC2FullAccessPolicy1"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ec2:RunInstances"
+                  - "ec2:CreateTags"
+                  - "ec2:DescribeInstances"
+                  - "autoscaling:UpdateAutoScalingGroup"
+                  - "autoscaling:DescribeAutoScalingGroups"
+                  - "elasticbeanstalk:DescribeEnvironmentResources"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DeleteNetworkInterface"
+                  - "elasticloadbalancing:DescribeRules"
+                  - "elasticloadbalancing:DeleteRule"
+                Resource: "*"
+        - PolicyName: "CloudWatchLogsPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+      Path: '/'
+
+  # Lambda Resource Based Policy for Cloudwatch
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaCloudwatchFunction
+      Principal: lambda.alarms.cloudwatch.amazonaws.com
+      SourceArn: !GetAtt AutoScalingGroupScaleDownAlarm.Arn
+
+  ELBLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunctionTrigger.Arn
+      Action: lambda:InvokeFunction
+      Principal: elasticloadbalancing.amazonaws.com
+
+  # Cloudwatch rule to set 0 in Autoscale
+  AutoScalingGroupScaleDownAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmName: AutoScalingGroupScaleDownAlarm
+      ComparisonOperator: LessThanOrEqualToThreshold
+      EvaluationPeriods: 3
+      MetricName: CPUUtilization 
+      Namespace: AWS/EC2
+      Period: 300  
+      Statistic: Average
+      Threshold: 10
+      ActionsEnabled: true
+      AlarmActions:
+        - !GetAtt LambdaCloudwatchFunction.Arn
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref OriginGroup
+
