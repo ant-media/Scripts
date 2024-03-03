@@ -490,6 +490,7 @@ Resources:
                   - "ec2:DeleteNetworkInterface"
                   - "elasticloadbalancing:DescribeRules"
                   - "elasticloadbalancing:DeleteRule"
+                  - "elasticloadbalancing:DescribeTargetGroups"
                 Resource: "*"
         - PolicyName: "CloudWatchLogsPolicy"
           PolicyDocument:
