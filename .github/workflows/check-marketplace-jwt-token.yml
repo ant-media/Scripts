@@ -1,26 +1,39 @@
-name: Ant Media Server JWT Validation Test
-on: [push]
+name: Marketplace SSL Test 
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
 
 jobs:
-  install_ant_media_server:
+  run_build:
+    name: Marketplace SSL Test 
     runs-on: ubuntu-latest
-    env:
-      SCRIPT_URL: https://raw.githubusercontent.com/ant-media/Ant-Media-Server/adc6096c54ee19e0f9aa0ee4e65e1495883ffb27/src/main/server/conf/jwt_marketplace_check.sh
-    name: Install Ant Media Server and Check JWT Token
+    
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Install Ant Media Server
-        run: |
-          curl --progress-bar -o ant.zip ${{ secrets.LATEST_URL }} 
-          wget https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh
-          sudo bash ./install_ant-media-server.sh -i ant.zip
-          sleep 30
-      - name: Test JWT
-        run: |
-          sudo wget -P /usr/local/antmedia/conf/ ${{ env.SCRIPT_URL }}
-          sudo -s
-          source /usr/local/antmedia/conf/jwt_marketplace_check.sh
-          result_marketplace=$(check_marketplace)
-          echo $result_marketplace
-          
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+      - name: Run enable_ssl.sh for marketplace
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.OVH_REMOTE_HOST }}
+          username: ${{ secrets.OVH_REMOTE_USERNAME }}
+          key: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OVH_REMOTE_PORT }}
+          script: |
+            SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
+            sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
+            sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
+            sudo service antmedia restart
+            sudo wget -P /usr/local/antmedia/conf/ https://raw.githubusercontent.com/ant-media/Ant-Media-Server/72bbc6735f9da3c53c5590d87c122baf64e32c7e/src/main/server/conf/jwt_marketplace_check.sh
+            sudo wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/72bbc6735f9da3c53c5590d87c122baf64e32c7e/src/main/server/enable_ssl.sh
+            sudo bash -x /usr/local/antmedia/enable_ssl.sh
+      - name: Run enable_ssl.sh for existing domain
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.OVH_REMOTE_HOST }}
+          username: ${{ secrets.OVH_REMOTE_USERNAME }}
+          key: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OVH_REMOTE_PORT }}
+          script: |
+            sudo bash /usr/local/antmedia/enable_ssl.sh -d ${{ secrets.OVH_REMOTE_HOST }}
