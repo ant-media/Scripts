@@ -27,7 +27,7 @@ jobs:
             sudo service antmedia restart
             sudo wget -P /usr/local/antmedia/conf/ https://raw.githubusercontent.com/ant-media/Ant-Media-Server/72bbc6735f9da3c53c5590d87c122baf64e32c7e/src/main/server/conf/jwt_marketplace_check.sh
             sudo wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/72bbc6735f9da3c53c5590d87c122baf64e32c7e/src/main/server/enable_ssl.sh
-            sudo bash -x /usr/local/antmedia/enable_ssl.sh
+            sudo bash /usr/local/antmedia/enable_ssl.sh
       - name: Run enable_ssl.sh for existing domain
         uses: appleboy/ssh-action@master
         with:
