@@ -276,7 +276,7 @@ Parameters:
     MinValue: '16'
     MaxValue: '1000'
   GPUImage: 
-    Description: If you check True, you must select one of the g and p cloud server types.
+    Description: If you select True, you must select one of the g and p instance types.
     Default: false
     Type: String
     AllowedValues: 
