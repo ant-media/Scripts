@@ -83,6 +83,25 @@ Parameters:
       - r3.2xlarge
       - r3.4xlarge
       - r3.8xlarge
+      - p2.xlarge
+      - p2.8xlarge
+      - p2.16xlarge
+      - p3.2xlarge
+      - p3.8xlarge
+      - p3.16xlarge
+      - p3dn.24xlarge
+      - g4dn.xlarge
+      - g4dn.2xlarge
+      - g4dn.4xlarge
+      - g4dn.8xlarge
+      - g4dn.12xlarge
+      - g4dn.16xlarge
+      - g5.xlarge
+      - g5.2xlarge
+      - g5.4xlarge
+      - g5.8xlarge
+      - g5.12xlarge
+      - g5.16xlarge 
     ConstraintDescription: must be a valid EC2 instance type.
 
   OriginInstanceType:
@@ -143,6 +162,25 @@ Parameters:
       - r3.2xlarge
       - r3.4xlarge
       - r3.8xlarge
+      - p2.xlarge
+      - p2.8xlarge
+      - p2.16xlarge
+      - p3.2xlarge
+      - p3.8xlarge
+      - p3.16xlarge
+      - p3dn.24xlarge
+      - g4dn.xlarge
+      - g4dn.2xlarge
+      - g4dn.4xlarge
+      - g4dn.8xlarge
+      - g4dn.12xlarge
+      - g4dn.16xlarge
+      - g5.xlarge
+      - g5.2xlarge
+      - g5.4xlarge
+      - g5.8xlarge
+      - g5.12xlarge
+      - g5.16xlarge 
     ConstraintDescription: must be a valid EC2 instance type.
 
   MongoDBInstanceType:
@@ -232,11 +270,22 @@ Parameters:
     Type: String
     Default: ''
   DiskSize:
-    Default: '10'
+    Default: '16'
     Description: Disk size of instances
     Type: Number
-    MinValue: '10'
+    MinValue: '16'
     MaxValue: '1000'
+  GPUImage: 
+    Description: If you check True, you must select one of the g and p cloud server types.
+    Default: false
+    Type: String
+    AllowedValues: 
+      - true
+      - false
+Conditions:
+  UseGPUImage: !Equals 
+    - !Ref GPUImage
+    - true
 
 Resources:
   DescribeImagesRole:
@@ -332,9 +381,18 @@ Resources:
     Type: Custom::FindAMI
     Properties:
       ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
-      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
-      Name: "AntMedia-AWS-Marketplace-EE-*"
+      ProductId: "8kf9kapq2qbo37fuekp8k7o6r"
+      Name: "AntMedia-AWS-Marketplace-GPU-*"
       Architecture: "x86_64"
+
+  AntMediaGPUAmi:
+    Condition: UseGPUImage
+    Type: Custom::FindAMI
+    Properties:
+      ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
+      ProductId: "8kf9kapq2qbo37fuekp8k7o6r"
+      Name: "AntMedia-AWS-Marketplace-GPU-*"
+      Architecture: "x86_64"   
 
   UbuntuAmi:
     Type: Custom::FindAMI
@@ -518,7 +576,7 @@ Resources:
       LaunchTemplateData:
         InstanceType: !Ref OriginInstanceType
         KeyName: !Ref KeyName
-        ImageId: !Ref AntMediaAmi
+        ImageId: !If [UseGPUImage, !Ref AntMediaGPUAmi, !Ref AntMediaAmi]
         SecurityGroupIds:
           - !GetAtt "InstanceSecurityGroup.GroupId"
         BlockDeviceMappings:
@@ -594,7 +652,7 @@ Resources:
       LaunchTemplateData:
         InstanceType: !Ref EdgeInstanceType
         KeyName: !Ref KeyName
-        ImageId: !Ref AntMediaAmi
+        ImageId: !If [UseGPUImage, !Ref AntMediaGPUAmi, !Ref AntMediaAmi]
         SecurityGroupIds:
           - !GetAtt "InstanceSecurityGroup.GroupId"
         BlockDeviceMappings:
