@@ -276,7 +276,7 @@ Parameters:
     MinValue: '16'
     MaxValue: '1000'
   GPUImage: 
-    Description: If you select True, you must select one of the g and p instance types.
+    Description: Select "true" to install the GPU Image. You must select one of the g and p instance types.
     Default: false
     Type: String
     AllowedValues: 
