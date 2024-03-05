@@ -232,10 +232,10 @@ Parameters:
     Type: String
     Default: ''
   DiskSize:
-    Default: '10'
+    Default: '16'
     Description: Disk size of instances
     Type: Number
-    MinValue: '10'
+    MinValue: '16'
     MaxValue: '1000'
 
 Resources:
