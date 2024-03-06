@@ -30,6 +30,7 @@ jobs:
             SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
             sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
             sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
+            echo "SECRET_KEY -> $SECRET_KEY"
             sudo service antmedia restart
             echo "Remote host: ${{ secrets.OVH_REMOTE_HOST }}"
             HTTPS_URL=$(sudo bash /usr/local/antmedia/enable_ssl.sh) # | grep 'You can use this url: ' | grep -o 'https://[^ ]*')
