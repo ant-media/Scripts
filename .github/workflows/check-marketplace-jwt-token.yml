@@ -37,7 +37,7 @@ jobs:
             if [ "$status_code" -eq 200 ]; then
                 echo "URL($HTTPS_URL) is working: $status_code"
             else
-                echo "URL is not working: $status_code"
+                echo "URL($HTTPS_URL) is not working: $status_code"
                 exit 1;
             fi
 
