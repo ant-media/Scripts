@@ -1,5 +1,6 @@
 name: Marketplace SSL Test 
 
+#run tests on schedule because we don't want to generate a subdomain everytime
 on:
   schedule:
     - cron: '0 0 * * 1'
@@ -16,10 +17,12 @@ jobs:
       - name: Run enable_ssl.sh for marketplace
         uses: appleboy/ssh-action@master
         with:
+          #OVH_REMOTE_HOST has marketplace version deployed 
           host: ${{ secrets.OVH_REMOTE_HOST }}
           username: ${{ secrets.OVH_REMOTE_USERNAME }}
           key: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
           port: ${{ secrets.OVH_REMOTE_PORT }}
+          # If the version is not marketplace, following enable_ssl.sh script fails 
           script: |
             SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
             sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
@@ -33,5 +36,6 @@ jobs:
           username: ${{ secrets.OVH_REMOTE_USERNAME }}
           key: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
           port: ${{ secrets.OVH_REMOTE_PORT }}
+          #restore the old domain to not encounter any issue
           script: |
             sudo bash /usr/local/antmedia/enable_ssl.sh -d ${{ secrets.OVH_REMOTE_HOST }}
