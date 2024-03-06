@@ -32,6 +32,7 @@ jobs:
             sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
             sudo service antmedia restart
             cat /usr/local/antmedia/enable_ssl.sh
+            cat /usr/local/antmedia/conf/jwt_marketplace_check.sh
             HTTPS_URL=$(sudo bash /usr/local/antmedia/enable_ssl.sh) # | grep 'You can use this url: ' | grep -o 'https://[^ ]*')
             echo "HTTPS_URL -> $HTTPS_URL"
             sleep 20
