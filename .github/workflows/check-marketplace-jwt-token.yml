@@ -32,6 +32,7 @@ jobs:
             sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
             sudo service antmedia restart
             HTTPS_URL=$(sudo bash /usr/local/antmedia/enable_ssl.sh | grep 'You can use this url: ' | grep -o 'https://[^ ]*')
+            echo "HTTPS_URL -> $HTTPS_URL"
             sleep 20
             status_code=$(curl -o /dev/null -s -I -w "%{http_code}" "$HTTPS_URL")
             if [ "$status_code" -eq 200 ]; then
