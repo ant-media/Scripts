@@ -27,13 +27,16 @@ jobs:
           port: ${{ secrets.OVH_REMOTE_PORT }}
           # If the version is not marketplace, following enable_ssl.sh script fails 
           script: |
+            bash
             SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
             sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
             sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
             sudo service antmedia restart
             cat /usr/local/antmedia/enable_ssl.sh
             cat /usr/local/antmedia/conf/jwt_marketplace_check.sh
-            HTTPS_URL=$(sudo bash /usr/local/antmedia/enable_ssl.sh | grep 'You can use this url: ' | grep -o 'https://[^ ]*')
+            OUTPUT=$(sudo bash /usr/local/antmedia/enable_ssl.sh)
+            echo "$OUTPUT";
+            HTTPS_URL=$(echo $OUTPUT | grep 'You can use this url: '| grep -o 'https://[^ ]*')
             echo "HTTPS_URL -> $HTTPS_URL"
             sleep 20
             status_code=$(curl -o /dev/null -s -I -w "%{http_code}" "$HTTPS_URL")
