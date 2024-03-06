@@ -336,6 +336,10 @@ Resources:
           import json, boto3, os
 
           def lambda_handler(event, context):
+              headers = event.get('headers', {})
+              host = headers.get('host', '')
+              path = event.get('path', '')
+              full_url = f"https://{host}{path}"
               listener_arn = os.environ['LISTENER_ARN']
               new_desired_capacity = 1
               autoscaling_client = boto3.client('autoscaling')
@@ -370,7 +374,7 @@ Resources:
               <html lang="en">
               <head>
                   <meta charset="UTF-8">
-                  <meta http-equiv="refresh" content="20;url=/">
+                  <meta http-equiv="refresh" content="20;url={full_url}">
                   <title>My Lambda HTML Page</title>
               </head>
               <body>
@@ -378,11 +382,9 @@ Resources:
                   <p>Your Ant Media Server Cluster will be ready soon. Please wait..</p>
               </body>
               </html>
-              """
-              
+              """.format(full_url=full_url)
               
 
-              # HTTP yanıtı hazırla (HTML içeriği)
               response = {
                   "statusCode": 200,
                   "headers": {
