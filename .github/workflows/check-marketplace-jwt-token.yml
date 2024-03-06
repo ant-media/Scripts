@@ -25,8 +25,6 @@ jobs:
             sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
             sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
             sudo service antmedia restart
-            sudo wget -P /usr/local/antmedia/conf/ https://raw.githubusercontent.com/ant-media/Ant-Media-Server/72bbc6735f9da3c53c5590d87c122baf64e32c7e/src/main/server/conf/jwt_marketplace_check.sh
-            sudo wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/72bbc6735f9da3c53c5590d87c122baf64e32c7e/src/main/server/enable_ssl.sh
             sudo bash /usr/local/antmedia/enable_ssl.sh
       - name: Run enable_ssl.sh for existing domain
         uses: appleboy/ssh-action@master
