@@ -1,11 +1,10 @@
 name: Marketplace SSL Test 
 
 #run tests on schedule because we don't want to generate a subdomain everytime
-#on:
-#  schedule:
-#    - cron: '0 0 * * 1'
+on:
+  schedule:
+    - cron: '0 0 * * 1'
 
-on: [push]
 
 
 jobs:
