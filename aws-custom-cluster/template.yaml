@@ -369,20 +369,45 @@ Resources:
               RuleArn=lambda_rule
               )
     
-              html_content = """
+              html_content = f"""
               <!DOCTYPE html>
               <html lang="en">
               <head>
                   <meta charset="UTF-8">
-                  <meta http-equiv="refresh" content="20;url={full_url}">
-                  <title>My Lambda HTML Page</title>
+                  <title>Ant Media Server is starting</title>
               </head>
-              <body>
-                  <h1>Hello!</h1>
-                  <p>Your Ant Media Server Cluster will be ready soon. Please wait..</p>
+              <body style="text-align:center">
+                  <h1>Get Ready!</h1>
+                  <h2>Ant Media Server is starting</h2>
+                  <p>This page will be automatically redirected soon...</p>
+                  <script>
+                      var url = "{full_url}";
+          
+                      function checkAndForward(url) {{
+                          setTimeout(function () {{
+                              fetch(url)
+                              .then(response => {{
+                                  if (response.status == 200) {{
+                                      console.log("Redirecting to " + url);
+                                      window.location = url;
+                                  }}
+                                  else {{
+                                      console.log("Waiting for the server to be ready");
+                                      checkAndForward(url);
+                                  }}
+                              }}).catch(error => {{
+                                  console.log("Waiting for the server to be ready");
+                                  console.log(error);
+                                  checkAndForward(url);
+                              }});
+                          }}, 5000);
+                      }}
+          
+                      checkAndForward(url);
+                  </script>
               </body>
               </html>
-              """.format(full_url=full_url)
+              """
               
 
               response = {
