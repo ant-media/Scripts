@@ -558,7 +558,7 @@ Resources:
       EvaluationPeriods: 3
       MetricName: CPUUtilization 
       Namespace: AWS/EC2
-      Period: 300  
+      Period: 120  
       Statistic: Average
       Threshold: 10
       ActionsEnabled: true
