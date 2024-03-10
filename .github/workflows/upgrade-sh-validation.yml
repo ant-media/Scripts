@@ -1,11 +1,9 @@
-name: Ant Media Server upgrade.sh Validation Test
+name: upgrade.sh Validation Test
 on: [push]
 
 jobs:
   install_and_upgrade_ant_media_server:
     runs-on: ubuntu-latest
-    env:
-      SCRIPT_URL: https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/src/main/server/upgrade.sh
     name: Install Previous Version of Ant Media Server
     steps:
       - name: Check out repository code
@@ -18,7 +16,7 @@ jobs:
           sleep 30
           PREVIOUS_VERSION=$(unzip -p /usr/local/antmedia/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
           echo "Previous Version: $PREVIOUS_VERSION"
-          wget ${{ SCRIPT_URL }}
+          wget https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/src/main/server/upgrade.sh
           DIR='/usr/local/antmedia/' sudo bash ./upgrade.sh
           wget http://localhost:5080 -O index.html
           CURRENT_VERSION=$(unzip -p /usr/local/antmedia/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
