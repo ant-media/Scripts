@@ -69,7 +69,7 @@ Resources:
   UbuntuGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.12
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -124,7 +124,7 @@ Resources:
 
       Handler: index.lambda_handler
       Role: !Sub '${AcmCertificateImportLambdaExecutionRole.Arn}'
-      Runtime: python3.11
+      Runtime: python3.12
   AcmCertificateImportLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -253,6 +253,8 @@ Resources:
 
   RTMPLoadBalancer:
     Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    DependsOn:
+      - InternetGatewayAttachment
     Properties:
       Subnets:
       - !Ref OriginZone
@@ -321,13 +323,6 @@ Resources:
           MaxBatchSize: '1'
           PauseTime: PT15M
           WaitOnResourceSignals: 'true'
-        NotificationConfiguration:
-          TopicARN: !Ref NotificationTopic
-          NotificationTypes:
-            - 'autoscaling:EC2_INSTANCE_LAUNCH'
-            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
 
   LaunchTemplateOrigin:
     Type: 'AWS::EC2::LaunchTemplate'
@@ -397,13 +392,6 @@ Resources:
         MaxBatchSize: '1'
         PauseTime: PT15M
         WaitOnResourceSignals: 'true'
-      NotificationConfiguration:
-          TopicARN: !Ref NotificationTopic
-          NotificationTypes:
-            - 'autoscaling:EC2_INSTANCE_LAUNCH'
-            - 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE'
-            - 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR'
 
   LaunchTemplateEdge:
     Type: 'AWS::EC2::LaunchTemplate'
@@ -418,7 +406,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
-              VolumeSize: !Ref DiskSize
+              VolumeSize: 10
               VolumeType: gp2
               DeleteOnTermination: true
         UserData:
