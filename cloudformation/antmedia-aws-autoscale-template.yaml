@@ -276,7 +276,7 @@ Parameters:
     MinValue: '16'
     MaxValue: '1000'
   GPUImage: 
-    Description: Select "true" to install the GPU Image. You must select one of the g and p instance types.
+    Description: Select "true" to use GPU Image in Origin Cluster. You must select one of the g and p instance types.
     Default: false
     Type: String
     AllowedValues: 
@@ -652,7 +652,7 @@ Resources:
       LaunchTemplateData:
         InstanceType: !Ref EdgeInstanceType
         KeyName: !Ref KeyName
-        ImageId: !If [UseGPUImage, !Ref AntMediaGPUAmi, !Ref AntMediaAmi]
+        ImageId: !Ref AntMediaAmi
         SecurityGroupIds:
           - !GetAtt "InstanceSecurityGroup.GroupId"
         BlockDeviceMappings:
