@@ -83,25 +83,6 @@ Parameters:
       - r3.2xlarge
       - r3.4xlarge
       - r3.8xlarge
-      - p2.xlarge
-      - p2.8xlarge
-      - p2.16xlarge
-      - p3.2xlarge
-      - p3.8xlarge
-      - p3.16xlarge
-      - p3dn.24xlarge
-      - g4dn.xlarge
-      - g4dn.2xlarge
-      - g4dn.4xlarge
-      - g4dn.8xlarge
-      - g4dn.12xlarge
-      - g4dn.16xlarge
-      - g5.xlarge
-      - g5.2xlarge
-      - g5.4xlarge
-      - g5.8xlarge
-      - g5.12xlarge
-      - g5.16xlarge 
     ConstraintDescription: must be a valid EC2 instance type.
 
   OriginInstanceType:
