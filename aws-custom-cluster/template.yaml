@@ -10,9 +10,130 @@ Parameters:
   SslCertificate:
     Type: String
     Description: "AWS ARN to ACM generated SSL certificate." 
+  InstanceType:
+    Description: Ant Media Server Edge EC2 instance type
+    Type: String
+    Default: c5.xlarge
+    AllowedValues:
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
 
 Resources:
 
+  DescribeImagesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeImages
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: ec2:DescribeImages
+                Effect: Allow
+                Resource: "*"
+  AMSGetLatestAMI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !Sub ${DescribeImagesRole.Arn}
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import traceback
+
+          def handler(event, context):
+            try:
+              response = boto3.client('ec2').describe_images(
+                  Filters=[
+                    {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductId']]},
+                    {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
+                    {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
+                    {'Name': 'root-device-type', 'Values': ['ebs']},
+                  ],
+              )
+
+              amis = sorted(response['Images'],
+                            key=lambda x: x['CreationDate'],
+                            reverse=True)
+              id = amis[0]['ImageId']
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, id)
+            except:
+              traceback.print_last()
+              cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+  AntMediaAmi:
+    Type: Custom::FindAMI
+    Properties:
+      ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
+      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
+      Name: "AntMedia-AWS-Marketplace-EE-*"
+      Architecture: "x86_64"
+      
   AntMediaVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -208,9 +329,9 @@ Resources:
     Properties:
       LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
       LaunchTemplateData:
-        InstanceType: t2.medium
+        InstanceType: !Ref InstanceType
         KeyName: !Ref KeyName
-        ImageId: ami-05603669082b6ebf0
+        ImageId: !Ref AntMediaAmi
         SecurityGroupIds:
           - !GetAtt "InstanceSecurityGroup.GroupId"
         BlockDeviceMappings:
