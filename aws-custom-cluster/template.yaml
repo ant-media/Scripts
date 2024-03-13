@@ -689,6 +689,13 @@ Resources:
         - Name: AutoScalingGroupName
           Value: !Ref OriginGroup
 Outputs:
+  DNSCnameRecord:
+    Description: CNAME record for your DNS Server
+    Value: !Join 
+        - ''
+        - !GetAtt 
+            - ApplicationLoadBalancer
+            - DNSName
   EndPoint:
     Description: HTTPS URL of the Ant Media Server
     Value: !Join 
@@ -697,3 +704,5 @@ Outputs:
         - !GetAtt 
           - ApplicationLoadBalancer
           - DNSName
+
+
