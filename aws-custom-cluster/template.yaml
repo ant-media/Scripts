@@ -691,11 +691,7 @@ Resources:
 Outputs:
   DNSCnameRecord:
     Description: CNAME record for your DNS Server
-    Value: !Join 
-        - ''
-        - !GetAtt 
-            - ApplicationLoadBalancer
-            - DNSName
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
   EndPoint:
     Description: HTTPS URL of the Ant Media Server
     Value: !Join 
