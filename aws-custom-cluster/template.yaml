@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-Description: Ant Media Server - AWS API Gateway, ASG, Lambda 
+Description: Ant Media Server - Self-Hosted Solution
 Parameters:
   KeyName:
     Description: Name of an existing EC2 KeyPair
