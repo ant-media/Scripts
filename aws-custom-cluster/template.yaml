@@ -688,4 +688,12 @@ Resources:
       Dimensions:
         - Name: AutoScalingGroupName
           Value: !Ref OriginGroup
-
+Outputs:
+  EndPoint:
+    Description: HTTPS URL of the Ant Media Server
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
