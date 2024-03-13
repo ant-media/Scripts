@@ -3,13 +3,13 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Ant Media Server - AWS API Gateway, ASG, Lambda 
 Parameters:
   KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the AWS Elastic
-      Beanstalk instance
+    Description: Name of an existing EC2 KeyPair
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  SslCertificate:
+  LoadBalancerCertificateArn:
+    Description: 'Amazon Resource Name (ARN) of the certificate to associate with the load balancer. If you do not have the SSL certificate, please check this guide: https://antmedia.io/ant-media-server-cloudformation-installation/ '
     Type: String
-    Description: "AWS ARN to ACM generated SSL certificate." 
+    Default: ''
   InstanceType:
     Description: Ant Media Server Edge EC2 instance type
     Type: String
@@ -304,7 +304,7 @@ Resources:
     Type: 'AWS::ElasticLoadBalancingV2::Listener'
     Properties:
       Certificates:
-        - CertificateArn: !Ref SslCertificate
+        - CertificateArn: !Ref LoadBalancerCertificateArn
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref ALBTargetGroupOrigin
