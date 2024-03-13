@@ -1,0 +1,57 @@
+name: Marketplace SSL Test 
+
+#run tests on schedule because we don't want to generate a subdomain everytime
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+
+
+
+jobs:
+  run_build:
+    name: Marketplace SSL Test 
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+      - name: Run enable_ssl.sh for marketplace
+        uses: appleboy/ssh-action@master
+        with:
+          #OVH_REMOTE_HOST has marketplace version deployed 
+          host: ${{ secrets.OVH_REMOTE_HOST }}
+          username: ${{ secrets.OVH_REMOTE_USERNAME }}
+          key: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OVH_REMOTE_PORT }}
+          # If the version is not marketplace, following enable_ssl.sh script fails 
+          script: |
+            SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
+            sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
+            sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
+            sudo service antmedia restart
+            sleep 20
+            OUTPUT=$(sudo bash /usr/local/antmedia/enable_ssl.sh)
+            echo "OUTPUT -> $OUTPUT";
+            HTTPS_URL=$(echo "$OUTPUT" | grep 'You can use this url: '| grep -o 'https://[^ ]*')
+            echo "HTTPS_URL -> $HTTPS_URL"
+            sleep 20
+            status_code=$(curl -o /dev/null -s -I -w "%{http_code}" "$HTTPS_URL")
+            if [ "$status_code" -eq 200 ]; then
+                echo "URL($HTTPS_URL) is working: $status_code"
+            else
+                echo "URL($HTTPS_URL) is not working: $status_code"
+                exit 1;
+            fi
+
+            
+      - name: Run enable_ssl.sh for existing domain
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.OVH_REMOTE_HOST }}
+          username: ${{ secrets.OVH_REMOTE_USERNAME }}
+          key: ${{ secrets.OVH_SSH_PRIVATE_KEY }}
+          port: ${{ secrets.OVH_REMOTE_PORT }}
+          #restore the old domain to not encounter any issue
+          script: |
+            sudo bash /usr/local/antmedia/enable_ssl.sh -d ${{ secrets.OVH_REMOTE_HOST }}
