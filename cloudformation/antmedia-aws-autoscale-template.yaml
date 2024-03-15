@@ -362,8 +362,8 @@ Resources:
     Type: Custom::FindAMI
     Properties:
       ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
-      ProductId: "8kf9kapq2qbo37fuekp8k7o6r"
-      Name: "AntMedia-AWS-Marketplace-GPU-*"
+      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
+      Name: "AntMedia-AWS-Marketplace-EE-*"
       Architecture: "x86_64"
 
   AntMediaGPUAmi:
