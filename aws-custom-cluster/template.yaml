@@ -331,7 +331,7 @@ Resources:
       LaunchTemplateData:
         InstanceType: !Ref InstanceType
         KeyName: !Ref KeyName
-        ImageId: !Ref AntMediaAmi
+        ImageId: ami-05603669082b6ebf0
         SecurityGroupIds:
           - !GetAtt "InstanceSecurityGroup.GroupId"
         BlockDeviceMappings:
@@ -449,99 +449,235 @@ Resources:
  #     ServiceToken: !Sub ${GetEBLoadBalancerArn.Arn}
  #     EnvironmentName: !Ref AMSEnvironment
 
-  # Lambda Function trigger by Cloudwatch
-  LambdaFunctionTrigger:
+  ApiGatewayApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn: ApiGatewayStage
+    Properties:
+      Name: AMSAPIKey
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref ApiGatewayRestApi
+          StageName: 'v1'
+
+  ApiGatewayUsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn: ApiGatewayApiKey
+    Properties:
+      ApiStages:
+        - ApiId: !Ref ApiGatewayRestApi
+          Stage: !Ref ApiGatewayStage
+      Description: Usage plan for API Key
+      Quota:
+        Limit: 10000
+        Period: MONTH
+      Throttle:
+        BurstLimit: 500
+        RateLimit: 1000
+      UsagePlanName: MyUsagePlan
+
+  ApiUsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn: ApiGatewayUsagePlan
+    Properties:
+      KeyId: !Ref ApiGatewayApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref ApiGatewayUsagePlan
+
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      ApiKeySourceType: HEADER
+      Description: An API Gateway with a Lambda Integration
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Name: Ant Media Server Api Gateway
+
+  ApiGatewayCreateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'create'
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: true
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaCreateFunction.Arn}/invocations'
+        IntegrationResponses:
+          - StatusCode: 200
+        RequestTemplates:
+          application/json: |
+            ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+            ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+            #set($allParams = $input.params())
+            {
+            "body" : $input.json('$'),
+            "params" : {
+            #foreach($type in $allParams.keySet())
+                #set($params = $allParams.get($type))
+            "$type" : {
+                #foreach($paramName in $params.keySet())
+                "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                    #if($foreach.hasNext),#end
+                #end
+            }
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "stageVariables" : {
+            #foreach($key in $stageVariables.keySet())
+            "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "context" : {
+                "accountId" : "$context.identity.accountId",
+                "apiId" : "$context.apiId",
+                "apiKey" : "$context.identity.apiKey",
+                "authorizerPrincipalId" : "$context.authorizer.principalId",
+                "caller" : "$context.identity.caller",
+                "cognitoAuthenticationProvider" : "$context.identity.cognitoAuthenticationProvider",
+                "cognitoAuthenticationType" : "$context.identity.cognitoAuthenticationType",
+                "cognitoIdentityId" : "$context.identity.cognitoIdentityId",
+                "cognitoIdentityPoolId" : "$context.identity.cognitoIdentityPoolId",
+                "httpMethod" : "$context.httpMethod",
+                "stage" : "$context.stage",
+                "sourceIp" : "$context.identity.sourceIp",
+                "user" : "$context.identity.user",
+                "userAgent" : "$context.identity.userAgent",
+                "userArn" : "$context.identity.userArn",
+                "requestId" : "$context.requestId",
+                "resourceId" : "$context.resourceId",
+                "resourcePath" : "$context.resourcePath"
+                }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+      RequestParameters:
+        method.request.querystring.name: false
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayCreateResource
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref ApiGatewayRestApi
+      Schema: {}
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    DependsOn: ApiGatewayDeployment
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      Description: Lambda API Stage v1
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: 'v1'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGatewayCreateMethod
+    Properties:
+      Description: Lambda API Deployment
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource:
+                  - !GetAtt LambdaCreateFunction.Arn
+  LambdaCreateFunction:
     Type: AWS::Lambda::Function
     Properties:
       Code:
         ZipFile: |
-
-          import json, boto3, os
+          import boto3, os
 
           def lambda_handler(event, context):
-              headers = event.get('headers', {})
-              host = headers.get('host', '')
-              path = event.get('path', '')
-              full_url = f"https://{host}{path}"
               listener_arn = os.environ['LISTENER_ARN']
               new_desired_capacity = 1
               autoscaling_client = boto3.client('autoscaling')
               ec2_client = boto3.client('ec2')
               elb_client = boto3.client('elbv2')
+
               # Find Auto Scaling Group names with specific prefixes
               asg_names = autoscaling_client.describe_auto_scaling_groups()
               asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
                                  'OriginGroup' in group['AutoScalingGroupName']]
               asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
-              
+
               autoscaling_client = boto3.client('autoscaling')
               response = autoscaling_client.update_auto_scaling_group(
                   AutoScalingGroupName=asg_origin_group_names,
                   DesiredCapacity=new_desired_capacity
               )
-              
+
               listener_response = elb_client.describe_rules(
-              ListenerArn=listener_arn
+                  ListenerArn=listener_arn
               )
 
               for rule in listener_response['Rules']:
                   if 'Priority' in rule and rule['Priority'] != 'default':
-                      lambda_rule=rule['RuleArn']
-              
-              delete_response = elb_client.delete_rule(
-              RuleArn=lambda_rule
-              )
-    
-              html_content = f"""
-              <!DOCTYPE html>
-              <html lang="en">
-              <head>
-                  <meta charset="UTF-8">
-                  <title>Ant Media Server is starting</title>
-              </head>
-              <body style="text-align:center">
-                  <h1>Get Ready!</h1>
-                  <h2>Ant Media Server is starting</h2>
-                  <p>This page will be automatically redirected soon...</p>
-                  <script>
-                      var url = "{full_url}";
-          
-                      function checkAndForward(url) {{
-                          setTimeout(function () {{
-                              fetch(url)
-                              .then(response => {{
-                                  if (response.status == 200) {{
-                                      console.log("Redirecting to " + url);
-                                      window.location = url;
-                                  }}
-                                  else {{
-                                      console.log("Waiting for the server to be ready");
-                                      checkAndForward(url);
-                                  }}
-                              }}).catch(error => {{
-                                  console.log("Waiting for the server to be ready");
-                                  console.log(error);
-                                  checkAndForward(url);
-                              }});
-                          }}, 5000);
-                      }}
-          
-                      checkAndForward(url);
-                  </script>
-              </body>
-              </html>
-              """
-              
+                      lambda_rule = rule['RuleArn']
 
-              response = {
-                  "statusCode": 200,
-                  "headers": {
-                      "Content-Type": "text/html",
-                  },
-                  "body": html_content
+              delete_response = elb_client.delete_rule(
+                  RuleArn=lambda_rule
+              )
+
+              return {
+                  'statusCode': 200,
+                  'body': 'Lambda function executed successfully!'
               }
 
-              return response
+        
+      Description: AWS Lambda function
+      Handler: "index.lambda_handler"  
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      Environment:
+        Variables:
+          LISTENER_ARN: !Ref ALBListener443 
+
+  # Lambda Function trigger by Cloudwatch
+  LambdaFunctionTrigger:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: ams-beanstalk
+        S3Key: lambda.zip
       Handler: "index.lambda_handler"
       Role: !GetAtt LambdaIamRole.Arn
       Runtime: python3.12
@@ -549,7 +685,7 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          LISTENER_ARN: !Ref ALBListener443
+          API_URL: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
           #TARGETGROUP_ARN: !Ref ALBTargetGroupLambda
 
   LambdaCloudwatchFunction:
@@ -609,12 +745,60 @@ Resources:
         Variables:
           AUTO_SCALING_GROUP_NAME: !Sub "${AWS::StackName}-OriginGroup"
           LISTENER_ARN: !Ref ALBListener443 
+  LambdaGetApiKey:
+    Type: AWS::Lambda::Function
+    DependsOn: ApiGatewayApiKey
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import traceback
+
+          def lambda_handler(event, context):
+              try:
+                  api_key_name = "AMSAPIKey"
+                  
+                  client = boto3.client('apigateway')
+
+                  response = client.get_api_keys(
+                      nameQuery=api_key_name,
+                      includeValues=True
+                  )
+                  
+                  if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                      api_key_value = response['items'][0]['value']
+                      print("API Key Value:", api_key_value)
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {"APIKeyValue": api_key_value})
+                      return {"APIKeyValue": api_key_value}  
+                  else:
+                      cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": "Failed to retrieve API key"})
+                      return {"Error": "Failed to retrieve API key"}  
+              except Exception as e:
+                  traceback.print_exc()
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
+                  return {"Error": str(e)}  
+        #Environment:
+        #  Variables:
+        #    API_KEY_NAME: !Sub "${AWS::StackName}-OriginGroup"                      
+      Description: AWS Lambda function
+      Handler: "index.lambda_handler"  
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12 
+      Timeout: 60
+
+  LambdaApiValue:
+    Type: Custom::LambdaApiKey
+    DependsOn: LambdaGetApiKey
+    Properties:
+      ServiceToken: !Sub "${LambdaGetApiKey.Arn}"
 
   # General IAM Role for Lambda Functions
   LambdaIamRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: "MyLambdaExecutionRole"
+      RoleName: !Sub "MyLambdaExecutionRole-${AWS::StackName}"
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -641,6 +825,7 @@ Resources:
                   - "elasticloadbalancing:DeleteRule"
                   - "elasticloadbalancing:DescribeTargetGroups"
                   - "elasticloadbalancing:CreateRule"
+                  - "apigateway:GET"
                 Resource: "*"
         - PolicyName: "CloudWatchLogsPolicy"
           PolicyDocument:
@@ -697,8 +882,8 @@ Outputs:
     Value: !Join 
       - ''
       - - 'https://'
-        - !GetAtt 
-          - ApplicationLoadBalancer
-          - DNSName
+        - !GetAtt ApplicationLoadBalancer.DNSName
+        - "?api_key="
+        - !GetAtt LambdaApiValue.APIKeyValue
 
 
