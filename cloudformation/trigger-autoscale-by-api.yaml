@@ -1,0 +1,393 @@
+
+Resources:
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      ApiKeySourceType: HEADER
+      Description: An API Gateway with a Lambda Integration
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Name: Ant Media Server Api Gateway
+
+  ApiGatewayCreateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'create'
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaCreateFunction.Arn}/invocations'
+        IntegrationResponses:
+          - StatusCode: 200
+        RequestTemplates:
+          application/json: |
+            ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+            ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+            #set($allParams = $input.params())
+            {
+            "body" : $input.json('$'),
+            "params" : {
+            #foreach($type in $allParams.keySet())
+                #set($params = $allParams.get($type))
+            "$type" : {
+                #foreach($paramName in $params.keySet())
+                "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                    #if($foreach.hasNext),#end
+                #end
+            }
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "stageVariables" : {
+            #foreach($key in $stageVariables.keySet())
+            "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "context" : {
+                "accountId" : "$context.identity.accountId",
+                "apiId" : "$context.apiId",
+                "apiKey" : "$context.identity.apiKey",
+                "authorizerPrincipalId" : "$context.authorizer.principalId",
+                "caller" : "$context.identity.caller",
+                "cognitoAuthenticationProvider" : "$context.identity.cognitoAuthenticationProvider",
+                "cognitoAuthenticationType" : "$context.identity.cognitoAuthenticationType",
+                "cognitoIdentityId" : "$context.identity.cognitoIdentityId",
+                "cognitoIdentityPoolId" : "$context.identity.cognitoIdentityPoolId",
+                "httpMethod" : "$context.httpMethod",
+                "stage" : "$context.stage",
+                "sourceIp" : "$context.identity.sourceIp",
+                "user" : "$context.identity.user",
+                "userAgent" : "$context.identity.userAgent",
+                "userArn" : "$context.identity.userArn",
+                "requestId" : "$context.requestId",
+                "resourceId" : "$context.resourceId",
+                "resourcePath" : "$context.resourcePath"
+                }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+      RequestParameters:
+        method.request.querystring.name: false
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayCreateResource
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayStatusResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'status'
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayStatusMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaStatusFunction.Arn}/invocations'
+        IntegrationResponses:
+          - StatusCode: 200
+        RequestTemplates:
+          application/json: |
+            ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+            ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+            #set($allParams = $input.params())
+            {
+            "body" : $input.json('$'),
+            "params" : {
+            #foreach($type in $allParams.keySet())
+                #set($params = $allParams.get($type))
+            "$type" : {
+                #foreach($paramName in $params.keySet())
+                "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                    #if($foreach.hasNext),#end
+                #end
+            }
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "stageVariables" : {
+            #foreach($key in $stageVariables.keySet())
+            "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "context" : {
+                "accountId" : "$context.identity.accountId",
+                "apiId" : "$context.apiId",
+                "apiKey" : "$context.identity.apiKey",
+                "authorizerPrincipalId" : "$context.authorizer.principalId",
+                "caller" : "$context.identity.caller",
+                "cognitoAuthenticationProvider" : "$context.identity.cognitoAuthenticationProvider",
+                "cognitoAuthenticationType" : "$context.identity.cognitoAuthenticationType",
+                "cognitoIdentityId" : "$context.identity.cognitoIdentityId",
+                "cognitoIdentityPoolId" : "$context.identity.cognitoIdentityPoolId",
+                "httpMethod" : "$context.httpMethod",
+                "stage" : "$context.stage",
+                "sourceIp" : "$context.identity.sourceIp",
+                "user" : "$context.identity.user",
+                "userAgent" : "$context.identity.userAgent",
+                "userArn" : "$context.identity.userArn",
+                "requestId" : "$context.requestId",
+                "resourceId" : "$context.resourceId",
+                "resourcePath" : "$context.resourcePath"
+                }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+      RequestParameters:
+        method.request.querystring.name: false
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayStatusResource
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref ApiGatewayRestApi
+      Schema: {}
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    DependsOn: ApiGatewayDeployment
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      Description: Lambda API Stage v1
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: 'v1'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGatewayCreateMethod
+    Properties:
+      Description: Lambda API Deployment
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource:
+                  - !GetAtt LambdaCreateFunction.Arn
+                  - !GetAtt LambdaStatusFunction.Arn 
+
+  # Lambda Function trigger by API Gateway 
+  LambdaCreateFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3, time
+
+          def wait_for_instances_running(auto_scaling_group_name):
+              ec2_client = boto3.client('ec2')
+              
+              while True:
+                  instances = ec2_client.describe_instances(
+                      Filters=[
+                          {'Name': 'tag:Name', 'Values': ['Ant-Media-Server']},
+                          {'Name': 'instance-state-name', 'Values': ['running']}
+                      ]
+                  )
+              
+                  for reservation in instances['Reservations']:
+                      for instance in reservation['Instances']:
+                          print(f"Instance ID: {instance['InstanceId']}, State: {instance['State']['Name']}")
+
+                          if instance['State']['Name'] == 'running':
+                              print("Instance is running. Exiting the loop.")
+                              return instances  # Return instances once they are running
+
+                  time.sleep(1)
+
+          def lambda_handler(event, context):
+              autoscaling_client = boto3.client('autoscaling')
+              asg_names = autoscaling_client.describe_auto_scaling_groups()
+              asg_name = [group for group in asg_names['AutoScalingGroups'] if
+                                 'OriginGroup' in group['AutoScalingGroupName']]
+              auto_scaling_group_name = [group['AutoScalingGroupName'] for group in asg_name][0]
+
+              print(auto_scaling_group_name)
+
+              origin_autoscaling_group = autoscaling_client.describe_auto_scaling_groups(
+                  AutoScalingGroupNames=[auto_scaling_group_name])
+
+              new_desired_capacity = 1
+              min_size = 1
+
+              autoscaling_client = boto3.client('autoscaling')
+              response = autoscaling_client.update_auto_scaling_group(
+                  AutoScalingGroupName=auto_scaling_group_name,
+                  DesiredCapacity=new_desired_capacity,
+                  MinSize=min_size
+              )
+
+              print(f"DesiredCapacity of Auto Scaling Group '{auto_scaling_group_name}' is set to {new_desired_capacity}")
+
+              # Wait for instances to be in the "running" state
+             # wait_for_instances_running(auto_scaling_group_name)
+
+              instances = wait_for_instances_running(auto_scaling_group_name)
+
+              if 'Reservations' in instances and instances['Reservations']:
+                  instance = instances['Reservations'][0]['Instances'][0]
+              
+                  # Check if the instance has a public IP address
+                  if 'PublicIpAddress' in instance:
+                      public_ip = instance['PublicIpAddress']
+                      return {
+                          'statusCode': 200,
+                          'body': f"{public_ip}"
+                      }
+                  else:
+                      return {
+                          'statusCode': 404,
+                          'body': "Instance doesn't have a public IP address."
+                      }
+              else:
+                  return {
+                      'statusCode': 404,
+                      'body': "No instances found with the specified tag."
+                  }
+
+        
+      Description: AWS Lambda function
+      Handler: "index.lambda_handler"  
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+
+  # Lambda Function trigger by API Gateway 
+  LambdaStatusFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+
+          ec2 = boto3.client('ec2')
+
+          def lambda_handler(event, context):
+              tag_key = 'Name'
+              tag_value = 'Ant-Media-Server'
+
+              instances = ec2.describe_instances(
+                  Filters=[
+                      {'Name': 'instance-state-name', 'Values': ['running']},
+                      {'Name': f'tag:{tag_key}', 'Values': [tag_value]}
+                  ]
+              )
+
+              if instances['Reservations']:
+                  response = {
+                      'statusCode': 200,
+                      'body': 'True'
+                  }
+              else:
+                  response = {
+                      'statusCode': 500,
+                      'body': 'False'
+                  }
+
+              return response
+        
+      Description: AWS Lambda function
+      Handler: "index.lambda_handler"  
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+
+  # General IAM Role for Lambda Functions
+  LambdaIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: "MyLambdaExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "EC2FullAccessPolicy1"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ec2:RunInstances"
+                  - "ec2:CreateTags"
+                  - "ec2:DescribeInstances"
+                  - "autoscaling:UpdateAutoScalingGroup"
+                  - "autoscaling:DescribeAutoScalingGroups"
+                  - "elasticbeanstalk:DescribeEnvironmentResources"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DeleteNetworkInterface"
+                Resource: "*"
+        - PolicyName: "CloudWatchLogsPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+      Path: '/'
+
+  # Lambda Resource Based Policy for Cloudwatch
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaCloudwatchFunction
+      Principal: lambda.alarms.cloudwatch.amazonaws.com
+      SourceArn: !GetAtt AutoScalingGroupScaleDownAlarm.Arn
