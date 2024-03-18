@@ -382,12 +382,3 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: "*"
       Path: '/'
-
-  # Lambda Resource Based Policy for Cloudwatch
-  LambdaInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref LambdaCloudwatchFunction
-      Principal: lambda.alarms.cloudwatch.amazonaws.com
-      SourceArn: !GetAtt AutoScalingGroupScaleDownAlarm.Arn
