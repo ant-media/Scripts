@@ -458,11 +458,9 @@ Resources:
                       EnvironmentName=environment_name
                   )
 
-                  # Load balancer bilgilerini içeren listeyi al
                   load_balancers = response['EnvironmentResources']['LoadBalancers']
 
                   if load_balancers:
-                      # İlk yük dengeleyicisinin adını al
                       load_balancer_name = load_balancers[0].get('Name')
                       if load_balancer_name:
                           cfnresponse.send(event, context, cfnresponse.SUCCESS, {"LoadBalancerName": load_balancer_name}, load_balancer_name)
@@ -863,6 +861,7 @@ Resources:
                   - "elasticloadbalancing:DescribeTargetGroups"
                   - "elasticloadbalancing:CreateRule"
                   - "apigateway:GET"
+                  - "acm:DescribeCertificate"
                 Resource: "*"
         - PolicyName: "CloudWatchLogsPolicy"
           PolicyDocument:
