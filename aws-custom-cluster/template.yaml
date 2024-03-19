@@ -412,7 +412,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: '5080'
           ToPort: '5080'
-          CidrIp: 10.0.0.0/16
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: '1935'
           ToPort: '1935'
