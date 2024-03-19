@@ -211,26 +211,6 @@ Resources:
       RouteTableId: !Ref RouteTable
       SubnetId: !Ref EdgeZone
 
-  OriginGroup:
-      Type: 'AWS::AutoScaling::AutoScalingGroup'
-      DependsOn:
-      - LaunchTemplateOrigin
-      Properties:
-        VPCZoneIdentifier: 
-          - !Ref OriginZone
-        LaunchTemplate:
-          LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
-          Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
-        MinSize: 0
-        MaxSize: 1
-        DesiredCapacity: 0
-        TargetGroupARNs:
-          - !Ref ALBTargetGroupOrigin 
-        Tags:
-        - Key: Name
-          Value: Ant-Media-Server
-          PropagateAtLaunch: 'true'
-
   ELBSecurityGroup:
       Type: AWS::EC2::SecurityGroup
       Properties:
@@ -324,6 +304,44 @@ Resources:
       ListenerArn: !Ref ALBListener443
       Priority: 1
 
+  RedisServerlessCache:
+    Type: AWS::ElastiCache::ServerlessCache
+    DependsOn:
+      - OriginGroup
+    Properties:
+      DailySnapshotTime: "03:00"
+      Description: "Ant Media Server - Redis Serverless Cache"
+      Engine: "Redis"
+      SecurityGroupIds: 
+        - !GetAtt "InstanceSecurityGroup.GroupId"
+      ServerlessCacheName: !Sub ${AWS::StackName}-ServerlessRedis
+      SubnetIds: 
+        - !Ref OriginZone
+        - !Ref EdgeZone
+      Tags: 
+        - Key: Name
+          Value: RedisCache
+
+  OriginGroup:
+      Type: 'AWS::AutoScaling::AutoScalingGroup'
+      DependsOn:
+      - LaunchTemplateOrigin
+      Properties:
+        VPCZoneIdentifier: 
+          - !Ref OriginZone
+        LaunchTemplate:
+          LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+          Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
+        MinSize: 0
+        MaxSize: 1
+        DesiredCapacity: 0
+        TargetGroupARNs:
+          - !Ref ALBTargetGroupOrigin 
+        Tags:
+        - Key: Name
+          Value: Ant-Media-Server
+          PropagateAtLaunch: 'true'
+
   LaunchTemplateOrigin:
     Type: 'AWS::EC2::LaunchTemplate'
     Properties:
@@ -343,7 +361,24 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            apt-get update 
+            sudo apt-get update -y
+            sudo apt-get install stunnel -y
+            sudo tee /etc/stunnel/stunnel.conf > /dev/null <<EOF
+            fips = no
+            setuid = root
+            setgid = root
+            pid = /var/run/stunnel.pid
+            debug = 7
+            options = NO_SSLv2
+            options = NO_SSLv3
+            [redis-cli]
+            client = yes
+            accept = 127.0.0.1:6379
+            connect = ${RedisServerlessCache.Endpoint.Address}:6379
+            EOF
+            sudo systemctl enable stunnel4
+            sudo stunnel /etc/stunnel/stunnel.conf
+            bash /usr/local/antmedia/change_server_mode.sh standalone redis://localhost:6379
             apt-get install -y python3-pip
             apt-get install -y python3-setuptools
             mkdir -p /opt/aws/bin
