@@ -306,8 +306,6 @@ Resources:
 
   RedisServerlessCache:
     Type: AWS::ElastiCache::ServerlessCache
-    DependsOn:
-      - OriginGroup
     Properties:
       DailySnapshotTime: "03:00"
       Description: "Ant Media Server - Redis Serverless Cache"
