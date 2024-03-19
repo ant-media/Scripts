@@ -423,6 +423,10 @@ Resources:
           FromPort: '5443'
           ToPort: '5443'
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '6379'
+          ToPort: '6379'
+          CidrIp: 0.0.0.0/0
       VpcId: !Ref AntMediaVPC
 
   LambdaSecurityGroup:
