@@ -439,51 +439,6 @@ Resources:
       - IpProtocol: "-1"
         CidrIp: "0.0.0.0/0"
 
-  # Lambda function to get Elastic Beanstalk Load Balancer ARN
-  GetEBLoadBalancerArn:
-    Type: AWS::Lambda::Function
-    Properties:
-      Code:
-        ZipFile: |
-          import boto3
-          import cfnresponse
-          import traceback
-
-          def lambda_handler(event, context):
-              try:
-                  elasticbeanstalk = boto3.client('elasticbeanstalk')
-                  environment_name = event['ResourceProperties']['EnvironmentName']
-
-                  response = elasticbeanstalk.describe_environment_resources(
-                      EnvironmentName=environment_name
-                  )
-
-                  load_balancers = response['EnvironmentResources']['LoadBalancers']
-
-                  if load_balancers:
-                      load_balancer_name = load_balancers[0].get('Name')
-                      if load_balancer_name:
-                          cfnresponse.send(event, context, cfnresponse.SUCCESS, {"LoadBalancerName": load_balancer_name}, load_balancer_name)
-                      else:
-                          cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": "Load balancer name not found."})
-                  else:
-                      cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": "No load balancers found for the environment."})
-            
-              except Exception as e:
-                  traceback.print_exc()
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
-      Runtime: python3.12
-      Handler: "index.lambda_handler"
-      Role: !GetAtt LambdaIamRole.Arn
-      Timeout: 60
-
-  # Custom resource to get Elastic Beanstalk Load Balancer information
- # GetEBLoadBalancer:
- #   Type: Custom::GetEBLoadBalancer
- #   Properties:
- #     ServiceToken: !Sub ${GetEBLoadBalancerArn.Arn}
- #     EnvironmentName: !Ref AMSEnvironment
-
   ApiGatewayApiKey:
     Type: 'AWS::ApiGateway::ApiKey'
     DependsOn: ApiGatewayStage
