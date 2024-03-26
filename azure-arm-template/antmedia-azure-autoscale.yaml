@@ -508,8 +508,8 @@
             "name": "antmedia-mongodb",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'edge')]"
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -552,7 +552,9 @@
             "name": "antmedia-mongodb-NIC",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]"
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]"
+
             ],
             "properties": {
                 "ipConfigurations": [
@@ -581,9 +583,9 @@
             "name": "antmedia-origin",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'edge')]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/applicationGateways/', variables('applicationGateWayName'))]"
 
             ],
             "sku": {
@@ -670,9 +672,10 @@
             "name": "antmedia-edge",
             "location": "[resourceGroup().location]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'edge')]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/applicationGateways/', variables('applicationGateWayName'))]"
+
 
             ],
             "sku": {
