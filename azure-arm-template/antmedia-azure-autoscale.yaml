@@ -509,7 +509,8 @@
             "location": "[resourceGroup().location]",
             "dependsOn": [
                 "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
-                "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]"
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]",
+                "[resourceId('Microsoft.Network/networkInterfaces', 'antmedia-mongodb-NIC')]"
             ],
             "properties": {
                 "hardwareProfile": {
@@ -666,7 +667,54 @@
                 }
             }
         },
-                {
+
+        {
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "2022-10-01",
+            "name": "AMSScaleSetAutoscaleSettings-Origin",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-origin')]"
+            ],
+            "properties": {
+                "name": "AMSScaleSetAutoscaleSettings-Origin",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-origin')]",
+                "enabled": true,
+                "profiles": [
+                    {
+                        "name": "DefaultProfile",
+                        "capacity": {
+                            "minimum": "1",
+                            "maximum": "10",
+                            "default": "1"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-origin')]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": 60
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT5M"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+
+        {
             "type": "Microsoft.Compute/virtualMachineScaleSets",
             "apiVersion": "2023-03-01",
             "name": "antmedia-edge",
@@ -754,6 +802,51 @@
                         ]
                     }
                 }
+            }
+        },
+        {
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "2022-10-01",
+            "name": "AMSScaleSetAutoscaleSettings-Edge",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-edge')]"
+            ],
+            "properties": {
+                "name": "AMSScaleSetAutoscaleSettings-Edge",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-edge')]",
+                "enabled": true,
+                "profiles": [
+                    {
+                        "name": "DefaultProfile",
+                        "capacity": {
+                            "minimum": "1",
+                            "maximum": "10",
+                            "default": "1"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-edge')]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": 60
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT5M"
+                                }
+                            }
+                        ]
+                    }
+                ]
             }
         }
     ]
