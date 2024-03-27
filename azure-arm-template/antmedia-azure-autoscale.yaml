@@ -38,6 +38,13 @@
             "description": "Type of Edge VMs in the VM Scale Set."
           }
         },
+        "CPUPolicyTargetValue": {
+          "type": "int",
+          "defaultValue": 60,
+          "metadata": {
+            "description": "This parameter for creates new Instances when CPU load exceed to %60."
+          }
+        },
         "MongoDBInstanceType": {
             "defaultValue": "Standard_D2s_v3",
             "type": "String",
@@ -699,7 +706,7 @@
                                     "timeWindow": "PT5M",
                                     "timeAggregation": "Average",
                                     "operator": "GreaterThan",
-                                    "threshold": 60
+                                    "threshold": "[parameters('CPUPolicyTargetValue')]"
                                 },
                                 "scaleAction": {
                                     "direction": "Increase",
