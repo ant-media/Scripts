@@ -1,0 +1,860 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": {
+            "defaultValue": "antmedia-cluster",
+            "type": "String"
+        },
+        "OriginInstanceCapacity": {
+          "type": "int",
+          "defaultValue": 1,
+          "metadata": {
+            "description": "Number of VM instances (100 or less)."
+          },
+          "minValue": 1,
+          "maxValue": 100
+        },
+        "OriginInstanceType": {
+          "type": "string",
+          "defaultValue": "Standard_D2s_v3",
+          "metadata": {
+            "description": "Size of Origin VMs in the VM Scale Set."
+          }
+        },
+        "EdgeInstanceCapacity": {
+          "type": "int",
+          "defaultValue": 2,
+          "metadata": {
+            "description": "Number of VM instances (100 or less)."
+          },
+          "minValue": 1,
+          "maxValue": 100
+        },
+        "EdgeInstanceType": {
+          "type": "string",
+          "defaultValue": "Standard_D2s_v3",
+          "metadata": {
+            "description": "Type of Edge VMs in the VM Scale Set."
+          }
+        },
+        "CPUPolicyTargetValue": {
+          "type": "int",
+          "defaultValue": 60,
+          "metadata": {
+            "description": "This parameter for creates new Instances when CPU load exceed to %60."
+          }
+        },
+        "MongoDBInstanceType": {
+            "defaultValue": "Standard_D2s_v3",
+            "type": "String",
+            "metadata": {
+                "description": "The instance type of the MongoDB Instance"
+            }
+        },
+        "certData": {
+          "type": "securestring",
+          "metadata": {
+            "description": "Base-64 encoded form of the .pfx file"
+          }
+        },
+        "certPassword": {
+          "type": "securestring",
+          "metadata": {
+            "description": "Password for .pfx certificate"
+          }
+        },
+        "InstanceUsername": {
+            "type": "String",
+            "metadata": {
+                "description": "Username for the Virtual Machine."
+            }
+        },
+        "authenticationType": {
+            "defaultValue": "password",
+            "allowedValues": [
+                "sshPublicKey",
+                "password"
+            ],
+            "type": "String",
+            "metadata": {
+                "description": "Type of authentication to use on the Virtual Machine. SSH key is recommended."
+            }
+        },
+        "InstancePassword": {
+            "type": "SecureString",
+            "metadata": {
+                "description": "SSH Key or password for the Virtual Machine. SSH key is recommended."
+            }
+        }
+    },
+    "variables": {
+        "publicIPAddressName": "[concat(parameters('projectName'), '-ip')]",
+        "appGwPublicIPAddressName": "app-gw-ip",
+        "osDiskType": "Standard_LRS",
+        "applicationGateWayName": "antmedia-app-gw",
+        "virtualNetworks_antmedia_cluster_vnet_name": "antmedia-cluster-vnet",
+
+        "linuxConfiguration": {
+            "disablePasswordAuthentication": true,
+            "ssh": {
+                "publicKeys": [
+                    {
+                        "path": "[format('/home/{0}/.ssh/authorized_keys', parameters('InstanceUsername'))]",
+                        "keyData": "[parameters('InstancePassword')]"
+                    }
+                ]
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2023-09-01",
+            "name": "[variables('virtualNetworks_antmedia_cluster_vnet_name')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/16"
+                    ]
+                },
+                "encryption": {
+                    "enabled": false,
+                    "enforcement": "AllowUnencrypted"
+                },
+                "subnets": [
+                    {
+                        "name": "origin",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]",
+                        "properties": {
+                            "addressPrefixes": [
+                                "10.0.1.0/24"
+                            ],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "edge",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'edge')]",
+                        "properties": {
+                            "addressPrefixes": [
+                                "10.0.2.0/24"
+                            ],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    },
+                    {
+                        "name": "app-gw",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'app-gw')]",
+                        "properties": {
+                            "addressPrefixes": [
+                                "10.0.0.0/24"
+                            ],
+                            "delegations": [],
+                            "privateEndpointNetworkPolicies": "Disabled",
+                            "privateLinkServiceNetworkPolicies": "Enabled"
+                        },
+                        "type": "Microsoft.Network/virtualNetworks/subnets"
+                    }
+                ],
+                "virtualNetworkPeerings": [],
+                "enableDdosProtection": false
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "name": "MongoDB-Security-Group",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "ssh_rule",
+                        "properties": {
+                            "description": "Locks inbound down to ssh default port 22.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "mongodb_rule",
+                        "properties": {
+                            "description": "Locks inbound down to MongoDB default port 27017.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "27017",
+                            "sourceAddressPrefix": "10.0.0.0/16",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 101,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2020-05-01",
+            "name": "AMSScaleSet-Security-Group",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "ssh_rule",
+                        "properties": {
+                            "description": "Locks inbound down to ssh default port 22.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "cluster_rule1",
+                        "properties": {
+                            "description": "Locks inbound down to Cluster default port 5000.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "5000",
+                            "sourceAddressPrefix": "10.0.0.0/16",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 101,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "cluster_rule2",
+                        "properties": {
+                            "description": "Locks inbound down to Cluster default port 5000.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "5000",
+                            "sourceAddressPrefix": "10.0.0.0/16",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 102,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "cluster_rule3",
+                        "properties": {
+                            "description": "Locks inbound down to Cluster default port 5080.",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "5080",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 103,
+                            "direction": "Inbound"
+                        }
+                    },
+                    {
+                        "name": "cluster_rule4",
+                        "properties": {
+                            "description": "Locks inbound down to Cluster default port 50000-60000.",
+                            "protocol": "Udp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "50000-60000",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 104,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+          "type": "Microsoft.Network/publicIPAddresses",
+          "name": "[variables('appGwPublicIPAddressName')]",
+          "location": "[resourceGroup().location]",
+          "apiVersion": "2020-06-01",
+          "sku": {
+            "name": "Standard"
+          },
+          "properties": {
+            "publicIPAllocationMethod": "Static"
+          }
+        },
+        {
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2020-05-01",
+            "name": "[variables('publicIPAddressName')]",
+            "location": "[resourceGroup().location]",
+            "sku": {
+                "name": "Basic"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2023-09-01",
+            "name": "[concat(variables('virtualNetworks_antmedia_cluster_vnet_name'), '/app-gw')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]"
+            ],
+            "properties": {
+                "addressPrefixes": [
+                    "10.0.0.0/24"
+                ],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2023-09-01",
+            "name": "[concat(variables('virtualNetworks_antmedia_cluster_vnet_name'), '/edge')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]"
+            ],
+            "properties": {
+                "addressPrefixes": [
+                    "10.0.2.0/24"
+                ],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Network/virtualNetworks/subnets",
+            "apiVersion": "2023-09-01",
+            "name": "[concat(variables('virtualNetworks_antmedia_cluster_vnet_name'), '/origin')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('virtualNetworks_antmedia_cluster_vnet_name'))]"
+            ],
+            "properties": {
+                "addressPrefixes": [
+                    "10.0.1.0/24"
+                ],
+                "delegations": [],
+                "privateEndpointNetworkPolicies": "Disabled",
+                "privateLinkServiceNetworkPolicies": "Enabled"
+            }
+        },
+    {
+      "type": "Microsoft.Network/applicationGateways",
+      "apiVersion": "2021-05-01",
+      "name": "[variables('applicationGateWayName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "sku": {
+          "name": "Standard_v2",
+          "tier": "Standard_v2"
+        },
+        "sslCertificates": [
+          {
+            "name": "appGatewaySslCert",
+            "properties": {
+              "data": "[parameters('certData')]",
+              "password": "[parameters('certPassword')]"
+            }
+          }
+        ],
+        "gatewayIPConfigurations": [
+          {
+            "name": "appGatewayIpConfig",
+            "properties": {
+              "subnet": {
+                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'app-gw')]"
+              }
+            }
+          }
+        ],
+        "frontendIPConfigurations": [
+          {
+            "name": "appGwPublicFrontendIp",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGwPublicIPAddressName'))]"
+              }
+            }
+          }
+        ],
+        "frontendPorts": [
+          {
+            "name": "port_443",
+            "properties": {
+              "port": 443
+            }
+          },
+          {
+            "name": "port_5443",
+            "properties": {
+              "port": 5443
+            }
+          }
+        ],
+        "backendAddressPools": [
+          {
+            "name": "OriginBackendPool",
+            "properties": {}
+          },
+          {
+            "name": "EdgeBackendPool",
+            "properties": {}
+          }
+        ],
+        "backendHttpSettingsCollection": [
+          {
+            "name": "myHTTPSetting",
+            "properties": {
+              "port": 5080,
+              "protocol": "Http",
+              "cookieBasedAffinity": "Disabled",
+              "pickHostNameFromBackendAddress": false,
+              "requestTimeout": 20
+            }
+          }
+        ],
+        "httpListeners": [
+          {
+            "name": "443Listener",
+            "properties": {
+              "frontendIPConfiguration": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('applicationGateWayName'), 'appGwPublicFrontendIp')]"
+              },
+              "frontendPort": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('applicationGateWayName'), 'port_443')]"
+              },
+              "Protocol": "Https",
+              "SslCertificate": {
+                "Id": "[resourceId('Microsoft.Network/applicationGateways/sslCertificates',variables('applicationGatewayName'), 'appGatewaySslCert')]"
+              }
+            }
+          },
+        {
+            "name": "5443Listener",
+            "properties": {
+                "frontendIPConfiguration": {
+                    "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', variables('applicationGateWayName'), 'appGwPublicFrontendIp')]"
+                },
+                "frontendPort": {
+                    "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', variables('applicationGateWayName'), 'port_5443')]"
+                },
+                "Protocol": "Https",
+                "SslCertificate": {
+                    "Id": "[resourceId('Microsoft.Network/applicationGateways/sslCertificates',variables('applicationGatewayName'), 'appGatewaySslCert')]"
+                }
+            }
+        }
+        ],
+        "requestRoutingRules": [
+          {
+            "name": "443RoutingRule",
+            "properties": {
+              "ruleType": "Basic",
+              "httpListener": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('applicationGateWayName'), '443Listener')]"
+              },
+              "backendAddressPool": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateWayName'), 'OriginBackendPool')]"
+              },
+              "backendHttpSettings": {
+                "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateWayName'), 'myHTTPSetting')]"
+              }
+            }
+          },
+        {
+            "name": "5443RoutingRule",
+            "properties": {
+                "ruleType": "Basic",
+                "httpListener": {
+                    "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', variables('applicationGateWayName'), '5443Listener')]"
+                },
+                "backendAddressPool": {
+                    "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateWayName'), 'EdgeBackendPool')]"
+                },
+                "backendHttpSettings": {
+                    "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', variables('applicationGateWayName'), 'myHTTPSetting')]"
+                }
+            }
+        }
+        ],
+        "enableHttp2": false,
+        "autoscaleConfiguration": {
+          "minCapacity": 0,
+          "maxCapacity": 10
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGwPublicIPAddressName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'app-gw')]"
+      ]
+    },        
+        {
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2023-09-01",
+            "name": "antmedia-mongodb",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]",
+                "[resourceId('Microsoft.Network/networkInterfaces', 'antmedia-mongodb-NIC')]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('MongoDBInstanceType')]"
+                },
+                "storageProfile": {
+                    "osDisk": {
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "[variables('osDiskType')]"
+                        }
+                    },
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "0001-com-ubuntu-server-jammy",
+                        "sku": "22_04-lts-gen2",
+                        "version": "latest"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', 'antmedia-mongodb-NIC')]"
+                        }
+                    ]
+                },
+                "osProfile": {
+                    "computerName": "antmedia-mongodb",
+                    "adminUsername": "[parameters('InstanceUsername')]",
+                    "adminPassword": "[parameters('InstancePassword')]",
+                    "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
+                    "customData": "[base64('#!/bin/bash\nwget -O install_mongodb.sh https://raw.githubusercontent.com/ant-media/Scripts/master/install_mongodb.sh\nchmod +x install_mongodb.sh\n./install_mongodb.sh')]"
+
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2023-09-01",
+            "name": "antmedia-mongodb-NIC",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]"
+
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "antmedia-mongodb-IPConfig",
+                        "properties": {
+                            "privateIPAllocationMethod": "Static",
+                            "privateIPAddress": "10.0.1.99",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'MongoDB-Security-Group')]"
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "2023-03-01",
+            "name": "antmedia-origin",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/applicationGateways/', variables('applicationGateWayName'))]"
+
+            ],
+            "sku": {
+                "name": "[parameters('OriginInstanceType')]",
+                "tier": "Standard",
+                "capacity": "[parameters('OriginInstanceCapacity')]"
+            },
+            "plan": {
+                "name": "enterprise_edition",
+                "product": "ant_media_server_enterprise",
+                "publisher": "antmedia"
+            },
+            "properties": {
+                "platformFaultDomainCount": 1,
+                "singlePlacementGroup": false,
+                "orchestrationMode": "Flexible",
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "antmedia-",
+                        "adminUsername": "[parameters('InstanceUsername')]",
+                        "adminPassword": "[parameters('InstancePassword')]",
+                        "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
+                        "customData": "[base64('#!/bin/bash\nsudo sed -i \"/org.apache.catalina.valves.RemoteIpValve/d\" /usr/local/antmedia/conf/jee-container.xml\n/usr/local/antmedia/change_server_mode.sh cluster 10.0.1.99')]"
+                    },
+                    "storageProfile": {
+                        "osDisk": {
+                            "createOption": "FromImage",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            }
+                        },
+                        "imageReference": {
+                            "publisher": "antmedia",
+                            "offer": "ant_media_server_enterprise",
+                            "sku": "enterprise_edition",
+                            "version": "latest"
+                        }
+                    },
+                    "networkProfile": {
+                        "networkApiVersion": "2020-11-01",
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "nicConfig",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "antmedia-cluster-vnet-nic01-defaultIpConfiguration",
+                                            "properties": {
+                                                "privateIPAddressVersion": "IPv4",
+                                                "subnet": {
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'origin')]"
+                                                },
+                                                      "applicationGatewayBackendAddressPools": [
+                                                {
+                                                  "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateWayName'), 'OriginBackendPool')]"
+                                                }
+                                              ],
+                                                "primary": true,
+                                                "publicIPAddressConfiguration": {
+                                                    "name": "publicIp-antmedia-cluster-vnet-nic01",
+                                                    "properties": {
+                                                        "idleTimeoutInMinutes": 15,
+                                                        "ipTags": [],
+                                                        "publicIPAddressVersion": "IPv4"
+                                                    }
+                                                    }                                            
+                                            }
+                                        }
+                                    ],
+                                    "networkSecurityGroup": {
+                                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+
+        {
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "2022-10-01",
+            "name": "AMSScaleSetAutoscaleSettings-Origin",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-origin')]"
+            ],
+            "properties": {
+                "name": "AMSScaleSetAutoscaleSettings-Origin",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-origin')]",
+                "enabled": true,
+                "profiles": [
+                    {
+                        "name": "DefaultProfile",
+                        "capacity": {
+                            "minimum": "[parameters('EdgeInstanceCapacity')]",
+                            "maximum": "10",
+                            "default": "[parameters('EdgeInstanceCapacity')]"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-origin')]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": "[parameters('CPUPolicyTargetValue')]"
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT5M"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        },
+
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "apiVersion": "2023-03-01",
+            "name": "antmedia-edge",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]",
+                "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworks_antmedia_cluster_vnet_name'))]",
+                "[resourceId('Microsoft.Network/applicationGateways/', variables('applicationGateWayName'))]"
+
+
+            ],
+            "sku": {
+                "name": "[parameters('EdgeInstanceType')]",
+                "tier": "Standard",
+                "capacity": "[parameters('EdgeInstanceCapacity')]"
+            },
+            "plan": {
+                "name": "enterprise_edition",
+                "product": "ant_media_server_enterprise",
+                "publisher": "antmedia"
+            },
+            "properties": {
+                "platformFaultDomainCount": 1,
+                "singlePlacementGroup": false,
+                "orchestrationMode": "Flexible",
+                "virtualMachineProfile": {
+                    "osProfile": {
+                        "computerNamePrefix": "antmedia-",
+                        "adminUsername": "[parameters('InstanceUsername')]",
+                        "adminPassword": "[parameters('InstancePassword')]",
+                        "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
+                        "customData": "[base64('#!/bin/bash\nsudo sed -i \"/org.apache.catalina.valves.RemoteIpValve/d\" /usr/local/antmedia/conf/jee-container.xml\n/usr/local/antmedia/change_server_mode.sh cluster 10.0.1.99')]"
+                    },
+                    "storageProfile": {
+                        "osDisk": {
+                            "createOption": "FromImage",
+                            "managedDisk": {
+                                "storageAccountType": "Premium_LRS"
+                            }
+                        },
+                        "imageReference": {
+                            "publisher": "antmedia",
+                            "offer": "ant_media_server_enterprise",
+                            "sku": "enterprise_edition",
+                            "version": "latest"
+                        }
+                    },
+                    "networkProfile": {
+                        "networkApiVersion": "2020-11-01",
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "nicConfig",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "antmedia-cluster-vnet-nic01-defaultIpConfiguration",
+                                            "properties": {
+                                                "privateIPAddressVersion": "IPv4",
+                                                "subnet": {
+                                                    "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'edge')]"
+                                                },
+                                                      "applicationGatewayBackendAddressPools": [
+                                                {
+                                                  "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', variables('applicationGateWayName'), 'EdgeBackendPool')]"
+                                                }
+                                              ],
+                                                "primary": true,
+                                                "publicIPAddressConfiguration": {
+                                                    "name": "publicIp-antmedia-cluster-vnet-nic01",
+                                                    "properties": {
+                                                        "idleTimeoutInMinutes": 15,
+                                                        "ipTags": [],
+                                                        "publicIPAddressVersion": "IPv4"
+                                                    }
+                                                    }                                            
+                                            }
+                                        }
+                                    ],
+                                    "networkSecurityGroup": {
+                                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', 'AMSScaleSet-Security-Group')]"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Insights/autoscaleSettings",
+            "apiVersion": "2022-10-01",
+            "name": "AMSScaleSetAutoscaleSettings-Edge",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-edge')]"
+            ],
+            "properties": {
+                "name": "AMSScaleSetAutoscaleSettings-Edge",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-edge')]",
+                "enabled": true,
+                "profiles": [
+                    {
+                        "name": "DefaultProfile",
+                        "capacity": {
+                            "minimum": "[parameters('EdgeInstanceCapacity')]",
+                            "maximum": "10",
+                            "default": "[parameters('EdgeInstanceCapacity')]"
+                        },
+                        "rules": [
+                            {
+                                "metricTrigger": {
+                                    "metricName": "Percentage CPU",
+                                    "metricNamespace": "",
+                                    "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', 'antmedia-edge')]",
+                                    "timeGrain": "PT1M",
+                                    "statistic": "Average",
+                                    "timeWindow": "PT5M",
+                                    "timeAggregation": "Average",
+                                    "operator": "GreaterThan",
+                                    "threshold": 60
+                                },
+                                "scaleAction": {
+                                    "direction": "Increase",
+                                    "type": "ChangeCount",
+                                    "value": "1",
+                                    "cooldown": "PT5M"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}
