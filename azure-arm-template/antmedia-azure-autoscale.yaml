@@ -684,9 +684,9 @@
                     {
                         "name": "DefaultProfile",
                         "capacity": {
-                            "minimum": "1",
+                            "minimum": "[parameters('EdgeInstanceCapacity')]",
                             "maximum": "10",
-                            "default": "1"
+                            "default": "[parameters('EdgeInstanceCapacity')]"
                         },
                         "rules": [
                             {
@@ -820,9 +820,9 @@
                     {
                         "name": "DefaultProfile",
                         "capacity": {
-                            "minimum": "1",
+                            "minimum": "[parameters('EdgeInstanceCapacity')]",
                             "maximum": "10",
-                            "default": "1"
+                            "default": "[parameters('EdgeInstanceCapacity')]"
                         },
                         "rules": [
                             {
