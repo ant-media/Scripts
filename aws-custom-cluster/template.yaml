@@ -444,7 +444,7 @@ Resources:
     DependsOn: ApiGatewayStage
     Properties:
       Name: AMSAPIKey
-      Enabled: true
+      Enabled: false
       StageKeys:
         - RestApiId: !Ref ApiGatewayRestApi
           StageName: 'v1'
@@ -493,7 +493,7 @@ Resources:
   ApiGatewayCreateMethod:
     Type: AWS::ApiGateway::Method
     Properties:
-      ApiKeyRequired: true
+      ApiKeyRequired: false
       AuthorizationType: NONE
       HttpMethod: GET
       Integration:
@@ -666,8 +666,135 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket: ams-beanstalk
-        S3Key: lambda.zip
+        ZipFile: |
+          import json
+          import boto3
+          import os
+
+          def lambda_handler(event, context):
+              headers = event.get('headers', {})
+              host = headers.get('host', '')
+              path = event.get('path', '')
+              full_url = f"https://{host}{path}"
+          #   request = event['queryStringParameters']
+          #    api_key = request.get('api_key', None)
+              api_url = os.environ['API_URL'] + "v1/create"
+          #   api_key = os.environ['API_KEY'] 
+              print (api_url)
+              
+          #    response = requests.get(api_url, headers={'x-api-key': api_key})
+
+              javascript_code = """
+              // success callback
+              var onSuccess = function(response) {
+                  var errorDivs = document.getElementsByClassName("hcaptcha-error");
+                  if (errorDivs.length) {
+                      errorDivs[0].className = "";
+                  }
+                  var errorMsgs = document.getElementsByClassName("hcaptcha-error-message");
+                  if (errorMsgs.length) {
+                      errorMsgs[0].parentNode.removeChild(errorMsgs[0]);
+                  }
+              
+                  var logEl = document.querySelector(".hcaptcha-success");
+                  if (!logEl) {
+                      logEl = document.createElement("div");
+                      logEl.className = "hcaptcha-success";
+                      document.body.appendChild(logEl);
+                  }
+                  logEl.innerHTML = "This page will be automatically redirected soon...";
+              
+                  fetch(api, {
+                      method: 'GET',
+                      headers: {
+                          'Content-Type': 'application/json',
+                      },
+                      mode: 'no-cors' 
+                  })
+                  .then(response => {
+                      console.log('Request successfully sent.');
+                      console.log(api);
+                      console.log(api_key)
+                  })
+                  .catch(error => {
+                      console.error('Error:', error);
+                  });
+              
+              };
+              
+              var onExpire = function(response) {
+                  var logEl = document.querySelector(".hcaptcha-success");
+                  if (!logEl) {
+                      logEl = document.createElement("div");
+                      logEl.className = "hcaptcha-success";
+                      document.body.appendChild(logEl);
+                  }
+                  logEl.innerHTML = "Token expired.";
+              };
+              """
+              
+          #    if response.status_code == 200:
+              html_content = f"""
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <title>Ant Media Server will be starting</title>
+                  <script src="https://js.hcaptcha.com/1/api.js?reportapi=https%3A%2F%2Faccounts.hcaptcha.com&custom=False" type="text/javascript" async defer></script>
+              </head>
+              <body style="text-align:center">
+                  <h1>Get Ready!</h1>
+                  <h2>Ant Media Server will be starting</h2>
+                  <div class="sample-form">
+                  <form id="hcaptcha-demo-form" method="POST">
+                  
+                  <div class="hcaptcha-error">
+                  <div class="hcaptcha-success"></div>
+                  <div id="hcaptcha-demo" class="h-captcha" data-sitekey="98c57914-7095-465f-98fe-dbcedf5cbd46" data-callback="onSuccess" data-expired-callback="onExpire"></div>
+                  <script>var api = "{api_url}"; {javascript_code}</script>
+                  </div>
+                  <script>
+                      var url = "{full_url}";
+
+                      function checkAndForward(url) {{
+                          setTimeout(function () {{
+                              fetch(url)
+                              .then(response => {{
+                                  if (response.status == 200) {{
+                                      console.log("Redirecting to " + url);
+                                      window.location = url;
+                                  }}
+                                  else {{
+                                      console.log("Waiting for the server to be ready");
+                                      checkAndForward(url);
+                                  }}
+                              }})
+                              .catch(error => {{
+                                  console.log("Waiting for the server to be ready");
+                                  console.log(error);
+                                  checkAndForward(url);
+                              }});
+                          }}, 30000);
+                      }}
+                      checkAndForward(url);
+                  </script>
+              </body>
+              </html>
+              """
+
+          #    else:
+          #        html_content = "Waiting for the server to be ready"
+
+              response = {
+                  "statusCode": 200,
+                  "headers": {
+                      "Content-Type": "text/html",
+                  },
+                  "body": html_content
+              }
+
+              return response
+
       Handler: "index.lambda_handler"
       Role: !GetAtt LambdaIamRole.Arn
       Runtime: python3.12
@@ -865,16 +992,16 @@ Resources:
         - Name: AutoScalingGroupName
           Value: !Ref OriginGroup
 Outputs:
-  DNSCnameRecord:
-    Description: CNAME record for your DNS Server
-    Value: !GetAtt ApplicationLoadBalancer.DNSName
   EndPoint:
-    Description: HTTPS URL of the Ant Media Server
+    Description: Load Balancer Address of Ant Media Server
     Value: !Join 
       - ''
       - - 'https://'
-        - !GetAtt ApplicationLoadBalancer.DNSName
-        - "?api_key="
-        - !GetAtt LambdaApiValue.APIKeyValue
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
+#  ApiKey:
+#    Description: API Key
+#    Value: !GetAtt LambdaApiValue.APIKeyValue
 
 
