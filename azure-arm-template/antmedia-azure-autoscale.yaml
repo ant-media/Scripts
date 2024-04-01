@@ -506,7 +506,8 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Network/publicIPAddresses', variables('appGwPublicIPAddressName'))]",
-        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'app-gw')]"
+        "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworks_antmedia_cluster_vnet_name'), 'app-gw')]",
+        "[resourceId('Microsoft.Compute/virtualMachines', 'antmedia-mongodb')]"
       ]
     },        
         {
