@@ -244,11 +244,11 @@
                     {
                         "name": "cluster_rule2",
                         "properties": {
-                            "description": "Locks inbound down to Cluster default port 5000.",
+                            "description": "Locks inbound down to Cluster default port 1935.",
                             "protocol": "Tcp",
                             "sourcePortRange": "*",
-                            "destinationPortRange": "5000",
-                            "sourceAddressPrefix": "10.0.0.0/16",
+                            "destinationPortRange": "1935",
+                            "sourceAddressPrefix": "0.0.0.0/0",
                             "destinationAddressPrefix": "*",
                             "access": "Allow",
                             "priority": 102,
