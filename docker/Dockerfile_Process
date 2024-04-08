@@ -2,7 +2,7 @@
 # It accepts all cluster related parameters at run time. 
 # It means it's very easy to add new containers to the cluster 
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG AntMediaServer
 ARG LicenseKey
