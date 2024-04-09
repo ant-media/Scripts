@@ -25,6 +25,7 @@ RED='\033[0;31m'
 NC='\033[0m' 
 #version that is being installed. It's get filled below
 VERSION= 
+VERSION_NAME=$(curl -s https://antmedia.io/download/latest-version.json | jq -r '.versionName')
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -280,7 +281,7 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
     else
-      echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
+      echo "The license key is valid. Downloading the latest version ($VERSION_NAME) of Ant Media Server Enterprise Edition."
       curl --progress-bar -o ams_enterprise.zip "$check_license"
       ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
       check_enterprise_file
