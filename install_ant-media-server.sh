@@ -25,6 +25,7 @@ RED='\033[0;31m'
 NC='\033[0m' 
 #version that is being installed. It's get filled below
 VERSION= 
+VERSION_NAME=$(curl -s https://antmedia.io/download/latest-version.json | jq -r '.versionName')
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -204,6 +205,31 @@ check_version() {
   fi
 }
 
+check_enterprise_file() {
+  local retry_count=0
+  local max_retries=3
+  local remote_file
+  local local_file
+
+  while [ $retry_count -lt $max_retries ]; do
+
+    remote_file="$(curl -sL https://antmedia.io/download/latest-version.md5 | cut -d ' ' -f 1)"
+    local_file="$(md5sum "$ANT_MEDIA_SERVER_ZIP_FILE" | cut -d ' ' -f 1)"
+
+    if [ "$local_file" != "$remote_file" ]; then
+      echo "Downloaded file MD5 checksum is different from remote file MD5 checksum. Retrying download. Attempt: $((retry_count+1))"
+      curl --progress-bar -o "$ANT_MEDIA_SERVER_ZIP_FILE" "$check_license"
+      ((retry_count++))
+    else
+      echo "Downloaded file MD5 checksum matches remote file MD5 checksum."
+      return 0 
+    fi
+  done
+
+  echo "Failed to download the file after $max_retries attempts. Please re-run script again or check the internet connection"
+  exit 1 
+}
+
 #Just checks if the latest ioperation is successfull
 check() {
   OUT=$?
@@ -255,9 +281,10 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
     else
-      echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
+      echo "The license key is valid. Downloading the latest version ($VERSION_NAME) of Ant Media Server Enterprise Edition."
       curl --progress-bar -o ams_enterprise.zip "$check_license"
       ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
+      check_enterprise_file
     fi
   fi
 fi
