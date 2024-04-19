@@ -12,6 +12,7 @@ ams_version = ""
 ```
 3. Generate a new SSH key
 ```
+mkdir ./ssh
 ssh-keygen -t rsa -f ./ssh/id_rsa
 ```
 # DO
@@ -27,6 +28,7 @@ ams_version = ""
 ```
 3. Generate a new SSH key
 ```
+mkdir ./ssh
 ssh-keygen -t rsa -f ./ssh/id_rsa
 ```
 
