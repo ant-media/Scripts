@@ -1,0 +1,25 @@
+resources:
+- name: origin-instance-group
+  type: compute.v1.instanceGroupManager
+  properties:
+    zone: {{ default_zone }}
+    targetSize: 1
+    baseInstanceName: my-instance
+    instanceTemplate: projects/{{ env["project"] }}/global/instanceTemplates/ams-origin-template
+    namedPorts:
+    - name: http
+      port: 5080
+
+- name: origin-autoscaler
+  type: compute.v1.autoscaler
+  properties:
+    zone: {{ default_zone }}
+    target: $(ref.origin-instance-group.selfLink)
+    autoscalingPolicy:
+      minNumReplicas: 1
+      maxNumReplicas: 10
+      coolDownPeriodSec: 60
+      cpuUtilization:
+        utilizationTarget: 0.6
+
+
