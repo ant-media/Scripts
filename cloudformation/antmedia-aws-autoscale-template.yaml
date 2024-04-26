@@ -569,15 +569,14 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
             apt-get update 
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
+            sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigOrigin --configsets setup --region ${AWS::Region}
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -648,12 +647,12 @@ Resources:
             touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
             apt-get update 
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
+            sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-init -v --stack ${AWS::StackName} --resource LaunchConfigEdge --configsets setup --region ${AWS::Region}
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
