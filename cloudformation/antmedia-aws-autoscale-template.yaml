@@ -292,7 +292,7 @@ Resources:
   AMSGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.12
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -326,7 +326,7 @@ Resources:
   UbuntuGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.12
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
