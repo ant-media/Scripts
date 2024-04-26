@@ -4,7 +4,7 @@ Description: >-
   If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
   VpcCidrBlock:
-    Description: 'CIDR value for Wavelength Network'
+    Description: 'CIDR value for Network'
     Type: String
     MinLength: '9'
     MaxLength: '18'
