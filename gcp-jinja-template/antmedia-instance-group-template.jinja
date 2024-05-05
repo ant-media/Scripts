@@ -2,18 +2,21 @@ resources:
 - name: origin-instance-group
   type: compute.v1.instanceGroupManager
   properties:
-    zone: {{ default_zone }}
+    zone: {{ properties["zone"] }}
     targetSize: 1
-    baseInstanceName: my-instance
+    baseInstanceName: antmedia-origin
     instanceTemplate: projects/{{ env["project"] }}/global/instanceTemplates/ams-origin-template
     namedPorts:
     - name: http
       port: 5080
+  metadata:
+    dependsOn:
+    - ams-origin-template
 
 - name: origin-autoscaler
   type: compute.v1.autoscaler
   properties:
-    zone: {{ default_zone }}
+    zone: {{ properties["zone"] }}
     target: $(ref.origin-instance-group.selfLink)
     autoscalingPolicy:
       minNumReplicas: 1
@@ -22,4 +25,28 @@ resources:
       cpuUtilization:
         utilizationTarget: 0.6
 
+- name: edge-instance-group
+  type: compute.v1.instanceGroupManager
+  properties:
+    zone: {{ properties["zone"] }}
+    targetSize: 1
+    baseInstanceName: antmedia-edge
+    instanceTemplate: projects/{{ env["project"] }}/global/instanceTemplates/ams-edge-template
+    namedPorts:
+    - name: http
+      port: 5080
+  metadata:
+    dependsOn:
+    - ams-edge-template
 
+- name: edge-autoscaler
+  type: compute.v1.autoscaler
+  properties:
+    zone: {{ properties["zone"] }}
+    target: $(ref.edge-instance-group.selfLink)
+    autoscalingPolicy:
+      minNumReplicas: 1
+      maxNumReplicas: 10
+      coolDownPeriodSec: 60
+      cpuUtilization:
+        utilizationTarget: 0.6

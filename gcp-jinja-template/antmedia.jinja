@@ -16,8 +16,8 @@ limitations under the License.
 {% set default_zone = "us-central1-a" %}
 {% set default_region = "us-central1" %}
 {% set mongodb_machine_type = "e2-standard-2" %}
-{% set origin_machine_type = "e2-standard-2" %}
-{% set edge_machine_type = "e2-standard-2" %}
+{% set origin_machine_type = "c2d-standard-4" %}
+{% set edge_machine_type = "c2d-standard-4" %}
 
 
 resources:
@@ -32,6 +32,15 @@ resources:
     zone: {{ default_zone }}
     origin_machine_type: {{ origin_machine_type }}
     edge_machine_type: {{ edge_machine_type }}
+- name: antmedia-instance-group
+  type: antmedia-instance-group-template.jinja
+  properties:
+    zone: {{ default_zone }}
+- name: antmedia-loadbalancer
+  type: antmedia-loadbalancer-template.jinja
+  properties:
+    zone: {{ default_zone }}
+    region: {{ default_region}}
 - name: antmedia-firewall
   type: antmedia-firewall-template.jinja
   properties:
@@ -41,3 +50,5 @@ resources:
   properties:
     region: {{ default_region}}
     autoCreateSubnetworks: false
+
+  

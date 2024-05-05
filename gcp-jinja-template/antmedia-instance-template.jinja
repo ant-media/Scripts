@@ -21,14 +21,16 @@ resources:
         boot: true
         autoDelete: true
         initializeParams:
-          sourceImage: projects/antmedia-public-385620/global/images/ams-marketplace282
+          sourceImage: projects/{{ env["project"] }}/global/images/ams-marketplace282
       networkInterfaces:
       - network: $(ref.antmedia-vpc-network.selfLink)
         subnetwork: $(ref.origin-subnet.selfLink)
         accessConfigs:
         - name: External NAT
           type: ONE_TO_ONE_NAT
-
+      tags:
+        items:
+        - antmedia
 - name: ams-edge-template
   type: compute.v1.instanceTemplate
   properties:
@@ -51,10 +53,13 @@ resources:
         boot: true
         autoDelete: true
         initializeParams:
-          sourceImage: projects/antmedia-public-385620/global/images/ams-marketplace282
+          sourceImage: projects/{{ env["project"] }}/global/images/ams-marketplace282
       networkInterfaces:
       - network: $(ref.antmedia-vpc-network.selfLink)
         subnetwork: $(ref.edge-subnet.selfLink)
         accessConfigs:
         - name: External NAT
           type: ONE_TO_ONE_NAT
+      tags:
+        items:
+        - antmedia
