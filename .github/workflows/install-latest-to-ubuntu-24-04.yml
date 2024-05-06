@@ -1,5 +1,5 @@
 name:  Install Latest to Ubuntu 24.04
-on: [push]
+#on: [push]
 
 jobs:
   Install-Ubuntu-24-04:
