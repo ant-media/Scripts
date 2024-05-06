@@ -1,0 +1,53 @@
+name:  Install Latest to Ubuntu 24.04
+#on: [push]
+
+jobs:
+  Install-Ubuntu-24-04:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      #Get latest version
+      - run: curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
+      - run: ./install_ant-media-server.sh -i ant-media-server-community.zip
+      - run: sleep 30
+      - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
+      - run: cat /usr/local/antmedia/log/antmedia-error.log
+  Auto-Install-Community-:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      #Get latest version
+      - run: ./install_ant-media-server.sh
+      - run: sleep 30
+      - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
+      - run: cat /usr/local/antmedia/log/antmedia-error.log
+  Auto-Install-Enterprise-:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      #Get latest version
+      - run: bash -x ./install_ant-media-server.sh -l"${{ secrets.ENTERPRISE_LICENSE }}"
+      - run: sleep 30
+      - run: cat /usr/local/antmedia/log/ant-media-server.log
+      - run: |
+         if [ $(cat /usr/local/antmedia/log/ant-media-server.log | grep "LiveApp started" | wc -l | xargs) -eq 0 ]; then 
+           echo "LiveApp started log does not exist. Check the logs above"
+           exit 1;
+         fi;
+      - run: cat /usr/local/antmedia/log/antmedia-error.log
