@@ -616,6 +616,7 @@ Resources:
 
           def lambda_handler(event, context):
               listener_arn = os.environ['LISTENER_ARN']
+              origin_asg = os.environ['ORIGIN_ASG']
               new_desired_capacity = 1
               autoscaling_client = boto3.client('autoscaling')
               ec2_client = boto3.client('ec2')
@@ -624,7 +625,7 @@ Resources:
               # Find Auto Scaling Group names with specific prefixes
               asg_names = autoscaling_client.describe_auto_scaling_groups()
               asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
-                                 'OriginGroup' in group['AutoScalingGroupName']]
+                                 origin_asg in group['AutoScalingGroupName']]
               asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
 
               autoscaling_client = boto3.client('autoscaling')
@@ -659,7 +660,8 @@ Resources:
       Timeout: 60
       Environment:
         Variables:
-          LISTENER_ARN: !Ref ALBListener443 
+          LISTENER_ARN: !Ref ALBListener443
+          ORIGIN_ASG: !Sub "${AWS::StackName}-OriginGroup"
 
   # Lambda Function trigger by Cloudwatch
   LambdaFunctionTrigger:
@@ -679,7 +681,7 @@ Resources:
           #   request = event['queryStringParameters']
           #    api_key = request.get('api_key', None)
               api_url = os.environ['API_URL'] + "v1/create"
-          #   api_key = os.environ['API_KEY'] 
+          #   api_key = os.environ['API_KEY']
               print (api_url)
               
           #    response = requests.get(api_url, headers={'x-api-key': api_key})
@@ -805,6 +807,8 @@ Resources:
           API_URL: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
           #TARGETGROUP_ARN: !Ref ALBTargetGroupLambda
 
+
+
   LambdaCloudwatchFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -814,17 +818,19 @@ Resources:
 
           def lambda_handler(event, context):
               listener_arn = os.environ['LISTENER_ARN']
+              origin_asg = os.environ['ORIGIN_ASG']
               autoscaling_client = boto3.client('autoscaling')
               elb_client = boto3.client('elbv2')
               asg_names = autoscaling_client.describe_auto_scaling_groups()
               asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
-                                 'OriginGroup' in group['AutoScalingGroupName']]
+                                 origin_asg in group['AutoScalingGroupName']]
               asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
               response = autoscaling_client.update_auto_scaling_group(
                   AutoScalingGroupName=asg_origin_group_names,
                   MinSize=0,
                   DesiredCapacity=0
               )
+
 
               target_group_name = elb_client.describe_target_groups(Names=['ALBTargetGroupLambda'])
               target_group_arn= target_group_name['TargetGroups'][0]['TargetGroupArn']
@@ -860,7 +866,7 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          AUTO_SCALING_GROUP_NAME: !Sub "${AWS::StackName}-OriginGroup"
+          ORIGIN_ASG: !Sub "${AWS::StackName}-OriginGroup"
           LISTENER_ARN: !Ref ALBListener443 
   LambdaGetApiKey:
     Type: AWS::Lambda::Function
@@ -1003,5 +1009,3 @@ Outputs:
 #  ApiKey:
 #    Description: API Key
 #    Value: !GetAtt LambdaApiValue.APIKeyValue
-
-
