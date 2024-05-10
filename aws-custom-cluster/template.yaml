@@ -275,7 +275,7 @@ Resources:
   ALBTargetGroupLambda:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
-      Name: ALBTargetGroupLambda
+    #  Name: ALBTargetGroupLambda
       TargetType: lambda
       Targets:
         - Id: !GetAtt LambdaFunctionTrigger.Arn
@@ -819,6 +819,7 @@ Resources:
           def lambda_handler(event, context):
               listener_arn = os.environ['LISTENER_ARN']
               origin_asg = os.environ['ORIGIN_ASG']
+              target_group_arn = os.environ['TARGETGROUP_ARN']
               autoscaling_client = boto3.client('autoscaling')
               elb_client = boto3.client('elbv2')
               asg_names = autoscaling_client.describe_auto_scaling_groups()
@@ -831,9 +832,6 @@ Resources:
                   DesiredCapacity=0
               )
 
-
-              target_group_name = elb_client.describe_target_groups(Names=['ALBTargetGroupLambda'])
-              target_group_arn= target_group_name['TargetGroups'][0]['TargetGroupArn']
 
               create_rule = elb_client.create_rule(
                   Actions=[
@@ -868,6 +866,7 @@ Resources:
         Variables:
           ORIGIN_ASG: !Sub "${AWS::StackName}-OriginGroup"
           LISTENER_ARN: !Ref ALBListener443 
+          TARGETGROUP_ARN: !Ref ALBTargetGroupLambda
   LambdaGetApiKey:
     Type: AWS::Lambda::Function
     DependsOn: ApiGatewayApiKey
