@@ -418,7 +418,7 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             sudo apt-get update -y
-            sudo apt-get install stunnel -y
+            sudo apt-get install stunnel python3-pip -y
             sudo tee /etc/stunnel/stunnel.conf > /dev/null <<EOF
             fips = no
             setuid = root
@@ -434,13 +434,12 @@ Resources:
             EOF
             sudo systemctl enable stunnel4
             sudo stunnel /etc/stunnel/stunnel.conf
+            touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh standalone redis://localhost:6379
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
