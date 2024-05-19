@@ -1,8 +1,8 @@
-name: Python Selenium Script
+name: Python Samples Script
 
-on: [push]
-     #schedule:
-     #- cron: '0 */12 * * *'
+on:
+  schedule:
+    - cron: '0 */12 * * *'
 
 jobs:
   run-selenium:
