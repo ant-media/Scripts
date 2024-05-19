@@ -10,13 +10,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 
-# Function to send notification to Slack
-def send_slack_message(webhook_url, message, icon_emoji=":x:"):
+# Function to send notification to Slack Channel
+def send_slack_message(webhook_url, message, user_id, icon_emoji=":x:"):
     payload = {
-        "text": message,
+        "text": f"<@{user_id}> {message}",
         "icon_emoji": icon_emoji
     }
-    response = requests.post(webhook_url, data={"payload": json.dumps(payload)})
+    headers = {'Content-Type': 'application/json'}
+    #response = requests.post(webhook_url, data={"payload": json.dumps(payload)})
+    response = requests.post(webhook_url, data=json.dumps(payload), headers=headers)
+
 
     if response.status_code != 200:
         print("Error sending Slack message: ", response.text)
@@ -56,26 +59,28 @@ def switch_to_first_tab(driver):
 
 
 # Function to remove advertisement from sample pages
-def remove_ad(driver):
-    element = driver.find_element(By.XPATH, "/html/body/div[3]/div")
-    driver.execute_script("arguments[0].style.display = 'none';", element)
+#def remove_ad(driver):
+#    element = driver.find_element(By.XPATH, "/html/body/div[3]")
+#    driver.execute_script("arguments[0].style.display = 'none';", element)
+#    element1 = driver.find_element(By.XPATH, "/html/body/div[6]/div")
+#    driver.execute_script("arguments[0].style.display = 'none';", element1)
     
 
 # Function to switch to new window and close the advertisement block
 def switch_window_and_frame(driver):
     driver.switch_to.window(driver.window_handles[1])
-    time.sleep(10)
-    remove_ad(driver)
-    time.sleep(2)
+    time.sleep(15)
     driver.switch_to.frame(0)
     time.sleep(3)
 
 
 webhook_url = os.environ['WEBHOOK_URL']
 icon_emoji = ":x:"
+user_id = 'U01UMD36SQ0'
 
 options = Options()
 options.add_argument('--headless')
+options.add_argument("--window-size=1920,1080");
 options.add_argument("--use-fake-ui-for-media-stream")
 options.add_argument("--use-fake-device-for-media-stream")
 driver = webdriver.Chrome(options=options)
@@ -89,8 +94,8 @@ for i in range(2):
         driver.execute_script("window.open('https://antmedia.io/webrtc-samples/webrtc-virtual-background/', '_blank');")
         driver.switch_to.window(driver.window_handles[1])
         time.sleep(20)
-        remove_ad(driver)
-        time.sleep(2)
+        #remove_ad(driver)
+        #time.sleep(2)
         driver.switch_to.frame(0)
         time.sleep(3)
         driver.find_element(By.XPATH, "/html/body/div/div/div[4]/div[3]/img").click()
@@ -105,7 +110,7 @@ for i in range(2):
     except:
         if i==1:
             message = "Virtual background test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-virtual-background/"
-            send_slack_message(webhook_url, message, icon_emoji)
+            send_slack_message(webhook_url, message, user_id, icon_emoji)
             continue
 
 switch_to_first_tab(driver)
@@ -115,17 +120,18 @@ try:
     driver.execute_script("window.open('https://antmedia.io/live-demo/', '_blank');")
     driver.switch_to.window(driver.window_handles[1])
     time.sleep(20)
-    remove_ad(driver)
-    time.sleep(2)
-    driver.find_element(By.XPATH, "/html/body/div[5]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
+    #remove_ad(driver)
+    #time.sleep(2)
+    driver.find_element(By.XPATH, "/html/body/div[1]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[1]").click()
     time.sleep(15)
-    driver.find_element(By.XPATH, "/html/body/div[5]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[2]").click()
+    driver.find_element(By.XPATH, "/html/body/div[1]/div/article[2]/div[2]/div[1]/div[1]/div/div/p/button[2]").click()
     time.sleep(3)
     print("Live demo is successful")
 
 except:
     message = "Livedemo test is failed, check -> https://antmedia.io/live-demo/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
+
 
 switch_to_first_tab(driver)
 
@@ -136,14 +142,14 @@ try:
     driver.find_element(By.XPATH, "/html/body/div/div/div[8]/button[1]").click()
     time.sleep(10)
     driver.find_element(By.XPATH, "/html/body/div/div/div[7]/div[1]/a").click()
-    time.sleep(5)
+    time.sleep(10)
     driver.find_element(By.XPATH, "/html/body/div/div/div[8]/button[2]").click()
     time.sleep(3)
     print("WebRTC to WebRTC is successful")
 
 except:
     message = "WebRTC to WebRTC test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-publish-webrtc-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 driver.close()
 driver.switch_to.window(driver.window_handles[1])
@@ -156,14 +162,14 @@ try:
     driver.find_element(By.XPATH, "/html/body/div/div/div[8]/button[1]").click()
     time.sleep(10)
     driver.find_element(By.XPATH, "/html/body/div/div/div[7]/div[1]/a").click()
-    time.sleep(5)
+    time.sleep(10)
     driver.find_element(By.XPATH, "/html/body/div/div/div[8]/button[2]").click()
     time.sleep(5)
     print("WebRTC to HLS is successful")
 
 except:
     message = "WebRTC to HLS test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-publish-hls-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 driver.close()
 driver.switch_to.window(driver.window_handles[1])
@@ -188,7 +194,7 @@ try:
 
 except:
     message = "WebRTC audio publish test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-audio-publish-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 driver.close()
 driver.switch_to.window(driver.window_handles[1])
@@ -205,7 +211,7 @@ try:
 
 except:
     message = "RTMP to WebRTC test is failed, check -> https://antmedia.io/webrtc-samples/rtmp-publish-wertc-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 switch_to_first_tab(driver)
 
@@ -220,7 +226,7 @@ try:
 
 except:
     message = "RTMP to HLS test is failed, check -> https://antmedia.io/webrtc-samples/rtmp-publish-hls-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 switch_to_first_tab(driver)
 
@@ -238,7 +244,7 @@ try:
 
 except:
     message = "SRT to WebRTC test is failed, check -> https://antmedia.io/webrtc-samples/srt-publish-webrtc-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
                           
 switch_to_first_tab(driver)
       
@@ -256,7 +262,7 @@ try:
 
 except:
     message = "SRT to HLS test is failed, check -> https://antmedia.io/webrtc-samples/srt-publish-hls-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 switch_to_first_tab(driver)
 
@@ -264,42 +270,63 @@ switch_to_first_tab(driver)
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/deepar-publish-play/', '_blank');")
     switch_window_and_frame(driver)
+    print("pass1")
     driver.find_element(By.XPATH, "/html/body/div/div/select").click()
-    time.sleep(1)
-    driver.find_element(By.XPATH, "/html/body/div[1]/div/select/option[6]").click()
-    time.sleep(1)
-    driver.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/button[1]").click()
+    print("pass2")
+    time.sleep(2)
+    driver.find_element(By.XPATH, "/html/body/div[1]/div/select/option[3]").click()
+    print("pass3")
+    time.sleep(2)
+    driver.find_element(By.XPATH, "/html/body/div/div/div[5]/button[1]").click()
     time.sleep(10)
-    driver.find_element(By.XPATH, "/html/body/div[1]/div/div[5]/button[2]").click()
+    driver.find_element(By.XPATH, "/html/body/div/div/div[5]/button[2]").click()
     print("WebRTC Deep AR test is successful")
 
 except:
     message = "WebRTC DeepAR sample test is failed, check -> https://antmedia.io/webrtc-samples/deepar-publish-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 switch_to_first_tab(driver)
 
 # Testing Whiteboard sample page
 try:
     driver.execute_script("window.open('https://antmedia.io/webrtc-samples/interactive-whiteboard-publish-play/', '_blank');")
-    switch_window_and_frame(driver)
-    driver.switch_to.frame("webrtc-publish-frame")
-    time.sleep(1)
-    driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[2]/div[6]/button[1]").click()
+    driver.switch_to.window(driver.window_handles[1])
     time.sleep(5)
     driver.switch_to.frame(0)
+    time.sleep(2)
+    driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[2]/div[6]/button[1]").click()
+    time.sleep(2)
+    iframe_element = driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[1]/iframe")
+    driver.switch_to.frame(iframe_element)
     driver.find_element(By.XPATH, "/html/body/section[2]/canvas[4]").click()
     time.sleep(2)
     driver.switch_to.default_content()
-    driver.switch_to.frame(0)
-    driver.switch_to.frame("webrtc-play-frame")
-    driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[3]/div[4]/button[1]").click()
+    iframe_element1 = driver.find_element(By.XPATH, "/html/body/div/div[2]/div/div/article/div/div/div/div/div/section/div/div/div/div/div/div/div/div/div[2]/iframe")
+    driver.switch_to.frame(iframe_element1)
+    driver.find_element(By.XPATH, "/html/body/div[2]/div/div/div/div[2]/div[5]/button[1]").click()
     time.sleep(10)
     print("WebRTC white board test is successful")
 
 except:
     message = "WebRTC whiteboard test is failed, check -> https://antmedia.io/webrtc-samples/interactive-whiteboard-publish-play/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
+
+switch_to_first_tab(driver)
+
+# Testing Conference sample page
+try:
+    driver.execute_script("window.open('https://antmedia.io/webrtc-samples/multitrack-conference-solution/', '_blank');")
+    switch_window_and_frame(driver)
+    driver.find_element(By.XPATH, "/html/body/div/div[2]/div[3]/div/div[2]/button[1]").click()
+    time.sleep(10)
+    driver.find_element(By.XPATH, "/html/body/div/div[2]/div[3]/div/div[2]/button[2]").click()
+    time.sleep(3)
+    print("WebRTC Conference test is successful")
+
+except:
+    message = "WebRTC Conference sample test is failed, check -> https://antmedia.io/webrtc-samples/multitrack-conference-solution/"
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 switch_to_first_tab(driver)
 
@@ -319,6 +346,6 @@ try:
 
 except:
     message = "WebRTC data channel test is failed, check -> https://antmedia.io/webrtc-samples/webrtc-data-channel-only/"
-    send_slack_message(webhook_url, message, icon_emoji)
+    send_slack_message(webhook_url, message, user_id, icon_emoji)
 
 driver.quit()
