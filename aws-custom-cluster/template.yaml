@@ -454,6 +454,174 @@ Resources:
       - IpProtocol: "-1"
         CidrIp: "0.0.0.0/0"
 
+  ApiGatewayApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn: ApiGatewayStage
+    Properties:
+      Name: AMSAPIKey
+      Enabled: false
+      StageKeys:
+        - RestApiId: !Ref ApiGatewayRestApi
+          StageName: 'v1'
+
+  ApiGatewayUsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn: ApiGatewayApiKey
+    Properties:
+      ApiStages:
+        - ApiId: !Ref ApiGatewayRestApi
+          Stage: !Ref ApiGatewayStage
+      Description: Usage plan for API Key
+      Quota:
+        Limit: 10000
+        Period: MONTH
+      Throttle:
+        BurstLimit: 500
+        RateLimit: 1000
+      UsagePlanName: MyUsagePlan
+
+  ApiUsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn: ApiGatewayUsagePlan
+    Properties:
+      KeyId: !Ref ApiGatewayApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref ApiGatewayUsagePlan
+
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      ApiKeySourceType: HEADER
+      Description: An API Gateway with a Lambda Integration
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Name: Ant Media Server Api Gateway
+
+  ApiGatewayCreateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'create'
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaCreateFunction.Arn}/invocations'
+        IntegrationResponses:
+          - StatusCode: 200
+        RequestTemplates:
+          application/json: |
+            ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+            ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+            #set($allParams = $input.params())
+            {
+            "body" : $input.json('$'),
+            "params" : {
+            #foreach($type in $allParams.keySet())
+                #set($params = $allParams.get($type))
+            "$type" : {
+                #foreach($paramName in $params.keySet())
+                "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                    #if($foreach.hasNext),#end
+                #end
+            }
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "stageVariables" : {
+            #foreach($key in $stageVariables.keySet())
+            "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "context" : {
+                "accountId" : "$context.identity.accountId",
+                "apiId" : "$context.apiId",
+                "apiKey" : "$context.identity.apiKey",
+                "authorizerPrincipalId" : "$context.authorizer.principalId",
+                "caller" : "$context.identity.caller",
+                "cognitoAuthenticationProvider" : "$context.identity.cognitoAuthenticationProvider",
+                "cognitoAuthenticationType" : "$context.identity.cognitoAuthenticationType",
+                "cognitoIdentityId" : "$context.identity.cognitoIdentityId",
+                "cognitoIdentityPoolId" : "$context.identity.cognitoIdentityPoolId",
+                "httpMethod" : "$context.httpMethod",
+                "stage" : "$context.stage",
+                "sourceIp" : "$context.identity.sourceIp",
+                "user" : "$context.identity.user",
+                "userAgent" : "$context.identity.userAgent",
+                "userArn" : "$context.identity.userArn",
+                "requestId" : "$context.requestId",
+                "resourceId" : "$context.resourceId",
+                "resourcePath" : "$context.resourcePath"
+                }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+      RequestParameters:
+        method.request.querystring.name: false
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayCreateResource
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref ApiGatewayRestApi
+      Schema: {}
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    DependsOn: ApiGatewayDeployment
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      Description: Lambda API Stage v1
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: 'v1'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGatewayCreateMethod
+    Properties:
+      Description: Lambda API Deployment
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource:
+                  - !GetAtt LambdaCreateFunction.Arn
   LambdaCreateFunction:
     Type: AWS::Lambda::Function
     Properties:
