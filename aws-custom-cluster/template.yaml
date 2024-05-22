@@ -350,6 +350,8 @@ Resources:
         ImageId: ami-05603669082b6ebf0
         SecurityGroupIds:
           - !GetAtt "InstanceSecurityGroup.GroupId"
+        IamInstanceProfile:
+          Arn: !GetAtt InstanceProfile.Arn
         BlockDeviceMappings:
           - DeviceName: /dev/sda1
             Ebs:
@@ -360,7 +362,7 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             sudo apt-get update -y
-            sudo apt-get install stunnel python3-pip -y
+            sudo apt-get install stunnel python3-pip jq -y
             sudo tee /etc/stunnel/stunnel.conf > /dev/null <<EOF
             fips = no
             setuid = root
@@ -377,7 +379,11 @@ Resources:
             sudo systemctl enable stunnel4
             sudo stunnel /etc/stunnel/stunnel.conf
             touch /usr/local/antmedia/conf/initialized
-            bash /usr/local/antmedia/change_server_mode.sh standalone redis://localhost:6379
+            SECRET_KEY=$(openssl rand -base64 32 | head -c 32)
+            sudo sed -i "/^server.jwtServerControlEnabled=/s|.*|server.jwtServerControlEnabled=true|" /usr/local/antmedia/conf/red5.properties
+            sudo sed -i "/^server.jwtServerSecretKey=/s|.*|server.jwtServerSecretKey=$SECRET_KEY|" /usr/local/antmedia/conf/red5.properties
+            wget -P /usr/local/antmedia/conf/ https://raw.githubusercontent.com/ant-media/Ant-Media-Server/749567900bc6fda5c614b329dceabbf5048485d3/src/main/server/conf/jwt_generator.sh
+            bash /usr/local/antmedia/change_server_mode.sh cluster redis://localhost:6379
             mkdir -p /opt/aws/bin
             sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
             sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
@@ -392,6 +398,16 @@ Resources:
           Tags:
             - Key: Name
               Value: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+
+  OriginCPUPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref OriginGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 50
 
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -813,48 +829,135 @@ Resources:
     Properties:
       Code:
         ZipFile: |
-          import boto3, os
+          import boto3, os, time, json
 
           def lambda_handler(event, context):
+
               listener_arn = os.environ['LISTENER_ARN']
               origin_asg = os.environ['ORIGIN_ASG']
               target_group_arn = os.environ['TARGETGROUP_ARN']
+              alarm_name = 'AutoScalingGroupScaleDownAlarm'
               autoscaling_client = boto3.client('autoscaling')
               elb_client = boto3.client('elbv2')
+              ec2_client = boto3.client("ec2")
+              ssm_client = boto3.client('ssm')
+              cloudwatch_client = boto3.client('cloudwatch')
+
+              script = """
+              #/usr/bin/env bash -x
+              sed -i 's|INSTALL_DIRECTORY="$1"|INSTALL_DIRECTORY="/usr/local/antmedia"|g' /usr/local/antmedia/conf/jwt_generator.sh
+              . /usr/local/antmedia/conf/jwt_generator.sh
+              generate_jwt
+              REST_URL="http://localhost:5080/rest/v2/applications-info"
+              curl -s -L "$REST_URL" --header "ProxyAuthorization: $JWT_KEY" -o /tmp/curl_output.txt
+              jq '[.[] | select(.liveStreamCount > 0)] | length > 0' /tmp/curl_output.txt
+              """
+
               asg_names = autoscaling_client.describe_auto_scaling_groups()
               asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
-                                 origin_asg in group['AutoScalingGroupName']]
+                                origin_asg in group['AutoScalingGroupName']]
               asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
-              response = autoscaling_client.update_auto_scaling_group(
-                  AutoScalingGroupName=asg_origin_group_names,
-                  MinSize=0,
-                  DesiredCapacity=0
+
+              print(f"Auto Scaling Group name: {asg_origin_group_names}")
+              origin_calculate_total_instance = autoscaling_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_origin_group_names])
+              origin_current_capacity = len(origin_calculate_total_instance['AutoScalingGroups'][0]['Instances'])
+              instance = origin_calculate_total_instance['AutoScalingGroups'][0]['Instances']
+              try:
+                  instance_id = instance[0]['InstanceId']
+                  print("Current capacity and Instance ID", {"origin_current_capacity": origin_current_capacity, "instance_id": instance_id})
+              except IndexError:
+                  cloudwatch_set_ok(alarm_name)
+                  print("No instances found in Auto Scaling Group", asg_origin_group_names)
+                  return {
+                      'statusCode': 200,
+                      'body': json.dumps({"message": "No instances found in Auto Scaling Group"})
+                  }
+
+              smm_response = ssm_client.send_command(
+                  DocumentName ='AWS-RunShellScript',
+                  Parameters = {'commands': [script]},
+                  InstanceIds = [instance_id]
               )
 
+              command_id = smm_response['Command']['CommandId']
 
-              create_rule = elb_client.create_rule(
-                  Actions=[
-                      {
-                          'Type': 'forward',
-                          'TargetGroupArn': target_group_arn
+              while True:
+                  time.sleep(2)
+                  invocation_response = ssm_client.get_command_invocation(
+                      CommandId=command_id,
+                      InstanceId=instance_id,
+                  )
+                  if invocation_response['Status'] not in ['Pending', 'InProgress']:
+                      break
+
+              smm_output = invocation_response['StandardOutputContent'].strip()
+              print(f"SSM command output: {smm_output}")
+              #debug
+              #print(invocation_response['StandardOutputContent'])
+              #error = invocation_response['StandardErrorContent'].strip()
+
+              if origin_current_capacity == 1:
+                  if smm_output == 'false':
+                      print("No live streams found. Updating Auto Scaling Group.")
+                      origin_response = autoscaling_client.update_auto_scaling_group(
+                          AutoScalingGroupName=asg_origin_group_names,
+                          MinSize=0,
+                          DesiredCapacity=0
+                      )
+
+                      create_rule = elb_client.create_rule(
+                          Actions=[
+                              {
+                                  'Type': 'forward',
+                                  'TargetGroupArn': target_group_arn
+                              }
+                          ],
+                          Conditions=[
+                              {
+                                  'Field': 'path-pattern',
+                                  'Values': ['*']
+                              }
+                          ],
+                          ListenerArn=listener_arn,
+                          Priority=1
+                      )
+                      cloudwatch_set_ok(alarm_name)
+                      print(origin_response)
+                      return {
+                          'statusCode': 200,
+                          'body': 'Auto Scaling Group updated successfully!'
                       }
-                  ],
-                  Conditions=[
-                      {
-                          'Field': 'path-pattern',
-                          'Values': ['*']
-                      }
-                  ],
-                  ListenerArn=listener_arn,
-                  Priority=1
-              )  
-
-              print(response)
-
+                  else:
+                      print("Live streams found.")
+              else:
+                  print(f"Current capacity is not 1, it is {origin_current_capacity}. No updates needed.")
+                  
+              cloudwatch_set_ok(alarm_name)
               return {
                   'statusCode': 200,
-                  'body': 'Auto Scaling Group updated successfully!'
+                  'body': 'Auto Scaling Group does not require update.'
               }
+
+
+          def cloudwatch_set_ok(alarm_name):
+              try:
+                  cloudwatch_client = boto3.client('cloudwatch')
+                  cloudwatch_response = cloudwatch_client.set_alarm_state(
+                      AlarmName=alarm_name,
+                      StateValue='OK',
+                      StateReason='Updating alarm state to OK'
+                  )
+                  print("Alarm state updated to OK", cloudwatch_response)
+                  return cloudwatch_response
+              except Exception as e:
+                  error_message = {
+                      "error": str(e),
+                      "function": "cloudwatch_set_ok",
+                      "alarm_name": alarm_name
+                  }
+                  print(json.dumps(error_message))
+                  raise e
+
       #FunctionName: InstanceDeleteFunction
       Handler: "index.lambda_handler"
       Role: !GetAtt LambdaIamRole.Arn
@@ -928,7 +1031,7 @@ Resources:
               Service: "lambda.amazonaws.com"
             Action: "sts:AssumeRole"
       Policies:
-        - PolicyName: "EC2FullAccessPolicy1"
+        - PolicyName: "AccessPolicy"
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -948,6 +1051,9 @@ Resources:
                   - "elasticloadbalancing:CreateRule"
                   - "apigateway:GET"
                   - "acm:DescribeCertificate"
+                  - "ssm:GetCommandInvocation"
+                  - "ssm:SendCommand"
+                  - "cloudwatch:SetAlarmState"
                 Resource: "*"
         - PolicyName: "CloudWatchLogsPolicy"
           PolicyDocument:
@@ -976,6 +1082,39 @@ Resources:
       FunctionName: !GetAtt LambdaFunctionTrigger.Arn
       Action: lambda:InvokeFunction
       Principal: elasticloadbalancing.amazonaws.com
+
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  EC2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      Policies:
+        - PolicyName: AllowSSM
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ssm:*"
+                  - "cloudwatch:PutMetricData"
+                  - "ds:CreateComputer"
+                  - "ds:DescribeDirectories"
+                  - "ec2:DescribeInstanceStatus"
+                  - "logs:*"
+                  - "ssm:*"
+                  - "ec2messages:*"
+                Resource: '*'
 
   # Cloudwatch rule to set 0 in Autoscale
   AutoScalingGroupScaleDownAlarm:
