@@ -435,7 +435,7 @@ Resources:
             sudo systemctl enable stunnel4
             sudo stunnel /etc/stunnel/stunnel.conf
             touch /usr/local/antmedia/conf/initialized
-            bash /usr/local/antmedia/change_server_mode.sh standalone redis://localhost:6379
+            bash /usr/local/antmedia/change_server_mode.sh cluster redis://localhost:6379
             mkdir -p /opt/aws/bin
             sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
             sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
@@ -450,6 +450,15 @@ Resources:
           Tags:
             - Key: Name
               Value: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+  OriginCPUPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref OriginGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 50
 
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -883,36 +892,45 @@ Resources:
               asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
                                  origin_asg in group['AutoScalingGroupName']]
               asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
-              response = autoscaling_client.update_auto_scaling_group(
-                  AutoScalingGroupName=asg_origin_group_names,
-                  MinSize=0,
-                  DesiredCapacity=0
-              )
 
+              origin_calculate_total_instance = autoscaling_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_origin_group_names])
+              origin_current_capacity = len(origin_calculate_total_instance['AutoScalingGroups'][0]['Instances'])
 
-              create_rule = elb_client.create_rule(
-                  Actions=[
-                      {
-                          'Type': 'forward',
-                          'TargetGroupArn': target_group_arn
-                      }
-                  ],
-                  Conditions=[
-                      {
-                          'Field': 'path-pattern',
-                          'Values': ['*']
-                      }
-                  ],
-                  ListenerArn=listener_arn,
-                  Priority=1
-              )  
+              if origin_current_capacity >= 1:
+                  origin_response = autoscaling_client.update_auto_scaling_group(
+                      AutoScalingGroupName=asg_origin_group_names,
+                      MinSize=0,
+                      DesiredCapacity=0
+                  )
+                  
+                  create_rule = elb_client.create_rule(
+                      Actions=[
+                          {
+                              'Type': 'forward',
+                              'TargetGroupArn': target_group_arn
+                          }
+                      ],
+                      Conditions=[
+                          {
+                              'Field': 'path-pattern',
+                              'Values': ['*']
+                          }
+                      ],
+                      ListenerArn=listener_arn,
+                      Priority=1
+                  )
 
-              print(response)
+                  print(origin_response)
 
-              return {
-                  'statusCode': 200,
-                  'body': 'Auto Scaling Group updated successfully!'
-              }
+                  return {
+                      'statusCode': 200,
+                      'body': 'Auto Scaling Group updated successfully!'
+                  }
+              else:
+                  return {
+                      'statusCode': 200,
+                      'body': 'Auto Scaling Group does not require update.'
+                  }
       #FunctionName: InstanceDeleteFunction
       Handler: "index.lambda_handler"
       Role: !GetAtt LambdaIamRole.Arn
