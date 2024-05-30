@@ -21,7 +21,7 @@ resources:
         boot: true
         autoDelete: true
         initializeParams:
-          sourceImage: projects/{{ env["project"] }}/global/images/ams-marketplace282
+          sourceImage: projects/{{ env["project"] }}/global/images/{{ properties["image_id"] }}
       networkInterfaces:
       - network: $(ref.antmedia-vpc-network.selfLink)
         subnetwork: $(ref.origin-subnet.selfLink)
@@ -53,7 +53,7 @@ resources:
         boot: true
         autoDelete: true
         initializeParams:
-          sourceImage: projects/{{ env["project"] }}/global/images/ams-marketplace282
+          sourceImage: projects/{{ env["project"] }}/global/images/{{ properties["image_id"] }}
       networkInterfaces:
       - network: $(ref.antmedia-vpc-network.selfLink)
         subnetwork: $(ref.edge-subnet.selfLink)

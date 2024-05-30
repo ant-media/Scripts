@@ -18,6 +18,8 @@ limitations under the License.
 {% set mongodb_machine_type = "e2-standard-2" %}
 {% set origin_machine_type = "c2d-standard-4" %}
 {% set edge_machine_type = "c2d-standard-4" %}
+{% set image_id = "ams-latest" %}
+
 
 
 resources:
@@ -32,6 +34,8 @@ resources:
     zone: {{ default_zone }}
     origin_machine_type: {{ origin_machine_type }}
     edge_machine_type: {{ edge_machine_type }}
+    image_id: {{ image_id }}
+
 - name: antmedia-instance-group
   type: antmedia-instance-group-template.jinja
   properties:
