@@ -487,6 +487,15 @@ Resources:
       LoadBalancerArn: !Ref RTMPLoadBalancer
       Port: '1935'
       Protocol: TCP
+  SRTListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref SRTTargetGroup
+      LoadBalancerArn: !Ref RTMPLoadBalancer
+      Port: '4200'
+      Protocol: UDP
   RTMPTargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
@@ -496,6 +505,17 @@ Resources:
       Protocol: TCP
       UnhealthyThresholdCount: 3
       VpcId: !Ref AntMediaVPC
+  SRTTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 3
+      Port: 4200
+      Protocol: UDP
+      UnhealthyThresholdCount: 3
+      HealthCheckProtocol: TCP
+      HealthCheckPort: '5080'
+      VpcId: !Ref AntMediaVPC
   RTMPSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -504,6 +524,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: '1935'
           ToPort: '1935'
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: udp
+          FromPort: '4200'
+          ToPort: '4200'
           CidrIp: '0.0.0.0/0'
       SecurityGroupEgress:
         - IpProtocol: tcp
@@ -528,6 +552,7 @@ Resources:
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
           - !Ref RTMPTargetGroup
+          - !Ref SRTTargetGroup
         Tags:
         - Key: Name
           Value: Antmedia-Origin
@@ -840,6 +865,9 @@ Resources:
         - IpProtocol: udp
           FromPort: '50000'
           ToPort: '60000'
+        - IpProtocol: udp
+          FromPort: '4200'
+          ToPort: '4200'
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: '5000'
