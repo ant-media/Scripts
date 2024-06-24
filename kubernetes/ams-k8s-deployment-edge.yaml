@@ -45,6 +45,18 @@ spec:
 # You may also need to add -u and -p parameters for
 # specifying mongodb username and passwords respectively         
         args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
+        livenessProbe:
+          httpGet:
+            path: / 
+            port: 5080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5080
+          initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests:
              cpu: 4000m
