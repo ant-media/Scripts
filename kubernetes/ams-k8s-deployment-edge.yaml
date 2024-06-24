@@ -49,13 +49,13 @@ spec:
           httpGet:
             path: / 
             port: 5080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 10
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /
             port: 5080
-          initialDelaySeconds: 30
+          initialDelaySeconds: 10
           periodSeconds: 10
         resources:
           requests:
