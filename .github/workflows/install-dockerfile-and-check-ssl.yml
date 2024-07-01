@@ -3,9 +3,10 @@ name: Docker Build and Test
 on: 
   workflow_dispatch:
     inputs:
-      branch_name:
-        description: 'The name of the branch to clone'
+      branch_name:  
+        description: 'build branch name'
         required: true
+        default: 'master'
 
 jobs:
   build:
