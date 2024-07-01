@@ -1,6 +1,6 @@
 name: Docker Build and Test
 
-on:
+on: 
   workflow_dispatch:
     inputs:
       branch_name:
