@@ -16,6 +16,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: stop the AMS service
+        run: sudo systemctl stop antmedia
+
       - name: Run Docker service
         run: sudo systemctl restart docker
 
@@ -48,6 +51,8 @@ jobs:
         run: |
           docker exec antmedia curl -f https://${{ secrets.CI_SSL_TEST_DOMAIN }}:5443  
       - name: Stop and remove container
+        if: ${{ always() }
         run: |
           docker stop antmedia
           docker rm antmedia
+          sudo systemctl start antmedia
