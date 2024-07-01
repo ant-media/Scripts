@@ -53,7 +53,6 @@ jobs:
       - name: Stop and remove container
         if: ${{ always() }}
         run: |
-           echo "test"
-#          docker stop antmedia
-#          docker rm antmedia
-#          sudo systemctl start antmedia
+          docker stop antmedia
+          docker rm antmedia
+          sudo systemctl start antmedia
