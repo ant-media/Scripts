@@ -1,11 +1,6 @@
 name: Docker Build and Test
 
-on: 
-  workflow_dispatch:
-    inputs:
-      branch_name:  
-        description: 'build branch name'
-        required: true
+on: [push]
 
 jobs:
   build:
