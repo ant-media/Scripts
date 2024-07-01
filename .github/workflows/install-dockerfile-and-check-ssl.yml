@@ -51,7 +51,7 @@ jobs:
         run: |
           docker exec antmedia curl -f https://${{ secrets.CI_SSL_TEST_DOMAIN }}:5443  
       - name: Stop and remove container
-        if: ${{ always() }
+        if: ${{ always() }}
         run: |
           docker stop antmedia
           docker rm antmedia
