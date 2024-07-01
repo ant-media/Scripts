@@ -36,7 +36,7 @@ jobs:
 #        run: docker cp Ant-Media-Server/src/main/server/enable_ssl.sh antmedia:/usr/local/antmedia/enable_ssl.sh
         
       - name: Run enable_ssl.sh inside container
-        run: docker exec antmedia bash /usr/local/antmedia/enable_ssl.sh
+        run: docker exec antmedia bash /usr/local/antmedia/enable_ssl.sh -d ${{ secrets.CI_SSL_TEST_DOMAIN }}
 
       - name: Verify container is running
         run: |
@@ -53,6 +53,7 @@ jobs:
       - name: Stop and remove container
         if: ${{ always() }}
         run: |
-          docker stop antmedia
-          docker rm antmedia
-          sudo systemctl start antmedia
+           echo "test"
+#          docker stop antmedia
+#          docker rm antmedia
+#          sudo systemctl start antmedia
