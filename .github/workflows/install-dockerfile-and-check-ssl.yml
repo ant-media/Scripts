@@ -10,11 +10,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       - name: Run Docker service
-        run: systemctl restart docker
+        run: sudo systemctl restart docker
 
       - name: Build Docker image
         run: docker build -f docker/Dockerfile_Process --network=host -t antmediaserver --build-arg LicenseKey="${{ secrets.ENTERPRISE_LICENSE }}" .
