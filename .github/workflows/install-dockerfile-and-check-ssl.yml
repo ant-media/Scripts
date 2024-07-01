@@ -20,7 +20,7 @@ jobs:
         run: docker run -d --name antmedia --network=host -it antmediaserver
 
       - name: Run enable_ssl.sh inside container
-        run: docker exec antmedia bash /usr/local/antmedia/enable_ssl.sh
+        run: docker exec antmedia bash wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/21b57c461ba8eae496b830e779d2c628f25aecce/src/main/server/enable_ssl.sh && bash /usr/local/antmedia/enable_ssl.sh
 
       - name: Verify container is running
         run: |
