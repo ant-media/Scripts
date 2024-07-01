@@ -20,7 +20,7 @@ jobs:
         run: sudo systemctl restart docker
 
       - name: Build Docker image
-        run: docker build -f docker/Dockerfile_Process --network=host -t antmediaserver --build-arg LicenseKey="${{ secrets.ENTERPRISE_LICENSE }}" .
+        run: docker build --restart=always -f docker/Dockerfile_Process --network=host -t antmediaserver --build-arg LicenseKey="${{ secrets.ENTERPRISE_LICENSE }}" .
 
       - name: Run Docker container
         run: docker run -d --name antmedia --network=host -it antmediaserver
