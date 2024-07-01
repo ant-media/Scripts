@@ -20,7 +20,7 @@ jobs:
         run: docker run -d --name antmedia --network=host -it antmediaserver
 
       - name: Run enable_ssl.sh inside container
-        run: docker exec -it antmedia bash /usr/local/antmedia/enable_ssl.sh
+        run: docker exec antmedia bash /usr/local/antmedia/enable_ssl.sh
 
       - name: Verify container is running
         run: |
@@ -32,7 +32,7 @@ jobs:
 
       - name: Test application
         run: |
-          docker exec -it antmedia curl -f http://localhost:5443  # Örneğin HTTP endpoint test
+          docker exec antmedia curl -f http://localhost:5443  # Örneğin HTTP endpoint test
 
       - name: Stop and remove container
         run: |
