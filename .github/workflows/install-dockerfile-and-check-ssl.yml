@@ -6,7 +6,6 @@ on:
       branch_name:  
         description: 'build branch name'
         required: true
-        default: 'master'
 
 jobs:
   build:
