@@ -30,6 +30,7 @@ jobs:
           set -e
           if docker exec antmedia curl -f https://${{ secrets.CI_SSL_TEST_DOMAIN }}:5443; then
             echo "Endpoint is reachable."
+            exit 1
           else
             echo "Endpoint is not reachable, but continuing workflow."
           fi
