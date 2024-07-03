@@ -40,7 +40,7 @@ jobs:
 #          git clone --depth=1 -b ${{ github.event.inputs.branch_name }} https://github.com/ant-media/Ant-Media-Server.git || git clone --depth=1 https://github.com/ant-media/Ant-Media-Server.git
 
       - name: Download enable_ssl.sh inside container
-        run: docker exec antmedia wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/src/main/server/enable_ssl.sh    
+        run: docker exec antmedia wget -O /usr/local/antmedia/enable_ssl.sh https://raw.githubusercontent.com/ant-media/Ant-Media-Server/269f866bf9ee03a62757565aa1a4e469c0230954/src/main/server/enable_ssl.sh    
   
 #      - name: Copy enable_ssl.sh from cloned branch to container
 #        run: docker cp Ant-Media-Server/src/main/server/enable_ssl.sh antmedia:/usr/local/antmedia/enable_ssl.sh
