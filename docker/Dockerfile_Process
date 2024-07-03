@@ -5,13 +5,14 @@
 #
 # Usage:
 #
-# 1. AntMediaServer: Specify the name of the Ant Media Server zip file to complete the installation.
+# * AntMediaServer: Specify the name of the Ant Media Server zip file to install that specify Ant Media Server version to the docker image
 # --build-arg AntMediaServer='ant-media-server.zip'
 #
-# 2. LicenseKey: Assign your license key to this variable to complete the installation without needing a zip file. 
+# * LicenseKey: Set your license key to this variable to install the latest Ant Media Server automatically to the docker image without needing a zip file. If you use this LicenseKey variable, don't specify AntMediaServer variable (# --build-arg AntMediaServer='ant-media-server.zip'
+)
 # --build-arg LicenseKey='your-license-key'
 #
-# 3. InstallMediaPush: Set this variable to 'true' to enable headless Chrome on the server for recording and streaming web pages back to Ant Media Server.
+# * InstallMediaPush: Set this variable to 'true' to enable headless Chrome on the server for recording and streaming web pages back to Ant Media Server.
 # --build-arg InstallMediaPush='true'
 #
 
