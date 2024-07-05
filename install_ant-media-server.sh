@@ -358,7 +358,7 @@ unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
 
-if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
+if [[ $VERSION == 2.1\.+.* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get install openjdk-8-jre -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
