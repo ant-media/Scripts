@@ -161,7 +161,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Centos 9, RockyLinux 8, RockyLinux 9, AlmaLinux 8 and AlmaLinux 9"
+    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Ubuntu 24.04, Centos 8, Centos 9, RockyLinux 8, RockyLinux 9, AlmaLinux 8 and AlmaLinux 9"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -182,7 +182,7 @@ distro () {
         exit 1
       fi
 
-      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]]; then
+      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]]; then
          echo $msg
          exit 1
             fi
@@ -202,6 +202,31 @@ check_version() {
       echo -e "${RED}You can install AMS v2.6 or higher on Centos/AlmaLinux/RockyLinux 9${NC}"
       exit 1
   fi
+}
+
+check_enterprise_file() {
+  local retry_count=0
+  local max_retries=3
+  local remote_file
+  local local_file
+
+  while [ $retry_count -lt $max_retries ]; do
+
+    remote_file="$(curl -sL https://antmedia.io/download/latest-version.md5 | cut -d ' ' -f 1)"
+    local_file="$(md5sum "$ANT_MEDIA_SERVER_ZIP_FILE" | cut -d ' ' -f 1)"
+
+    if [ "$local_file" != "$remote_file" ]; then
+      echo "Downloaded file MD5 checksum is different from remote file MD5 checksum. Retrying download. Attempt: $((retry_count+1))"
+      curl --progress-bar -o "$ANT_MEDIA_SERVER_ZIP_FILE" "$check_license"
+      ((retry_count++))
+    else
+      echo "Downloaded file MD5 checksum matches remote file MD5 checksum."
+      return 0 
+    fi
+  done
+
+  echo "Failed to download the file after $max_retries attempts. Please re-run script again or check the internet connection"
+  exit 1 
 }
 
 #Just checks if the latest ioperation is successfull
@@ -255,9 +280,11 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
     else
-      echo "The license key is valid. Downloading the latest version of Ant Media Server Enterprise Edition."
+      VERSION_NAME=$(curl -s https://antmedia.io/download/latest-version.json | jq -r '.versionName')
+      echo "The license key is valid. Downloading the latest version ($VERSION_NAME) of Ant Media Server Enterprise Edition."
       curl --progress-bar -o ams_enterprise.zip "$check_license"
       ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
+      check_enterprise_file
     fi
   fi
 fi
@@ -331,7 +358,7 @@ unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
 
-if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
+if [[ $VERSION == 2.1\.+.* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   if [ "$ID" == "ubuntu" ]; then
     $SUDO apt-get install openjdk-8-jre -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
