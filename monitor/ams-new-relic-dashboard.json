@@ -1,0 +1,397 @@
+{
+  "name": "Ant Media Server",
+  "description": null,
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Ant Media Server",
+      "description": null,
+      "widgets": [
+        {
+          "title": "DASH Viewer Counts",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "colors": {
+              "seriesOverrides": [
+                {
+                  "color": "#339ac7",
+                  "seriesName": "LiveApp, stream1"
+                }
+              ]
+            },
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(dashViewerCount) AS 'DASH Viewer Count'\nFROM Log\nWHERE event = 'viewerCount' FACET app, streamId \nSINCE 1 minutes ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "HLS Viewer Counts",
+          "layout": {
+            "column": 5,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "colors": {
+              "seriesOverrides": [
+                {
+                  "color": "#cdc837",
+                  "seriesName": "LiveApp, stream1"
+                }
+              ]
+            },
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(hlsViewerCount) AS 'HLS Viewer Count'\nFROM Log\nWHERE event = 'viewerCount' FACET app, streamId \nSINCE 1 minutes ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "WebRTC Viewer Counts",
+          "layout": {
+            "column": 9,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(webRTCViewerCount) AS 'WebRTC Viewer Count'\nFROM Log\nWHERE event = 'viewerCount' FACET app, streamId \nSINCE 1 minutes ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Publisher Statistics",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(timestamp) FROM Log WHERE event = 'publishStarted' FACET streamId, app, protocol, videoCodec, audioCodec, height, width SINCE 1 day ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Stream Start and End Times",
+          "layout": {
+            "column": 7,
+            "row": 4,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT\n  filter(latest(timestamp), WHERE event = 'publishStarted') AS 'publishStarted',\n  filter(latest(timestamp), WHERE event = 'publishEnded') AS 'publishEnded'\nFROM\n  Log\nWHERE\n  (event = 'publishStarted' OR event = 'publishEnded')\nFACET\n  streamId, app\nSINCE\n  1 day ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Subscriber Playback Duration",
+          "layout": {
+            "column": 1,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "FROM Log\nSELECT \n  filter(latest(timestamp), WHERE event = 'playStartedFirstTime') AS 'playStartTime',\n  filter(latest(timestamp), WHERE event = 'playEnded') AS 'playEndTime',\n  (filter(latest(timestamp), WHERE event = 'playEnded') - filter(latest(timestamp), WHERE event = 'playStartedFirstTime')) / 1000 / 60 AS 'playDurationMinutes'\nWHERE event IN ('playStartedFirstTime', 'playEnded')\nFACET subscriberId, app, streamId\nSINCE 1 day ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Per User Total Transferred (Mb)",
+          "layout": {
+            "column": 7,
+            "row": 7,
+            "width": 6,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(numeric(totalBytesTransferred)) / 1048576 as 'Per User Total Transferred' \nFROM Log \nWHERE event = 'playerStats'\nFACET subscriberId, app, streamId SINCE 1 day ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "First Play Time per Subscriber",
+          "layout": {
+            "column": 1,
+            "row": 10,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.bar"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(timestamp)\nFROM Log\nWHERE event = 'playStartedFirstTime'\nFACET subscriberId\nSINCE 1 day ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Start time of the viewers",
+          "layout": {
+            "column": 5,
+            "row": 10,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(timestamp)\nFROM Log\nWHERE event = 'playStarted'\nFACET subscriberId\nSINCE 1 day ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "End time of the viewers",
+          "layout": {
+            "column": 9,
+            "row": 10,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.pie"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": true
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(timestamp)\nFROM Log\nWHERE event = 'playEnded'\nFACET subscriberId\nSINCE 1 day ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Subscriber Statistics",
+          "layout": {
+            "column": 1,
+            "row": 13,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "initialSorting": {
+              "direction": "desc",
+              "name": "Timestamp"
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(protocol), latest(clientIP), latest(timestamp)\nFROM Log\nWHERE event = 'watchTime'\nFACET subscriberId\nSINCE 1 day ago\n"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        },
+        {
+          "title": "Key Frame Interval ",
+          "layout": {
+            "column": 5,
+            "row": 13,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.table"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  0000000
+                ],
+                "query": "SELECT latest(timestamp) FROM Log WHERE event = 'keyFrameStats' FACET streamId, app, keyFramesInLastMinute, keyFrameIntervalMs SINCE 1 day ago"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": []
+}
