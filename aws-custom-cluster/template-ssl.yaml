@@ -6,10 +6,6 @@ Parameters:
     Description: Name of an existing EC2 KeyPair
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: must be the name of an existing EC2 KeyPair.
-  LoadBalancerCertificateArn:
-    Description: 'Amazon Resource Name (ARN) of the certificate to associate with the load balancer. If you do not have the SSL certificate, please check this guide: https://antmedia.io/ant-media-server-cloudformation-installation/ '
-    Type: String
-    Default: ''
   InstanceType:
     Description: Ant Media Server Edge EC2 instance type
     Type: String
