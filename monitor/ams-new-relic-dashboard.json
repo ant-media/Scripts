@@ -37,7 +37,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(dashViewerCount) AS 'DASH Viewer Count'\nFROM Log\nWHERE event = 'viewerCount' FACET app, streamId \nSINCE 1 minutes ago\n"
               }
@@ -77,7 +77,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(hlsViewerCount) AS 'HLS Viewer Count'\nFROM Log\nWHERE event = 'viewerCount' FACET app, streamId \nSINCE 1 minutes ago\n"
               }
@@ -109,7 +109,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(webRTCViewerCount) AS 'WebRTC Viewer Count'\nFROM Log\nWHERE event = 'viewerCount' FACET app, streamId \nSINCE 1 minutes ago\n"
               }
@@ -138,7 +138,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(timestamp) FROM Log WHERE event = 'publishStarted' FACET streamId, app, protocol, videoCodec, audioCodec, height, width SINCE 1 day ago"
               }
@@ -167,7 +167,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT\n  filter(latest(timestamp), WHERE event = 'publishStarted') AS 'publishStarted',\n  filter(latest(timestamp), WHERE event = 'publishEnded') AS 'publishEnded'\nFROM\n  Log\nWHERE\n  (event = 'publishStarted' OR event = 'publishEnded')\nFACET\n  streamId, app\nSINCE\n  1 day ago\n"
               }
@@ -196,7 +196,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "FROM Log\nSELECT \n  filter(latest(timestamp), WHERE event = 'playStartedFirstTime') AS 'playStartTime',\n  filter(latest(timestamp), WHERE event = 'playEnded') AS 'playEndTime',\n  (filter(latest(timestamp), WHERE event = 'playEnded') - filter(latest(timestamp), WHERE event = 'playStartedFirstTime')) / 1000 / 60 AS 'playDurationMinutes'\nWHERE event IN ('playStartedFirstTime', 'playEnded')\nFACET subscriberId, app, streamId\nSINCE 1 day ago"
               }
@@ -225,7 +225,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(numeric(totalBytesTransferred)) / 1048576 as 'Per User Total Transferred' \nFROM Log \nWHERE event = 'playerStats'\nFACET subscriberId, app, streamId SINCE 1 day ago"
               }
@@ -254,7 +254,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(timestamp)\nFROM Log\nWHERE event = 'playStartedFirstTime'\nFACET subscriberId\nSINCE 1 day ago\n"
               }
@@ -286,7 +286,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(timestamp)\nFROM Log\nWHERE event = 'playStarted'\nFACET subscriberId\nSINCE 1 day ago\n"
               }
@@ -318,7 +318,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(timestamp)\nFROM Log\nWHERE event = 'playEnded'\nFACET subscriberId\nSINCE 1 day ago\n"
               }
@@ -351,7 +351,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(protocol), latest(clientIP), latest(timestamp)\nFROM Log\nWHERE event = 'watchTime'\nFACET subscriberId\nSINCE 1 day ago\n"
               }
@@ -380,7 +380,7 @@
             "nrqlQueries": [
               {
                 "accountIds": [
-                  4479905
+                  0000000
                 ],
                 "query": "SELECT latest(timestamp) FROM Log WHERE event = 'keyFrameStats' FACET streamId, app, keyFramesInLastMinute, keyFrameIntervalMs SINCE 1 day ago"
               }
