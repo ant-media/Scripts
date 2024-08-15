@@ -1,10 +1,11 @@
 #!/bin/bash
-Server=$1
-NoOfClients=$2
+file=$1
+server=$2
+noofclients=$3
 
-for (( i=1; i <= $NoOfClients; ++i ))
+for (( i=1; i <= $noofclients; ++i ))
 do
-  COMMAND="ffmpeg -re -stream_loop -1 -i /Users/yashtandon/Downloads/Video/test.mp4 -codec copy -f flv ${Server}_${i}"
+  COMMAND="ffmpeg -re -stream_loop -1 -i ${file} -codec copy -f flv ${server}_${i}"
   $COMMAND >/dev/null 2>&1 &
   echo "running command $COMMAND"
   sleep 1
