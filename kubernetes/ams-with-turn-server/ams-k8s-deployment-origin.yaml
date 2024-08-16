@@ -35,7 +35,7 @@ spec:
 # args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
         args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
         volumeMounts:
-        - mountPath: /temp-data
+        - mountPath: /tmp
           name: temp-volume
         livenessProbe:
           httpGet:
