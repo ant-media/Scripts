@@ -34,6 +34,9 @@ spec:
 # specifying mongodb username and passwords respectively         
 # args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
         args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
+        volumeMounts:
+        - mountPath: /temp-data
+          name: temp-volume
         livenessProbe:
           httpGet:
             path: / 
@@ -49,5 +52,11 @@ spec:
         resources:
           requests:
              cpu: 4000m
+      volumes:
+      - hostPath:
+          path: /temp-data
+          type: DirectoryOrCreate
+        name: temp-volume
+
  #     imagePullSecrets:
  #     - name: docker
