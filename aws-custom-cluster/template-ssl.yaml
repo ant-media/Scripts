@@ -146,7 +146,7 @@ Resources:
 
       Handler: index.lambda_handler
       Role: !Sub '${AcmCertificateImportLambdaExecutionRole.Arn}'
-      Runtime: python3.12
+      Runtime: python3.11
   AcmCertificateImportLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
