@@ -455,6 +455,8 @@ Resources:
         PredefinedMetricSpecification:
           PredefinedMetricType: ASGAverageCPUUtilization
         TargetValue: 50
+        ScaleInCooldown: 300 
+        ScaleOutCooldown: 300
 
   InstanceSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
