@@ -331,7 +331,7 @@ Resources:
           LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
           Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
         MinSize: 0
-        MaxSize: 1
+        MaxSize: 100
         DesiredCapacity: 0
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin 
