@@ -8,7 +8,7 @@ runs:
       shell: bash
       run: |
         apt-get update
-        apt-get -y install wget findutils unzip
+        apt-get -y install wget findutils unzip curl
         curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
