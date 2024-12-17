@@ -54,7 +54,11 @@ jobs:
         run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/master/docker/Dockerfile_RockyLinux -O Dockerfile
 
       - name: Build Docker image
-        run: docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip .
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run:  |
+          echo "Building Docker image with branch: $BRANCH_NAME"
+          docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip --build-arg BranchName=$BRANCH_NAME .
 
       - name: Run the image
         run: docker run -d -p 5080:5080 --name antmediaserver antmediaserver
