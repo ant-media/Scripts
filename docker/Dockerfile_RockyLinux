@@ -4,7 +4,7 @@ ARG AntMediaServer
 ARG BranchName=master
 
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN yum install -y curl wget iproute logrotate which findutils which crontabs unzip
+RUN yum install -y curl wget iproute logrotate which findutils which crontabs unzip --allowerasing
 
 ADD ./${AntMediaServer} /home
 
