@@ -55,7 +55,9 @@ jobs:
         run: curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
       - name: Download Dockerfile
-        run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/$BRANCH_NAME/docker/Dockerfile_RockyLinux -O Dockerfile
+        run:  |
+          echo "Building Docker image with branch: $BRANCH_NAME" 
+          wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/$BRANCH_NAME/docker/Dockerfile_RockyLinux -O Dockerfile
 
       - name: Build Docker image
         run:  |
