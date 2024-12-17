@@ -1,4 +1,4 @@
-FROM rockylinux/rockylinux:8.6
+FROM rockylinux/rockylinux:9.3
 ARG AntMediaServer
 
 ARG BranchName=master
