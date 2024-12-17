@@ -18,7 +18,7 @@ jobs:
         run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/$BRANCH_NAME/docker/Dockerfile_Process -O Dockerfile
 
       - name: Build Docker image
-        run: docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip BranchName=$BRANCH_NAME .
+        run: docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip --build-arg BranchName=$BRANCH_NAME .
 
       - name: Run the image
         run: docker run -d -p 5080:5080 --name antmediaserver antmediaserver
