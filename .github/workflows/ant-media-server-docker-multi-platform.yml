@@ -5,6 +5,8 @@ on: [push]
 jobs:
   ams_ubuntu_docker_test:
     runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ github.ref_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -13,10 +15,10 @@ jobs:
         run: curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
       - name: Download Dockerfile
-        run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/master/docker/Dockerfile_Process -O Dockerfile
+        run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/$BRANCH_NAME/docker/Dockerfile_Process -O Dockerfile
 
       - name: Build Docker image
-        run: docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip .
+        run: docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip BranchName=$BRANCH_NAME .
 
       - name: Run the image
         run: docker run -d -p 5080:5080 --name antmediaserver antmediaserver
@@ -43,6 +45,8 @@ jobs:
 
   ams_rockylinux_docker_test:
     runs-on: ubuntu-latest
+    env:
+      BRANCH_NAME: ${{ github.ref_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -51,11 +55,9 @@ jobs:
         run: curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
       - name: Download Dockerfile
-        run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/master/docker/Dockerfile_RockyLinux -O Dockerfile
+        run: wget --quiet https://raw.githubusercontent.com/ant-media/Scripts/$BRANCH_NAME/docker/Dockerfile_RockyLinux -O Dockerfile
 
       - name: Build Docker image
-        env:
-          BRANCH_NAME: ${{ github.ref_name }}
         run:  |
           echo "Building Docker image with branch: $BRANCH_NAME"
           docker build --network=host -t antmediaserver:latest --build-arg AntMediaServer=ant-media-server-community.zip --build-arg BranchName=$BRANCH_NAME .
