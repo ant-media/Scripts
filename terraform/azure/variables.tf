@@ -33,11 +33,9 @@ variable "user" {
 variable "ams_version" {
   type        = string
   description = "AMS Version"
-  default = "2.12.0"
 }
 
 variable "zip_file_id" {
   description = "Google drive ID"
   type        = string
-  default = "" 
 }
