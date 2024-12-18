@@ -15,12 +15,11 @@ variable "do_instance_type" {
 }
 
 variable "do_image" {
-  default = "ubuntu-22-04-x64"
+  default = "ubuntu-24-04-x64"
 }
 
 variable "zip_file_id" {
   description = "Google drive ID"
   type        = string
-  #default = "xxxxxxx" 
 }
 
