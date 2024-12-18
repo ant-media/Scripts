@@ -1,0 +1,16 @@
+---
+# Your resource definitions go here under resources key
+resources:
+    - name: my-backend-service  # Replace with your desired name
+      type: compute.v1.backendService  # Adjust type based on resource
+      properties:
+          portName: http
+          protocol: HTTP
+          backend:
+            group: origin-instance-group  # Assuming your instance group name
+          healthChecks:
+            - https://www.googleapis.com/compute/v1/healthChecks/default
+
+# You can add other outputs here if needed
+output:
+  # ...

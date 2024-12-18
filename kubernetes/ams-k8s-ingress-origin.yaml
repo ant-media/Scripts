@@ -10,6 +10,7 @@ metadata:
     nginx.ingress.kubernetes.io/session-cookie-max-age: "172800"
     nginx.org/websocket-services: "ant-media-server"
     nginx.ingress.kubernetes.io/websocket-services : "ant-media-server"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0m"
 spec:
   rules:
   - host: test.antmedia.cloud

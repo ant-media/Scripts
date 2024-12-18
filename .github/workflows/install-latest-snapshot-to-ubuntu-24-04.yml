@@ -1,9 +1,9 @@
-name: Install Latest Snapshot to Ubuntu 22.04
+name: Install Latest Snapshot to Ubuntu 24.04
 on: [push]
 
 jobs:
-  Install-Ubuntu-22-04:
-    runs-on: ubuntu-22.04
+  Install-Ubuntu-24-04:
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3

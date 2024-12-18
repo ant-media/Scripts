@@ -1,0 +1,33 @@
+resources:
+- name: antmedia-vpc-network
+  type: compute.v1.network
+  properties:
+    region: {{ properties["region"] }}
+    autoCreateSubnetworks: false
+
+- name: origin-subnet
+  type: compute.v1.subnetwork
+  properties:
+    ipCidrRange: 10.0.1.0/24
+    network: $(ref.antmedia-vpc-network.selfLink)
+    region: {{ properties["region"] }}
+
+- name: edge-subnet
+  type: compute.v1.subnetwork
+  properties:
+    ipCidrRange: 10.0.2.0/24
+    network: $(ref.antmedia-vpc-network.selfLink)
+    region: {{ properties["region"] }}
+
+- name: firewall-rule
+  type: compute.v1.firewall
+  properties:
+    network: $(ref.antmedia-vpc-network.selfLink)
+    sourceRanges:
+    - 0.0.0.0/0
+    allowed:
+    - IPProtocol: tcp
+      ports:
+      - "80"
+      - "443"
+      - "22"

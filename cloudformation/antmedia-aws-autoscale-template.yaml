@@ -4,7 +4,7 @@ Description: >-
   If you have any questions, please just drop a line to contact (at) antmedia.io
 Parameters:
   VpcCidrBlock:
-    Description: 'CIDR value for Wavelength Network'
+    Description: 'CIDR value for Network'
     Type: String
     MinLength: '9'
     MaxLength: '18'
@@ -292,7 +292,7 @@ Resources:
   AMSGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.12
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -326,7 +326,7 @@ Resources:
   UbuntuGetLatestAMI:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.11
+      Runtime: python3.12
       Handler: index.handler
       Role: !Sub ${DescribeImagesRole.Arn}
       Timeout: 60
@@ -380,7 +380,7 @@ Resources:
     Properties:
       ServiceToken: !Sub ${UbuntuGetLatestAMI.Arn}
       Owner: "099720109477"
-      Name: "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
+      Name: "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"
       Architecture: "x86_64"
 
   AntMediaVPC:
@@ -487,6 +487,15 @@ Resources:
       LoadBalancerArn: !Ref RTMPLoadBalancer
       Port: '1935'
       Protocol: TCP
+  SRTListener:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref SRTTargetGroup
+      LoadBalancerArn: !Ref RTMPLoadBalancer
+      Port: '4200'
+      Protocol: UDP
   RTMPTargetGroup:
     Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
     Properties:
@@ -496,6 +505,17 @@ Resources:
       Protocol: TCP
       UnhealthyThresholdCount: 3
       VpcId: !Ref AntMediaVPC
+  SRTTargetGroup:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthyThresholdCount: 3
+      Port: 4200
+      Protocol: UDP
+      UnhealthyThresholdCount: 3
+      HealthCheckProtocol: TCP
+      HealthCheckPort: '5080'
+      VpcId: !Ref AntMediaVPC
   RTMPSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -504,6 +524,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: '1935'
           ToPort: '1935'
+          CidrIp: '0.0.0.0/0'
+        - IpProtocol: udp
+          FromPort: '4200'
+          ToPort: '4200'
           CidrIp: '0.0.0.0/0'
       SecurityGroupEgress:
         - IpProtocol: tcp
@@ -528,6 +552,7 @@ Resources:
         TargetGroupARNs:
           - !Ref ALBTargetGroupOrigin
           - !Ref RTMPTargetGroup
+          - !Ref SRTTargetGroup
         Tags:
         - Key: Name
           Value: Antmedia-Origin
@@ -572,12 +597,11 @@ Resources:
             touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
             apt-get update 
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
+            sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -647,13 +671,12 @@ Resources:
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-            apt-get update 
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
+            sudo apt-get update 
+            sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -842,6 +865,9 @@ Resources:
         - IpProtocol: udp
           FromPort: '50000'
           ToPort: '60000'
+        - IpProtocol: udp
+          FromPort: '4200'
+          ToPort: '4200'
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: '5000'
@@ -903,13 +929,8 @@ Resources:
          Fn::Base64:
           !Sub |
             #!/bin/bash -xe
-            wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
-            echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-            sudo apt-get update
-            sudo apt-get install -y mongodb-org python3-pip python3-setuptools
-            sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
-            systemctl enable mongod
-            systemctl restart mongod
+            wget -P /tmp/ https://raw.githubusercontent.com/ant-media/Scripts/master/install_mongodb.sh
+            bash /tmp/install_mongodb.sh
 
 Outputs:
 

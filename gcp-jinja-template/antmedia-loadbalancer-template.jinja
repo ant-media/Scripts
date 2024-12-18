@@ -1,0 +1,74 @@
+{% set scenarios = ['origin', 'edge'] %}
+
+
+resources:
+{% for scenario in scenarios %}
+- name: ams-load-balancer-{{ scenario }}
+  type: compute.v1.globalForwardingRule
+  properties:
+    region: {{ properties["region"] }}
+    loadBalancingScheme: EXTERNAL
+    target: $(ref.ams-target-proxy-{{ scenario }}.selfLink)
+    IPAddress: $(ref.lb-ipaddress-{{ scenario }}.address)
+    IPProtocol: TCP
+    portRange: 443-443
+
+- name: ams-target-proxy-{{ scenario }}
+  type: compute.v1.targetHttpsProxy
+  properties:
+    urlMap: $(ref.ams-{{ scenario }}.selfLink)
+    sslCertificates:
+    - $(ref.ams-ssl-cert-{{ scenario }}.selfLink)
+
+- name: lb-ipaddress-{{ scenario }}
+  type: compute.v1.globalAddress
+
+- name: ams-{{ scenario }}
+  type: compute.v1.urlMap
+  properties:
+    defaultService: $(ref.ams-backend-{{ scenario }}.selfLink)
+
+- name: ams-ssl-cert-{{ scenario }}
+  type: compute.v1.sslCertificate
+  properties:
+    certificate: |
+        -----BEGIN CERTIFICATE-----
+
+        -----END CERTIFICATE-----
+    privateKey: |
+        -----BEGIN PRIVATE KEY-----
+
+        -----END PRIVATE KEY-----
+
+
+- name: ams-backend-{{ scenario }}
+  type: compute.v1.backendService  
+  properties:
+    port: 5080
+    portName: http
+    protocol: HTTP
+    backends:
+      - name: backend
+        balancingMode: UTILIZATION
+        capacityScaler: 1.0
+        group: projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/instanceGroups/{{ scenario }}-instance-group
+
+    maxUtilization: 0.8
+    connectionDraining:
+      drainingTimeoutSec: 300
+    healthChecks:
+      - $(ref.ams-health-check-{{ scenario }}.selfLink)
+  metadata:
+    dependsOn:
+      - {{ scenario }}-instance-group
+      - ams-health-check-{{ scenario }}
+
+- name: ams-health-check-{{ scenario }}
+  type: compute.v1.healthCheck
+  properties:
+    type: HTTP
+    httpHealthCheck:
+      port: 5080
+      requestPath: /
+
+{% endfor %}

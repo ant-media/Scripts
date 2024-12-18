@@ -292,13 +292,12 @@ Resources:
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-            apt-get update 
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
+            sudo apt-get update 
+            sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -361,13 +360,12 @@ Resources:
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
             bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
-            apt-get update 
-            apt-get install -y python3-pip
-            apt-get install -y python3-setuptools
+            sudo apt-get update 
+            sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
-            python3 -m easy_install --script-dir /opt/aws/bin aws-cfn-bootstrap-py3-latest.tar.gz
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
         TagSpecifications:
           - ResourceType: instance
             Tags:
@@ -607,13 +605,8 @@ Resources:
          Fn::Base64:
           !Sub |
             #!/bin/bash -xe
-            wget -qO - https://www.mongodb.org/static/pgp/server-5.0.asc | sudo apt-key add -
-            echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/5.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-5.0.list
-            sudo apt-get update
-            sudo apt-get install -y mongodb-org python3-pip python3-setuptools
-            sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mongod.conf
-            systemctl enable mongod
-            systemctl restart mongod
+            wget -P /tmp/ https://raw.githubusercontent.com/ant-media/Scripts/master/install_mongodb.sh
+            bash /tmp/install_mongodb.sh
 
 Outputs:
 

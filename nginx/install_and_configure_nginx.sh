@@ -66,8 +66,10 @@ update_nginx_config() {
 
   # Generate the server blocks configuration based on the IP addresses
   origin_server_blocks=""
+  origin_server_blocks_backup=""
   for ip in "${origin_server_ips[@]}"; do
     origin_server_blocks+="\n    server $ip:$HTTP_PORT;\n"
+    origin_server_blocks_backup+="\n    server $ip:$HTTP_PORT backup;\n"
   done
 
   rtmp_origin_server_blocks=""
@@ -81,14 +83,21 @@ update_nginx_config() {
   done
 
   edge_server_blocks=""
+  edge_server_blocks_backup=""
   for ip in "${edge_server_ips[@]}"; do
     edge_server_blocks+="\n    server $ip:$HTTP_PORT;\n"
+    edge_server_blocks_backup+="\n    server $ip:$HTTP_PORT backup;\n"
   done
 
+ 
   sudo sed -i "s/{{ORIGIN_SERVER_BLOCKS}}/$origin_server_blocks/g" $nginx_config
+  sudo sed -i "s/{{ORIGIN_SERVER_BLOCKS_BACKUP}}/$edge_server_blocks_backup/g" $nginx_config #put edge servers as backup for origin servers
+
   sudo sed -i "s/{{RTMP_SERVER_BLOCKS}}/$rtmp_origin_server_blocks/g" $nginx_config
   sudo sed -i "s/{{ORIGIN_SRT_SERVER_BLOCKS}}/$srt_origin_server_blocks/g" $nginx_config
   sudo sed -i "s/{{EDGE_SERVER_BLOCKS}}/$edge_server_blocks/g" $nginx_config
+  sudo sed -i "s/{{EDGE_SERVER_BLOCKS_BACKUP}}/$origin_server_blocks_backup/g" $nginx_config   #put origin servers as backup for edge servers
+
   sudo sed -i "s/{{YOUR_DOMAIN}}/$domain/g" $nginx_config
   
   # Check if a ssl enabled name is provided
