@@ -92,4 +92,23 @@ RUN if [ "true" = "$InstallMediaPush" ]; then \
 #       Example usage: ./start.sh -e 60
 
 
+##################### supervisor configuration ##############################
+#RUN apt-get update && apt-get install -y supervisor
+#
+#RUN echo '[supervisord]\n\
+#nodaemon=true\n\
+#\n\
+#[program:antmedia]\n\
+#command=/usr/local/antmedia/start.sh\n\
+#autostart=true\n\
+#autorestart=true\n\
+#user=antmedia\n\
+#stdout_logfile_maxbytes = 0\n\
+#stderr_logfile_maxbytes = 0\n\
+#stdout_logfile=/dev/stdout\n\
+#stderr_logfile=/dev/stderr' > /etc/supervisor/supervisord.conf
+#
+#ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+##############################################################################
+
 ENTRYPOINT ["/usr/local/antmedia/start.sh"]
