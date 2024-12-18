@@ -33,7 +33,7 @@ variable "machine_type" {
 variable "image" {
   type        = string
   description = "The image to deploy to"
-  default     = "ubuntu-os-cloud/ubuntu-2204-lts"
+  default     = "ubuntu-os-cloud/ubuntu-2404-lts-amd64"
 }
 
 variable "ams_version" {
@@ -60,5 +60,4 @@ variable "user" {
 variable "zip_file_id" {
   description = "Google drive ID"
   type        = string
-  #default = "xxxxxxx" 
 }
