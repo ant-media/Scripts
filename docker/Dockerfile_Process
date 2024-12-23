@@ -14,6 +14,9 @@
 # * InstallMediaPush: Set this variable to 'true' to enable headless Chrome on the server for recording and streaming web pages back to Ant Media Server.
 # --build-arg InstallMediaPush='true'
 #
+# * Supervisor Configuration (Optional)
+# If you want to use Supervisor to manage the Ant Media Server process, you can uncomment the Supervisor-related section in the Dockerfile. 
+# With this configuration, you can easily restart, stop the service, or run the `enable_ssl.sh` script for Ant Media Server. 
 
 FROM ubuntu:22.04
 
