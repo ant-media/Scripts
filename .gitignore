@@ -11,3 +11,5 @@ Thumbs.db
 ssh
 ./ssh
 terraform.*
+.terraform.*
+.terraform/*
