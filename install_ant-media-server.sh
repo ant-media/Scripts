@@ -119,9 +119,9 @@ restore_settings() {
   #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
   TOKEN_GENERATOR_REMOVED_VERSION=2.6
   if [ "$(printf '%s\n' "$TOKEN_GENERATOR_REMOVED_VERSION" "$VERSION" | sort -V | head -n1)" == "$TOKEN_GENERATOR_REMOVED_VERSION" ]; then
-  	#remove token generator from jee-container.xml
-  	$SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
-	$SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+    #remove token generator from jee-container.xml
+    $SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+  $SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
   fi
 
   #SSL Restore
@@ -182,7 +182,7 @@ distro () {
         exit 1
       fi
 
-      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
+      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
          echo $msg
          exit 1
             fi
@@ -331,8 +331,21 @@ if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
   $SUDO yum -y install epel-release
   $SUDO yum -y install unzip zip libva libvdpau
+  OS_VERSION=$(echo $VERSION_ID | cut -d. -f1)
+  # Extract AMS version from zip file
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+
+  if [ "$OS_VERSION" == "8" ]; then
+     if [[ "$(printf '%s\n' "$VERSION" "2.12.0" | sort -V | head -n1)" == "2.12.0" ]]; then
+      echo -e "${RED}AMS version 2.12.0 and above (including version $VERSION) is not supported on $ID 8 distributions.${NC}"
+      exit 1
+    elif [ "$(printf '%s\n' "2.6" "$VERSION" | sort -V | head -n1)" != "2.6" ]; then
+      echo -e "${RED}This OS version requires AMS version 2.6 or higher.${NC}"
+      exit 1
+    fi
+  fi
+
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     check_version
     $SUDO yum -y install libcrystalhd
@@ -376,7 +389,7 @@ if [[ $VERSION == 2.1\.+.* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   $SUDO sed -i '/Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-11-openjdk-amd64"/c\Environment=JAVA_HOME="\/usr\/lib\/jvm\/java-8-openjdk-amd64"'  $AMS_BASE/antmedia
 
 elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
-	
+  
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jdk -y
@@ -399,7 +412,7 @@ elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 
 else
-  # with 2.8 we start to use java17 	
+  # with 2.8 we start to use java17   
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
@@ -413,7 +426,7 @@ else
   export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-17*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
-	
+  
 fi
 
 if ! [ -d $AMS_BASE ]; then
@@ -560,4 +573,3 @@ if [ "$?" -eq "0" ]; then
 else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
-
