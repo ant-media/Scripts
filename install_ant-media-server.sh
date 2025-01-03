@@ -182,7 +182,7 @@ distro () {
         exit 1
       fi
 
-      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
+      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
          echo $msg
          exit 1
             fi
@@ -329,10 +329,26 @@ if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
       fi
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
-  $SUDO yum -y install epel-release
-  $SUDO yum -y install unzip zip libva libvdpau
+  OS_VERSION=$(echo $VERSION_ID | cut -d. -f1)
+  # Extract AMS version from zip file
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+  # Parse AMS version numbers
+  MAJOR_VERSION=$(echo $VERSION | cut -d. -f1)
+  MINOR_VERSION=$(echo $VERSION | cut -d. -f2)
+
+  # Check version compatibility for AlmaLinux/Centos/RockyLinux version 8
+  if [ "$OS_VERSION" == "8" ]; then
+    if [ "$MAJOR_VERSION" == "2" ] && [ "$MINOR_VERSION" -ge "12" ]; then
+      echo -e "${RED}AMS version 2.12.0 and above is not supported on version 8 distributions. Please use version 9 instead.${NC}"
+      exit 1
+    elif [ "$(printf '%s\n' "2.6" "$VERSION" | sort -V | head -n1)" != "2.6" ]; then
+      echo -e "${RED}This OS version requires AMS version 2.6 or higher.${NC}"
+      exit 1
+    fi
+  fi
+  $SUDO yum -y install epel-release
+  $SUDO yum -y install unzip zip libva libvdpau
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     check_version
     $SUDO yum -y install libcrystalhd
