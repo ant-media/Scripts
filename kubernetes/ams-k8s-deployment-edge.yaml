@@ -45,8 +45,29 @@ spec:
 # You may also need to add -u and -p parameters for
 # specifying mongodb username and passwords respectively         
         args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
+        volumeMounts:
+        - mountPath: /tmp
+          name: temp-volume
+        livenessProbe:
+          httpGet:
+            path: / 
+            port: 5080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5080
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests:
              cpu: 4000m
+      volumes:
+      - hostPath:
+          path: /temp-data
+          type: DirectoryOrCreate
+        name: temp-volume
+
  #     imagePullSecrets:
  #     - name: docker

@@ -1,0 +1,68 @@
+name: Python Samples Script
+
+on:
+  schedule:
+    - cron: '0 */12 * * *'
+
+jobs:
+  run-selenium:
+    runs-on: ubuntu-latest
+    
+    env:
+      WEBHOOK_URL: ${{ secrets.WEBHOOK }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python 3
+      uses: actions/setup-python@v3
+      with:
+        python-version: 3.x
+    
+    - name: Install dependencies
+      run: |
+        pip install selenium
+        pip install requests
+        
+    - name: Install FFmpeg
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+    
+    - name: Install SRT
+      run: |
+        git clone https://github.com/Haivision/srt.git
+        cd srt
+        sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
+        ./configure
+        make
+        sudo make install
+        cd ..
+        
+    - name: Install Chrome
+      run: |
+        wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo dpkg -i google-chrome-stable_current_amd64.deb
+        
+    - name: Install ChromeDriver
+      run: |
+        wget https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.69/linux64/chromedriver-linux64.zip
+        unzip chromedriver-linux64.zip
+        cd chromedriver-linux64
+        sudo mv chromedriver /usr/bin/chromedriver
+        sudo chown root:root /usr/bin/chromedriver
+        sudo chmod +x /usr/bin/chromedriver
+    
+    - name: Run Selenium script
+      run: |
+        python Selenium/antmedia-samples.py
+
+    - name: Install jq
+      run: sudo apt-get install -y jq
+
+    - name: Send Slack notification on failure
+      if: ${{ failure() || cancelled() }}
+      run: |
+        SLACK_PAYLOAD=$(jq -n --arg text "<@U01UMD36SQ0> GitHub Workflow failed for ${{ github.repository }}" '{text: $text, icon_emoji: ":x:"}')
+        curl -X POST -H 'Content-type: application/json' --data "$SLACK_PAYLOAD" ${{ env.WEBHOOK_URL }}

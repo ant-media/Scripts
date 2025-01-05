@@ -25,7 +25,6 @@ RED='\033[0;31m'
 NC='\033[0m' 
 #version that is being installed. It's get filled below
 VERSION= 
-VERSION_NAME=$(curl -s https://antmedia.io/download/latest-version.json | jq -r '.versionName')
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -162,7 +161,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Centos 9, RockyLinux 8, RockyLinux 9, AlmaLinux 8 and AlmaLinux 9"
+    msg="We are supporting Ubuntu 20.04, Ubuntu 22.04, Ubuntu 24.04, Centos 9, RockyLinux 9 and AlmaLinux 9"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -177,13 +176,13 @@ distro () {
         $SUDO apt-get update && $SUDO apt-get install coreutils
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ] || [ "$ID" == "debian" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
       fi
 
-      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]]; then
+      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
          echo $msg
          exit 1
             fi
@@ -263,7 +262,7 @@ if [ "$UPDATE" == "true" ]; then
 fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     #Added curl package for the minimal OS installations.
     $SUDO apt-get update
     $SUDO apt-get install jq curl -y
@@ -276,11 +275,12 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
     curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')"   
     ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
   elif [ -n "${LICENSE_KEY}" ]; then
-    check_license=$(curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
+    check_license=$(curl -s https://api-v2.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
     if [ "$check_license" == "401" ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
     else
+      VERSION_NAME=$(curl -s https://antmedia.io/download/latest-version.json | jq -r '.versionName')
       echo "The license key is valid. Downloading the latest version ($VERSION_NAME) of Ant Media Server Enterprise Edition."
       curl --progress-bar -o ams_enterprise.zip "$check_license"
       ANT_MEDIA_SERVER_ZIP_FILE="ams_enterprise.zip"
@@ -312,7 +312,7 @@ fi
 
 REQUIRED_VERSION="2.6"
 
-if [ "$ID" == "ubuntu" ]; then
+if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
@@ -358,8 +358,8 @@ unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
 
-if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
-  if [ "$ID" == "ubuntu" ]; then
+if [[ $VERSION == 2.1\.+.* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get install openjdk-8-jre -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y
@@ -377,14 +377,14 @@ if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
 
 elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
 	
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jdk -y
     check
   fi
  
 elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
@@ -400,7 +400,7 @@ elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
 
 else
   # with 2.8 we start to use java17 	
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
     check
