@@ -13,3 +13,4 @@ ssh
 terraform.*
 .terraform.*
 .terraform/*
+**/.terraform/
