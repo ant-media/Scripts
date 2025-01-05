@@ -27,7 +27,8 @@ resource "digitalocean_droplet" "enterprise" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo apt-get purge droplet-agent -y",
+      "sudo rm /var/lib/dpkg/lock",
+      "sudo rm /var/lib/apt/lists",
       "wget https://raw.githubusercontent.com/ant-media/Scripts/master/install_ant-media-server.sh",
       "curl -L 'https://drive.usercontent.google.com/download?id=${var.zip_file_id}&export=download&confirm=t' -o 'ams.zip'",
       "bash install_ant-media-server.sh -i ams.zip",

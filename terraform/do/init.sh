@@ -4,7 +4,7 @@ echo 'NEEDRESTART_SUSPEND=1' >> /etc/environment
 sudo source /etc/environment
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
-sudo apt-get purge droplet-agent -y
+sudo DEBIAN_FRONTEND=noninteractive apt-get purge droplet-agent -y
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow 22/tcp
@@ -18,6 +18,7 @@ sudo ufw allow 4200/udp
 echo "y" | sudo ufw enable
 sudo systemctl stop antmedia
 sudo sed -i 's/server.marketplace=.*/server.marketplace=do/g' /usr/local/antmedia/conf/red5.properties
+sudo dpkg -P droplet-agent
 sudo rm -rf /root/.ssh
 sudo rm -rf /usr/local/antmedia/conf/instanceId
 sudo rm -rf /usr/local/antmedia/*.db.*
@@ -30,3 +31,4 @@ wget https://raw.githubusercontent.com/digitalocean/marketplace-partners/master/
 bash 90-cleanup.sh
 bash 99-img-check.sh
 history -c
+shutdown -h now
