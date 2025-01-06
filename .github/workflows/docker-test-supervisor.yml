@@ -26,7 +26,7 @@ jobs:
       - name: Build Docker Image
         id: build-image
         run: |
-          docker build \
+          docker build -f docker/Dockerfile_Process \
             --build-arg UseSupervisor=${{ matrix.use_supervisor }} \
             --build-arg LicenseKey=${{ secrets.DOCKER_TEST_AMS_LICENSE_KEY }} \
             -t my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }} .
