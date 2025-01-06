@@ -1,0 +1,62 @@
+
+name: Ant Media Server Docker Test (Supervisor/No-Supervisor)
+on: [push]
+#on:
+#  push:
+#    branches:
+#      - main 
+#  pull_request:
+#    branches:
+#      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        use_supervisor: [false, true] 
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker Image
+        id: build-image
+        run: |
+          docker build \
+            --build-arg UseSupervisor=${{ matrix.use_supervisor }} \
+            --build-arg LicenseKey=${{ secrets.DOCKER_TEST_AMS_LICENSE_KEY }} \
+            -t my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }} .
+
+      - name: Run Docker Container (No Supervisor)
+        if: ${{ matrix.use_supervisor == false }}
+        run: |
+           docker run --name test-container-${{ github.run_id }}-${{ matrix.use_supervisor }} \
+            -d my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }}
+            
+           sleep 10 
+           
+           docker logs test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+           
+           docker inspect -f '{{.State.Running}}' test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+           
+           docker stop test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+           docker rm test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+
+      - name: Run Docker Container (With Supervisor)
+        if: ${{ matrix.use_supervisor == true }}
+        run: |
+           docker run --name test-container-${{ github.run_id }}-${{ matrix.use_supervisor }} \
+             -d -e ENABLE_SUPERVISOR=true  my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }}
+            
+           sleep 10 
+           
+           docker logs test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+           
+           docker inspect -f '{{.State.Running}}' test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+           
+           docker stop test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+           docker rm test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
