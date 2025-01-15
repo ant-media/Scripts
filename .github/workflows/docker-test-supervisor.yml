@@ -50,7 +50,7 @@ jobs:
         if: ${{ matrix.use_supervisor == true }}
         run: |
            docker run --name test-container-${{ github.run_id }}-${{ matrix.use_supervisor }} \
-             -d -e ENABLE_SUPERVISOR=true  my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }}
+             -d -e UseSupervisor=true  my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }}
             
            sleep 10 
            
