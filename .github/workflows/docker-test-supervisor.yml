@@ -1,4 +1,4 @@
-name: Docker 
+name: Test Dockerfile with supervisor and without supervisor
 
 on: [push]
 env:
