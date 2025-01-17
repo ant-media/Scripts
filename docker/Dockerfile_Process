@@ -104,7 +104,7 @@ RUN if [ "true" = "$UseSupervisor" ]; then \
        nodaemon=true\n\
        \n\
        [program:antmedia]\n\
-       command="/usr/local/antmedia/start.sh $@"\n\
+       command=/bin/bash -c "/usr/local/antmedia/start.sh $@"\n\
        autostart=true\n\
        autorestart=true\n\
        user=antmedia\n\
