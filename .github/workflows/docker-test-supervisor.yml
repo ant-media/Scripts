@@ -23,7 +23,7 @@ jobs:
 
       - name: Build with Supervisor=${{ matrix.supervisor }}
         run: |
-          docker build \
+          docker build -f docker/Dockerfile_Process \
             --build-arg UseSupervisor=${{ matrix.supervisor }} \
             --build-arg AntMediaServer=ant-media-server-community.zip \
             -t antmedia:${{ matrix.supervisor }} .
