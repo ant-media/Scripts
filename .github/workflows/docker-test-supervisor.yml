@@ -1,62 +1,87 @@
+name: Docker 
 
-name: Ant Media Server Docker Test (Supervisor/No-Supervisor)
 on: [push]
-#on:
-#  push:
-#    branches:
-#      - main 
-#  pull_request:
-#    branches:
-#      - main
+env:
+  DEBUG: true
 
 jobs:
-  build-and-test:
+  test-docker-builds:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        use_supervisor: [false, true] 
-
+        supervisor: [ true, false] 
+        
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Image
-        id: build-image
-        run: |
-          docker build -f docker/Dockerfile_Process \
-            --build-arg UseSupervisor=${{ matrix.use_supervisor }} \
-            --build-arg LicenseKey=${{ secrets.DOCKER_TEST_AMS_LICENSE_KEY }} \
-            -t my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }} .
+      - name: Download the latest version of Ant Media Server
+        run: curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
 
-      - name: Run Docker Container (No Supervisor)
-        if: ${{ matrix.use_supervisor == false }}
+      - name: Build with Supervisor=${{ matrix.supervisor }}
         run: |
-           docker run --name test-container-${{ github.run_id }}-${{ matrix.use_supervisor }} \
-            -d my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }}
+          docker build \
+            --build-arg UseSupervisor=${{ matrix.supervisor }} \
+            --build-arg AntMediaServer=ant-media-server-community.zip \
+            -t antmedia:${{ matrix.supervisor }} .
+
+      - name: Test Container (Supervisor=${{ matrix.supervisor }})
+        run: |
+          docker images
+          docker run -d -p 5080:5080 --name antmedia-${{ matrix.supervisor }} antmedia:${{ matrix.supervisor }}
+          docker ps -a
+          docker logs antmedia-${{ matrix.supervisor }}
+          sleep 30
+          docker ps
+          AMS_PID=$(docker exec antmedia-${{ matrix.supervisor }} pgrep -f "antmedia")
+          if [ "${{ matrix.supervisor }}" = "true" ]; then
+            # With supervisor: AMS should NOT run with PID 1
+            if [ "$AMS_PID" = "1" ]; then
+              echo "Error: Ant Media Server is running with PID 1 when supervisor is enabled"
+              docker logs antmedia-${{ matrix.supervisor }}
+              exit 1
+            else
+              echo "Success: Ant Media Server is running with PID $AMS_PID (with supervisor)"
+            fi
+          else
+            # Without supervisor: AMS should run with PID 1
+            if [ "$AMS_PID" = "1" ]; then
+              echo "Success: Ant Media Server is running with PID 1 (without supervisor)"
+            else
+              echo "Error: Ant Media Server is not running with PID 1 when supervisor is disabled"
+              docker logs antmedia-${{ matrix.supervisor }}
+              exit 1
+            fi
+          fi
+          
+          # Additional validation: Check if supervisor is running when enabled
+          if [ "${{ matrix.supervisor }}" = "true" ]; then
+            SUPERVISOR_RUNNING=$(docker exec antmedia-${{ matrix.supervisor }} pgrep -f "supervisord" || echo "")
+            if [ -z "$SUPERVISOR_RUNNING" ]; then
+              echo "Error: Supervisor process not found when it should be enabled"
+              exit 1
+            fi
+          fi
+
+      - name: Check Ant Media Server health with a timeout
+        run: |
+          timeout=120  
+          start_time=$(date +%s)
+          until wget http://localhost:5080 -O index.html; do
+            current_time=$(date +%s)
+            elapsed_time=$((current_time - start_time))
             
-           sleep 10 
-           
-           docker logs test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
-           
-           docker inspect -f '{{.State.Running}}' test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
-           
-           docker stop test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
-           docker rm test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+            if [ $elapsed_time -gt $timeout ]; then
+              echo "Timeout reached. Ant Media Server did not start within $timeout seconds."
+              exit 1
+            fi
 
-      - name: Run Docker Container (With Supervisor)
-        if: ${{ matrix.use_supervisor == true }}
-        run: |
-           docker run --name test-container-${{ github.run_id }}-${{ matrix.use_supervisor }} \
-             -d -e UseSupervisor=true  my-docker-image:${{ github.run_id }}-${{ matrix.use_supervisor }}
-            
-           sleep 10 
-           
-           docker logs test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
-           
-           docker inspect -f '{{.State.Running}}' test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
-           
-           docker stop test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
-           docker rm test-container-${{ github.run_id }}-${{ matrix.use_supervisor }}
+            echo "Waiting for Ant Media Server to start..."
+            sleep 10
+          done
+
+
+          
