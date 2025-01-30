@@ -1,13 +1,6 @@
 name: Test MongoDB Installation
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+on: [push]
 
 jobs:
   test-mongodb:
@@ -19,11 +12,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Make script executable
-        run: |
-          wget https://raw.githubusercontent.com/ant-media/Scripts/3b3fd732613f2e234847231ff2b4c0e36d0440f1/install_mongodb.sh
-          ls -alh
 
       - name: Run MongoDB installation script
         run: bash ./install_mongodb.sh --auto-create 
