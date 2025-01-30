@@ -57,8 +57,10 @@ if [[ $1 == "--auto-create" ]]; then
   sudo sed -i 's/bindIp:.*/bindIp: 0.0.0.0/g' /etc/mongod.conf
   sudo systemctl restart mongod
 
-  echo "MongoDB username: $username"
-  echo "MongoDB password: $password"
+  echo "MongoDB username: $username" > /tmp/mongo_credentials.txt
+  echo "MongoDB password: $password" >> /tmp/mongo_credentials.txt
+
+  echo "MongoDB credentials saved to /tmp/mongo_credentials.txt"
 else
   # Start MongoDB without authentication
   sudo sed -i 's/bindIp:.*/bindIp: 0.0.0.0/g' /etc/mongod.conf
