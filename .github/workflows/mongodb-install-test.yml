@@ -1,0 +1,35 @@
+name: Test MongoDB Installation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-mongodb:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Make script executable
+        run: chmod +x mongodb-install.sh
+
+      - name: Run MongoDB installation script
+        run: sudo ./mongodb-install.sh --auto-create
+
+      - name: Verify MongoDB service
+        run: |
+          systemctl is-active mongod || (echo "MongoDB failed to start" && exit 1)
+
+      - name: Test MongoDB authentication
+        run: |
+          echo 'show dbs' | mongosh --username "$(grep 'MongoDB username:' mongodb-install.sh | awk '{print $3}')" --password "$(grep 'MongoDB password:' mongodb-install.sh | awk '{print $3}')" --authenticationDatabase admin || (echo "Authentication failed" && exit 1)
