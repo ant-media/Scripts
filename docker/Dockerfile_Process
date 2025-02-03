@@ -116,4 +116,4 @@ RUN if [ "true" = "$UseSupervisor" ]; then \
 
 ##############################################################################
 
-ENTRYPOINT [ "sh", "-c", "if [ \"$UseSupervisor\" = \"true\" ]; then exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf; else exec /usr/local/antmedia/start.sh; fi" ]
+ENTRYPOINT [ "sh", "-c", "if [ \"$UseSupervisor\" = \"true\" ]; then exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf; else exec /usr/local/antmedia/start.sh \"$@\"; fi", "--" ]
