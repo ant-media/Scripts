@@ -415,7 +415,9 @@ else
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-17-openjdk-headless tzdata-java
-    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-17-openjdk-amd64
+    $SUDO rm -rf /usr/lib/jvm/java-17-openjdk-amd64
+    JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
+    $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-17-openjdk-amd64
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-17-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc

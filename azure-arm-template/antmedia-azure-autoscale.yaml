@@ -428,7 +428,7 @@
             "properties": {
               "port": 5080,
               "protocol": "Http",
-              "cookieBasedAffinity": "Disabled",
+              "cookieBasedAffinity": "Enabled",
               "pickHostNameFromBackendAddress": false,
               "requestTimeout": 20
             }
