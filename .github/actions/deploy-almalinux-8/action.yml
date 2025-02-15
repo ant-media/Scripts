@@ -9,7 +9,7 @@ runs:
       run: |
         echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
         yum -y install wget which findutils which crontabs unzip
-        curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
+        curl -L -o ant-media-server-community.zip https://github.com/ant-media/Ant-Media-Server/releases/download/ams-v2.11.3/ant-media-server-community-2.11.3.zip
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
         sleep 30

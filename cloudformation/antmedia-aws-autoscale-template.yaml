@@ -599,7 +599,7 @@ Resources:
             apt-get update 
             sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz --break-system-packages
             sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
             /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
         TagSpecifications:
@@ -674,7 +674,7 @@ Resources:
             sudo apt-get update 
             sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
-            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz --break-system-packages
             sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
             /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource EdgeGroup --region ${AWS::Region}
         TagSpecifications:
