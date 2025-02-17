@@ -10,7 +10,11 @@ Thumbs.db
 /.project
 ssh
 ./ssh
-terraform.*
-.terraform.*
-.terraform/*
+**/ssh/
+**/*.tfstate
+**/*.tfstate.backup
 **/.terraform/
+**/.terraform.lock.hcl
+**/*.tfvars
+**/*.tfvars.json
+**/terraform.*
