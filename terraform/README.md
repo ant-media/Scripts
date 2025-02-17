@@ -4,7 +4,7 @@
 ```
 gcloud auth application-default login
 ```
-2. Create a file called terraforms.tfvars and add the following variables
+2. Create a file called terraform.tfvars and add the following variables
 ```
 zip_file_id = ""
 ams_version = ""
@@ -24,7 +24,7 @@ az login
 ```
 2. Set subscription id in provider.tf
 
-3. Create a file called terraforms.tfvars and add the following variables
+3. Create a file called terraform.tfvars and add the following variables
 ```
 zip_file_id = ""
 ams_version = ""
@@ -39,7 +39,7 @@ ssh-keygen -t rsa -f ./ssh/id_rsa
 
 1. First create a DO token
 
-2. Create a file called terraforms.tfvars and add the following variables
+2. Create a file called terraform.tfvars and add the following variables
 
 ```
 zip_file_id = ""
