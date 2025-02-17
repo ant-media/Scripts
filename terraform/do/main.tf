@@ -44,6 +44,22 @@ resource "digitalocean_droplet" "enterprise" {
   }
 }
 
+resource "null_resource" "poweroff-enterprise" {
+  count = length(digitalocean_droplet.enterprise)  # Tüm droplet'ler için döngü
+
+  provisioner "local-exec" {
+    command = <<EOT
+      curl -X POST -H "Content-Type: application/json" \
+           -H "Authorization: Bearer ${var.do_token}" \
+           "https://api.digitalocean.com/v2/droplets/${digitalocean_droplet.enterprise[count.index].id}/actions" \
+           -d '{"type":"power_off"}'
+    EOT
+  }
+
+  depends_on = [digitalocean_droplet.enterprise]
+}
+
+
 resource "digitalocean_droplet_snapshot" "ams-enterprise-snapshot" {
   count = var.do_droplet_enable ? 1 : 0
   droplet_id = digitalocean_droplet.enterprise[count.index].id
@@ -87,6 +103,21 @@ resource "digitalocean_droplet" "community" {
       host        = digitalocean_droplet.community[count.index].ipv4_address
     }
   }
+}
+
+resource "null_resource" "poweroff-community" {
+  count = length(digitalocean_droplet.community)  # Tüm droplet'ler için döngü
+
+  provisioner "local-exec" {
+    command = <<EOT
+      curl -X POST -H "Content-Type: application/json" \
+           -H "Authorization: Bearer ${var.do_token}" \
+           "https://api.digitalocean.com/v2/droplets/${digitalocean_droplet.community[count.index].id}/actions" \
+           -d '{"type":"power_off"}'
+    EOT
+  }
+
+  depends_on = [digitalocean_droplet.community]
 }
 
 resource "digitalocean_droplet_snapshot" "ams-community-snapshot" {

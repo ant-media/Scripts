@@ -31,4 +31,3 @@ wget https://raw.githubusercontent.com/digitalocean/marketplace-partners/master/
 bash 90-cleanup.sh
 bash 99-img-check.sh
 history -c
-shutdown -h now
