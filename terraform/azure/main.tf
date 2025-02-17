@@ -138,6 +138,9 @@ resource "null_resource" "ams-marketplace-setup_enterprise" {
       private_key = file(var.privatekeypath)
     }
     inline = [
+      "echo 'APT::Get::Assume-Yes \"true\";' | sudo tee /etc/apt/apt.conf.d/90assumeyes",
+      "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections",
+      "echo 'systemd restart services' | sudo tee /etc/needrestart/conf.d/override.conf",
       "sudo sed -i 's/#\\$nrconf{kernelhints} = -1;/\\$nrconf{kernelhints} = -1;/g'  /etc/needrestart/needrestart.conf",
       "echo 'NEEDRESTART_SUSPEND=1' >> /etc/environment",
       "source /etc/environment",
@@ -167,6 +170,9 @@ resource "null_resource" "ams-marketplace-setup_community" {
       private_key = file(var.privatekeypath)
     }
     inline = [
+      "echo 'APT::Get::Assume-Yes \"true\";' | sudo tee /etc/apt/apt.conf.d/90assumeyes",
+      "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections",
+      "echo 'systemd restart services' | sudo tee /etc/needrestart/conf.d/override.conf",
       "sudo sed -i 's/#\\$nrconf{kernelhints} = -1;/\\$nrconf{kernelhints} = -1;/g'  /etc/needrestart/needrestart.conf",
       "echo 'NEEDRESTART_SUSPEND=1' >> /etc/environment",
       "sudo source /etc/environment",
