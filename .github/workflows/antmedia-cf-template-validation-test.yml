@@ -80,18 +80,20 @@ jobs:
 
       - name: Send Slack Notification on Failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-message: "<@murat> CloudFormation deployment failed! :x:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}\nCheck the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "<@murat> CloudFormation deployment failed! :x:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}\nCheck the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Send Slack Notification on Success
         if: success()
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v2.0.0
         with:
-          channel-id: 'C02RBQP4R44'  
-          slack-message: "CloudFormation deployment completed successfully! :white_check_mark:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}"
-        env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "CloudFormation deployment completed successfully! :white_check_mark:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}"
