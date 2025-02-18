@@ -6,8 +6,13 @@ variable "resource_group_location" {
 variable "resource_group_name_enterprise" {
   default     = "enterprise"
   description = "Name"
+  type        = string
 }
 
+variable "rg_name" {
+  description = "Enter the Azure Resource Group Name"
+  type        = string
+}
 
 variable "resource_group_name_community" {
   default     = "community"

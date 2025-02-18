@@ -1,6 +1,6 @@
 resource "azurerm_resource_group" "rg" {
   location = var.resource_group_location
-  name     = "community"
+  name     = var.rg_name
 }
 
 resource "azurerm_virtual_network" "antmedia-marketplace" {
@@ -229,7 +229,7 @@ resource "null_resource" "generalize_vm" {
 
 
 resource "azurerm_shared_image_gallery" "antmedia-marketplace" {
-  name                = "antmedia_image_gallery_${var.ams_version}"
+  name                = "antmedia_image_gallery_${azurerm_resource_group.rg.name}_${var.ams_version}"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   description         = "Shared images and things."
