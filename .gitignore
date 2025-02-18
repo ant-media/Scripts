@@ -18,3 +18,5 @@ ssh
 **/*.tfvars
 **/*.tfvars.json
 **/terraform.*
+**/.terraform.*
+
