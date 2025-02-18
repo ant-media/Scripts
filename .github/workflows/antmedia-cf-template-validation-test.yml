@@ -1,8 +1,8 @@
 name: Ant Media Server Cloudformation Deployment
 
-on: [push]
-#  schedule:
-#    - cron: '0 0 * * 1'
+on: 
+  schedule:
+    - cron: '0 0 * * 1'
 
 jobs:
   deploy_cf_template:
@@ -82,8 +82,8 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: 'CC02RBQP4R44'  
-          slack-message: "<@DUVBHLMDG> CloudFormation deployment failed! :x:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}\nCheck the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          channel-id: 'C02RBQP4R44'  
+          slack-message: "<@murat> CloudFormation deployment failed! :x:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}\nCheck the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
 
@@ -91,7 +91,7 @@ jobs:
         if: success()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: 'CC02RBQP4R44'  
+          channel-id: 'C02RBQP4R44'  
           slack-message: "CloudFormation deployment completed successfully! :white_check_mark:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
