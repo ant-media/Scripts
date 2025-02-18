@@ -82,7 +82,7 @@ jobs:
         if: failure()
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: 'C02RBQP4R44'  
+          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
           slack-message: "<@murat> CloudFormation deployment failed! :x:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}\nCheck the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
