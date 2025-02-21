@@ -2,6 +2,12 @@ name: RockyLinux
 on: [push]
 
 jobs:
+  RockyLinux8:
+    runs-on: ubuntu-24.04
+    container: rockylinux:8
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/deploy-rockylinux-8
   RockyLinux9:
     runs-on: ubuntu-24.04
     container: rockylinux:9
