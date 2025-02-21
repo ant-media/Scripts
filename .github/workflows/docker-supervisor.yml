@@ -31,7 +31,8 @@ jobs:
       - name: Test Container (Supervisor=${{ matrix.supervisor }})
         run: |
           docker images
-          docker run -d -p 5080:5080 --name antmedia-${{ matrix.supervisor }} antmedia:${{ matrix.supervisor }}
+          export LICENSE_KEY="test-test"
+          docker run -d -p 5080:5080 --name antmedia-${{ matrix.supervisor }} antmedia:${{ matrix.supervisor }} -l $LICENSE_KEY
           docker ps -a
           docker logs antmedia-${{ matrix.supervisor }}
           sleep 30
@@ -45,11 +46,20 @@ jobs:
               exit 1
             else
               echo "Success: Ant Media Server is running with PID $AMS_PID (with supervisor)"
+              # we dont check license key when supervisor is enabled because passing command line parameters has not been supported yet 
             fi
           else
             # Without supervisor: AMS should run with PID 1
             if [ "$AMS_PID" = "1" ]; then
               echo "Success: Ant Media Server is running with PID 1 (without supervisor)"
+              AMS_LICENSE_KEY=$(docker exec antmedia-${{ matrix.supervisor }} cat /usr/local/antmedia/conf/red5.properties | grep "licenseKey" | cut -d'=' -f2)
+              
+              #check if the license key is set correctly. It validates that docker file accepts the parameters from command line
+
+              if [ "$AMS_LICENSE_KEY" != "$LICENSE_KEY" ]; then
+                   echo "Error: License key mismatch"
+                   exit 1
+              fi
             else
               echo "Error: Ant Media Server is not running with PID 1 when supervisor is disabled"
               docker logs antmedia-${{ matrix.supervisor }}
