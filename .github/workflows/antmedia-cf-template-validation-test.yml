@@ -1,6 +1,6 @@
 name: Ant Media Server Cloudformation Deployment
 
-on:
+on: 
   schedule:
     - cron: '0 0 * * 1'
 
@@ -77,3 +77,23 @@ jobs:
         run: |
           aws cloudformation delete-stack --stack-name ${{ env.STACK_NAME }}
           aws cloudformation wait stack-delete-complete --stack-name ${{ env.STACK_NAME }}
+
+      - name: Send Slack Notification on Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "<@murat> CloudFormation deployment failed! :x:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}\nCheck the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Send Slack Notification on Success
+        if: success()
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          method: chat.postMessage
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          payload: |
+            channel: ${{ secrets.SLACK_CHANNEL_ID }}
+            text: "CloudFormation deployment completed successfully! :white_check_mark:\nWorkflow: ${{ github.workflow }}\nJob: ${{ github.job }}"
