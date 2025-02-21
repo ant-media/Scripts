@@ -52,8 +52,8 @@ jobs:
             # Without supervisor: AMS should run with PID 1
             if [ "$AMS_PID" = "1" ]; then
               echo "Success: Ant Media Server is running with PID 1 (without supervisor)"
-              AMS_LICENSE_KEY=$(docker exec antmedia-${{ matrix.supervisor }} cat /usr/local/antmedia/conf/red5.properties | grep "licenseKey" | cut -d'=' -f2)
-              
+              AMS_LICENSE_KEY=$(docker exec antmedia-${{ matrix.supervisor }} cat /usr/local/antmedia/conf/red5.properties | grep "server.licence_key" | cut -d'=' -f2)
+              echo "AMS_LICENSE_KEY: $AMS_LICENSE_KEY"
               #check if the license key is set correctly. It validates that docker file accepts the parameters from command line
 
               if [ "$AMS_LICENSE_KEY" != "$LICENSE_KEY" ]; then
