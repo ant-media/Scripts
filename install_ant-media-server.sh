@@ -114,7 +114,7 @@ restore_settings() {
   
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
   #jee-container holds beans. SSL restoring and cluster restorign require coping
-  cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml,instanceId} "$AMS_BASE/conf"
+  cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml} "$AMS_BASE/conf"
   
   #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
   TOKEN_GENERATOR_REMOVED_VERSION=2.6
