@@ -8,4 +8,5 @@ do
     COMMAND="ffmpeg -i "$m3u8_url" -codec copy -f null /dev/null"
     $COMMAND &>>/dev/null &
     echo "running command $COMMAND"
-    done
+    sleep 0.5
+done
