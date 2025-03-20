@@ -5,9 +5,10 @@
 INITIALIZED=/usr/local/antmedia/conf/initialized
 if [ ! -f "$INITIALIZED" ]
 then
+  TOKEN=`curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"`
   ## Local IPV4
 
-  export LOCAL_IPv4=`curl -s http://169.254.169.254/latest/meta-data/local-ipv4`
+  export LOCAL_IPv4=`curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/local-ipv4`
 
   # $HOSTNAME ip-172-30-0-216
   HOST_NAME=`hostname`
@@ -27,7 +28,7 @@ then
     fi
   fi 
   ## Instance ID
-  export INSTANCE_ID=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
+  export INSTANCE_ID=`curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id`
 
   ## Add Initial User with curl
   RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`

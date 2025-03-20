@@ -114,7 +114,7 @@ restore_settings() {
   
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
   #jee-container holds beans. SSL restoring and cluster restorign require coping
-  cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml,instanceId} "$AMS_BASE/conf"
+  cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml} "$AMS_BASE/conf"
   
   #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
   TOKEN_GENERATOR_REMOVED_VERSION=2.6
@@ -161,7 +161,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 18.04, Ubuntu 20.04, Ubuntu 22.04, Centos 8, Centos 9, RockyLinux 8, RockyLinux 9, AlmaLinux 8 and AlmaLinux 9"
+    msg="We are supporting Ubuntu 20.04, Ubuntu 22.04, Ubuntu 24.04, Centos 9, RockyLinux 9 and AlmaLinux 9"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -176,13 +176,13 @@ distro () {
         $SUDO apt-get update && $SUDO apt-get install coreutils
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
-    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
+    elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ] || [ "$ID" == "debian" ]; then
       if [ "$VERSION_ID" == "18.04" ] && [ "aarch64" == $ARCH ]; then
         echo -e "ARM architecture is supported on Ubuntu 20.04. For 18.04 installation, use the link below to install.\nhttps://github.com/ant-media/Ant-Media-Server/wiki/Frequently-Asked-Questions#how-can-i-install-the-ant-media-server-on-ubuntu-1804-with-arm64"
         exit 1
       fi
 
-      if [[ $VERSION_ID != 18.04 ]] && [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]]; then
+      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
          echo $msg
          exit 1
             fi
@@ -262,7 +262,7 @@ if [ "$UPDATE" == "true" ]; then
 fi
 
 if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     #Added curl package for the minimal OS installations.
     $SUDO apt-get update
     $SUDO apt-get install jq curl -y
@@ -275,7 +275,7 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
     curl --progress-bar -o ams_community.zip -L "$(curl -s -H "Accept: application/vnd.github+json" https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | jq -r '.assets[0].browser_download_url')"   
     ANT_MEDIA_SERVER_ZIP_FILE="ams_community.zip"
   elif [ -n "${LICENSE_KEY}" ]; then
-    check_license=$(curl -s https://api.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
+    check_license=$(curl -s https://api-v2.antmedia.io/?license="${LICENSE_KEY}" | tr -d "\"")
     if [ "$check_license" == "401" ]; then
       echo "Invalid license key. Please check your license key."
       exit 1
@@ -312,7 +312,7 @@ fi
 
 REQUIRED_VERSION="2.6"
 
-if [ "$ID" == "ubuntu" ]; then
+if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
   $SUDO apt-get update -y
   $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
@@ -333,6 +333,15 @@ elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] |
   $SUDO yum -y install unzip zip libva libvdpau
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
+  OS_VERSION=$(echo $VERSION_ID | cut -d. -f1)
+
+  if [ "$OS_VERSION" == "8" ]; then
+     if [[ "$(printf '%s\n' "$VERSION" "2.12.0" | sort -V | head -n1)" == "2.12.0" ]]; then
+       echo -e "${RED}AMS version 2.12.0 and above (including version $VERSION) is not supported on $ID 8 distributions.${NC}"
+       exit 1
+     fi
+  fi
+
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     check_version
     $SUDO yum -y install libcrystalhd
@@ -358,8 +367,8 @@ unzip $ANT_MEDIA_SERVER_ZIP_FILE
 check
 
 
-if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
-  if [ "$ID" == "ubuntu" ]; then
+if [[ $VERSION == 2.1\.+.* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get install openjdk-8-jre -y
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y
@@ -377,14 +386,14 @@ if [[ $VERSION == 2.1* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
 
 elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
 	
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jdk -y
     check
   fi
  
 elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
@@ -400,13 +409,15 @@ elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
 
 else
   # with 2.8 we start to use java17 	
-  if [ "$ID" == "ubuntu" ]; then
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-17-openjdk-headless tzdata-java
-    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-17-openjdk-amd64
+    $SUDO rm -rf /usr/lib/jvm/java-17-openjdk-amd64
+    JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
+    $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-17-openjdk-amd64
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-17-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc

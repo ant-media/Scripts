@@ -1,16 +1,41 @@
+#
 # This docker file can be used in kubernetes. 
 # It accepts all cluster related parameters at run time. 
 # It means it's very easy to add new containers to the cluster 
+#
+# Usage:
+#
+# * AntMediaServer: Specify the name of the Ant Media Server zip file to install that specify Ant Media Server version to the docker image
+# --build-arg AntMediaServer='ant-media-server.zip'
+#
+# * LicenseKey: Set your license key to this variable to install the latest Ant Media Server automatically to the docker image without needing a zip file. If you use this LicenseKey variable, don't specify AntMediaServer variable (# --build-arg AntMediaServer='ant-media-server.zip')
+# --build-arg LicenseKey='your-license-key'
+#
+# * InstallMediaPush: Set this variable to 'true' to enable headless Chrome on the server for recording and streaming web pages back to Ant Media Server.
+# --build-arg InstallMediaPush='true'
+#
+# * MediaPushVersion: Specify the latest version or latest snapshot version of the Media Push Plugin. It's empty by default and the latest version of the Media Push Plugin will be installed by default.
+# If you want to install the latest snapshot version of the Media Push Plugin, you can specify --snapshot
+#   
+# --build-arg MediaPushVersion='--snapshot'
+#
+# * Supervisor Configuration (Optional): If you want to use Supervisor to manage the Ant Media Server process, you can enable as follows. With this configuration, you can easily restart, stop the service, or run the `enable_ssl.sh` script for Ant Media Server. 
+# --build-arg UseSupervisor='true'
+#
 
 FROM ubuntu:22.04
 
 ARG AntMediaServer
 ARG LicenseKey
-
+ARG InstallMediaPush
+ARG MediaPushVersion
+ARG UseSupervisor=false
 ARG BranchName=master
 
+ENV UseSupervisor=${UseSupervisor}
+
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get install -y curl wget iproute2 cron logrotate
+RUN apt-get update && apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables
 
 ADD ./${AntMediaServer} /home
 
@@ -29,6 +54,14 @@ RUN cd /home \
            echo "Both AntMediaServer and LicenseKey arguments are not provided. Aborting the build process."; \
            exit 1; \
        fi
+
+RUN if [ "true" = "$InstallMediaPush" ]; then \
+        echo "test"; \
+        echo "#!/bin/bash\n\$@" > /usr/bin/sudo; \
+        chmod +x /usr/bin/sudo; \
+        wget -O install_media-push-plugin.sh https://raw.githubusercontent.com/ant-media/Plugins/master/MediaPushPlugin/src/main/script/install_media-push-plugin.sh; \
+        bash ./install_media-push-plugin.sh $MediaPushVersion; \
+    fi
 
 #
 # Options:
@@ -70,4 +103,23 @@ RUN cd /home \
 #       Example usage: ./start.sh -e 60
 
 
-ENTRYPOINT ["/usr/local/antmedia/start.sh"]
+##################### supervisor configuration ##############################
+RUN if [ "true" = "$UseSupervisor" ]; then \
+       apt-get update && apt-get install -y supervisor && \
+       echo '[supervisord]\n\
+       nodaemon=true\n\
+       \n\
+       [program:antmedia]\n\
+       command=/bin/bash -c "/usr/local/antmedia/start.sh $@"\n\
+       autostart=true\n\
+       autorestart=true\n\
+       user=antmedia\n\
+       stdout_logfile_maxbytes = 0\n\
+       stderr_logfile_maxbytes = 0\n\
+       stdout_logfile=/dev/stdout\n\
+       stderr_logfile=/dev/stderr' > /etc/supervisor/supervisord.conf; \
+    fi
+
+##############################################################################
+
+ENTRYPOINT [ "sh", "-c", "if [ \"$UseSupervisor\" = \"true\" ]; then exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf; else exec /usr/local/antmedia/start.sh \"$@\"; fi", "--" ]

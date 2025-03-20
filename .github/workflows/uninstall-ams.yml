@@ -1,0 +1,41 @@
+name:  Uninstall Ant Media Server 
+on: [push]
+
+jobs:
+  test-uninstall:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up test environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl systemd
+
+    - name: Download and install Ant Media Server
+      run: |
+        wget https://raw.githubusercontent.com/ant-media/Scripts/refs/heads/master/install_ant-media-server.sh
+        curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
+        bash ./install_ant-media-server.sh -i ant-media-server-community.zip
+
+    - name: Verify AMS Installation
+      run: |
+        sleep 30
+        systemctl is-active antmedia
+        test -d /usr/local/antmedia
+        ps -aux |grep antmedia
+
+    - name: Run uninstall script
+      run: |
+        wget https://raw.githubusercontent.com/ant-media/Ant-Media-Server/refs/heads/master/src/main/server/uninstall.sh
+        sudo bash ./uninstall.sh <<< "yes"
+
+    - name: Verify uninstallation
+      run: |
+        # Check if service file is removed
+        test ! -f /etc/systemd/system/antmedia.service
+        # Check if installation directory is removed
+        test ! -d /usr/local/antmedia
+        # Check if log directory is removed
+        test ! -d /var/log/antmedia

@@ -3,9 +3,8 @@ on: [push]
 
 jobs:
   Centos8:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     container: centos:8
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/deploy-centos
-
+      - uses: ./.github/actions/deploy-centos-8

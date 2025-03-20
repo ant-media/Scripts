@@ -45,8 +45,42 @@ spec:
 # You may also need to add -u and -p parameters for
 # specifying mongodb username and passwords respectively         
         args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        volumeMounts:
+        - mountPath: /tmp
+          name: temp-volume
+        - mountPath: /var/log/antmedia/
+          name: log-storage
+          subPath: ${POD_NAME}
+        livenessProbe:
+          httpGet:
+            path: / 
+            port: 5080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 5080
+          initialDelaySeconds: 30
+          periodSeconds: 10
         resources:
           requests:
              cpu: 4000m
+      volumes:
+      - hostPath:
+          path: /temp-data
+          type: DirectoryOrCreate
+        name: temp-volume
+      - hostPath:
+          path: /mnt/logs/antmedia
+          type: DirectoryOrCreate
+        name: log-storage
+
  #     imagePullSecrets:
  #     - name: docker
