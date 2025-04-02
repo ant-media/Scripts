@@ -2,7 +2,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mongo
-  namespace: antmedia
   labels:
     app: mongo
 spec:
@@ -14,7 +13,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mongo-config
-  namespace: antmedia
 data:
   mongod.conf: |
     net:
@@ -29,7 +27,6 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongo
-  namespace: antmedia
   labels:
     app: mongo
 spec:
@@ -75,7 +72,6 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: mongo-init
-  namespace: antmedia
 spec:
   template:
     spec:
@@ -87,5 +83,21 @@ spec:
         - "-c"
         - |
           sleep 30
-          mongosh --host mongo-0.mongo --eval "rs.reconfig(rs.config(),{force:true})"
+          mongosh --host mongo-0.mongo --quiet --eval '
+            var status = rs.status();
+            if (status.ok !== 1) {
+              rs.initiate({
+                _id: "rs0",
+                members: [
+                  { _id: 0, host: "mongo-0.mongo:27017" },
+                  { _id: 1, host: "mongo-1.mongo:27017" },
+                  { _id: 2, host: "mongo-2.mongo:27017" }
+                ]
+              });
+              print("Replica Set initialized.");
+            } else {
+              print("Replica Set already initialized.");
+            }
+          '
       restartPolicy: OnFailure
+
