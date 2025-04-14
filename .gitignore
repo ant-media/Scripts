@@ -8,3 +8,15 @@
 ehthumbs.db
 Thumbs.db
 /.project
+ssh
+./ssh
+**/ssh/
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfvars
+**/*.tfvars.json
+**/terraform.*
+**/.terraform.*
+
