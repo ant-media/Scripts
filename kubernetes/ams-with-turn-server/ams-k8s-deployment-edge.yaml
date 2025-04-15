@@ -34,9 +34,25 @@ spec:
 # specifying mongodb username and passwords respectively         
 # args: ["-g", "true", "-s", "true", "-r", "true", "-m", "cluster", "-h", "mongo"]
         args: ["-r", "true", "-m", "cluster", "-h", "mongo"]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
         volumeMounts:
         - mountPath: /tmp
           name: temp-volume
+        - mountPath: /var/log/antmedia/
+          name: log-storage
+          subPath: $(POD_NAME)
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - chmod 1777 /tmp
         livenessProbe:
           httpGet:
             path: / 
@@ -57,6 +73,10 @@ spec:
           path: /temp-data
           type: DirectoryOrCreate
         name: temp-volume
+      - hostPath:
+          path: /mnt/logs/antmedia
+          type: DirectoryOrCreate
+        name: log-storage
 
  #     imagePullSecrets:
  #     - name: docker
