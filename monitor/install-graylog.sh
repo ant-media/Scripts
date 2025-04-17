@@ -14,8 +14,10 @@ ROOT_PASSWORD_SHA2=$(echo -n "$ADMIN_PASSWORD" | sha256sum | cut -d" " -f1)
 OPENSEARCH_ADMIN_PASSWORD=$(tr -dc 'A-Za-z0-9!@#$%^&*()-_=+' </dev/urandom | head -c 16)
 HEADLESS_INSTALL="false"
 
-TOTAL_MEM=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-HEAP_SIZE=$((TOTAL_MEM / 2 / 1024))g
+TOTAL_MEM=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+HEAP_SIZE=$((TOTAL_MEM / 2 / 1024 / 1024))
+HEAP_SIZE="${HEAP_SIZE}G"
+
 
 check() {
   OUT=$?
@@ -86,7 +88,7 @@ check_ip
 # MongoDB 
 curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc | \
    sudo gpg --dearmor --batch --yes -o /usr/share/keyrings/mongodb-server-8.0.gpg
-echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu noble/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
+echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/8.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-8.0.list
 sudo apt-get update
 sudo apt-get install -y mongodb-org
 sudo systemctl enable mongod
@@ -110,8 +112,8 @@ action.auto_create_index: false
 plugins.security.disabled: true
 EOF
 
-sudo systemctl enable opensearch.service
-sudo systemctl start opensearch.service
+sudo systemctl enable graylog-datanode.service
+sudo systemctl start graylog-datanode.service
 
 # Graylog 
 wget https://packages.graylog2.org/repo/packages/graylog-6.1-repository_latest.deb
@@ -125,6 +127,7 @@ sudo sed -i "s/^password_secret =.*$/password_secret = $PASSWORD_SECRET/" /etc/g
 sudo sed -i "s/^root_password_sha2 =.*$/root_password_sha2 = $ROOT_PASSWORD_SHA2/" /etc/graylog/server/server.conf
 
 echo "opensearch_heap = $HEAP_SIZE" | sudo tee -a /etc/graylog/datanode/datanode.conf
+sudo sed -i "s/^password_secret =.*$/password_secret = $PASSWORD_SECRET/" /etc/graylog/datanode/datanode.conf
 
 cat <<EOF | sudo tee -a /etc/graylog/server/server.conf
 message_journal_max_age = 24h
@@ -171,4 +174,3 @@ echo -e " Graylog Dashboard Username: ${RED}admin${NC}"
 echo -e " Graylog Dashboard Password: ${RED}$ADMIN_PASSWORD${NC}"
 echo -e " Login URL: ${RED}http://$LOGIN_IP:9000${NC}"
 echo "==========================================="
-
