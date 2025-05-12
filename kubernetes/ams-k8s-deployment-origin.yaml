@@ -56,7 +56,14 @@ spec:
           name: temp-volume
         - mountPath: /var/log/antmedia/
           name: log-storage
-          subPath: ${POD_NAME}
+          subPath: $(POD_NAME)
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - chmod 1777 /tmp
         livenessProbe:
           httpGet:
             path: / 
