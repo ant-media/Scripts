@@ -22,6 +22,13 @@
 # * Supervisor Configuration (Optional): If you want to use Supervisor to manage the Ant Media Server process, you can enable as follows. With this configuration, you can easily restart, stop the service, or run the `enable_ssl.sh` script for Ant Media Server. 
 # --build-arg UseSupervisor='true'
 #
+# * InstallLLHLSPlugin: Set this variable to 'true' to enable LL-HLS plugin to Ant Media Server.
+# --build-arg InstallLLHLSPlugin='true'
+#
+# * LLHLSPluginZip: If the LL-HLS plugin is in the same folder as the Dockerfile, no path is needed. Otherwise, you must provide the path manually.
+# --build-arg LLHLSPluginZip='low-latency-hls-plugin.zip'
+#
+
 
 FROM ubuntu:22.04
 
@@ -31,6 +38,8 @@ ARG InstallMediaPush
 ARG MediaPushVersion
 ARG UseSupervisor=false
 ARG BranchName=master
+ARG InstallLLHLSPlugin=false
+ARG LLHLSPluginZip=low-latency-hls-plugin.zip
 
 ENV UseSupervisor=${UseSupervisor}
 
@@ -121,5 +130,22 @@ RUN if [ "true" = "$UseSupervisor" ]; then \
     fi
 
 ##############################################################################
+
+
+ADD ./${LLHLSPluginZip} /home/
+
+RUN touch /.dockerenv 
+
+RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
+        cd /home && \
+        unzip ${LLHLSPluginZip} && \
+        cd low-latency-hls-plugin && \
+        chmod +x install_low-latency-hls-plugin.sh && \
+        bash -x install_low-latency-hls-plugin.sh && \
+        cd /home && \
+        rm -rf ${LLHLSPluginZip} low-latency-hls-plugin; \
+    fi
+
+RUN rm -f /.dockerenv
 
 ENTRYPOINT [ "sh", "-c", "if [ \"$UseSupervisor\" = \"true\" ]; then exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf; else exec /usr/local/antmedia/start.sh \"$@\"; fi", "--" ]
