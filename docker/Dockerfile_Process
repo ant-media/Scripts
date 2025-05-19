@@ -134,7 +134,12 @@ RUN if [ "true" = "$UseSupervisor" ]; then \
 
 ADD ./${LLHLSPluginZip} /home/
 
-RUN touch /.dockerenv 
+RUN touch /.dockerenv
+
+RUN if [ "$InstallLLHLSPlugin" = "true" ] && [ ! -f "/home/${LLHLSPluginZip}" ]; then \
+      echo "LLHLS Plugin ZIP file not found at /home/${LLHLSPluginZip}. Aborting."; \
+      exit 1; \
+    fi
 
 RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
         cd /home && \
