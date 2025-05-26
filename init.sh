@@ -29,22 +29,37 @@ then
   fi 
   ## Instance ID
   export INSTANCE_ID=`curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id`
+  
+  #check if first login
+  
+  RESULT=`curl -s -X GET -H "Content-Type: application/json" http://localhost:5080/rest/v2/first-login-status`
+  echo ${RESULT} | grep --quiet ":false" 
+  
+  #if the above commands returns 0, it means server is already initialized
+  if [ $? = 0 ]; then
+    echo "First login is not true"
+    touch $INITIALIZED
+    exit 0
+  else 
+     ## Add Initial User with curl
+    RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/re
+st/v2/users/initial`
 
-  ## Add Initial User with curl
-  RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
+    echo ${RESULT} | grep --quiet ":true"  
 
-  echo ${RESULT} | grep --quiet ":true"  
-
-  if [ ! $1 ]; then
-    echo ${RESULT} | grep --quiet ":true"
-    if [ $? = 1 ]; then
-      echo "Cannot create initial user"
-      echo "sleep 3 ; /usr/local/antmedia/conf/init.sh"  | at now
-      exit $OUT
-    else
+    if [ ! $1 ]; then
       echo ${RESULT} | grep --quiet ":true"
-    fi
+      if [ $? = 1 ]; then
+        echo "Cannot create initial user"
+        echo "sleep 3 ; /usr/local/antmedia/conf/init.sh"  | at now
+        exit $OUT
+      else
+        echo ${RESULT} | grep --quiet ":true"
+      fi
 
+    fi
+    touch $INITIALIZED
+  
   fi
-  touch $INITIALIZED
+
 fi
