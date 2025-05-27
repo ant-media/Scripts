@@ -42,8 +42,7 @@ then
     exit 0
   else 
      ## Add Initial User with curl
-    RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/re
-st/v2/users/initial`
+    RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
 
     echo ${RESULT} | grep --quiet ":true"  
 
