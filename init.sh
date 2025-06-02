@@ -58,6 +58,7 @@ then
      ## Add Initial User with curl
     RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "'$USERNAME'", "password": "'$PASSWORD'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
 
+
     echo ${RESULT} | grep --quiet ":true"  
 
     if [ ! $1 ]; then
