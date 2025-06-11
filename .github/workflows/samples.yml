@@ -34,11 +34,12 @@ jobs:
       run: |
         git clone https://github.com/Haivision/srt.git
         cd srt
-        sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
-        ./configure
-        make
+        sudo mkdir build
+        cd build
+        sudo cmake ..
+        sudo make -j$(nproc)
         sudo make install
-        cd ..
+        sudo ldconfig
         
     - name: Install Chrome
       run: |
