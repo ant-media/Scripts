@@ -34,11 +34,12 @@ jobs:
       run: |
         git clone https://github.com/Haivision/srt.git
         cd srt
-        sudo apt-get install tclsh pkg-config cmake libssl-dev build-essential
-        ./configure
-        make
+        sudo mkdir build
+        cd build
+        sudo cmake ..
+        sudo make -j$(nproc)
         sudo make install
-        cd ..
+        sudo ldconfig
         
     - name: Install Chrome
       run: |
@@ -47,7 +48,7 @@ jobs:
         
     - name: Install ChromeDriver
       run: |
-        wget https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.98/linux64/chromedriver-linux64.zip
+        wget https://storage.googleapis.com/chrome-for-testing-public/137.0.7151.70/linux64/chromedriver-linux64.zip
         unzip chromedriver-linux64.zip
         cd chromedriver-linux64
         sudo mv chromedriver /usr/bin/chromedriver
