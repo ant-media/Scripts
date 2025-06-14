@@ -41,8 +41,23 @@ then
     touch $INITIALIZED
     exit 0
   else 
+  	TAG_VALUE=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/auto-managed-ams)
+  	if [ "$TAG_VALUE" = "true" ]; then
+  	     #get username and password from tags
+  	     USERNAME=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/web-panel-login-email)
+  	     #password is the md5 of the instance id
+  	     PASSWORD=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/web-panel-login-password)
+  	     
+  	else
+  		USERNAME="JamesBond"
+  	    PASSWORD=$(echo -n $INSTANCE_ID | md5sum | awk '{print $1}' )
+  	    
+    fi
+  
+  
      ## Add Initial User with curl
-    RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
+    RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "'$USERNAME'", "password": "'$PASSWORD'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
+
 
     echo ${RESULT} | grep --quiet ":true"  
 
