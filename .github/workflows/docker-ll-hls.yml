@@ -23,7 +23,7 @@ jobs:
       - name: Build Docker Image with LL-HLS Plugin
         run: |
           docker build -f docker/Dockerfile_Process \
-            --build-arg LicenseKey=${{ secrets.ENTERPRISE_LICENSE }}" \
+            --build-arg LicenseKey="${{ secrets.ENTERPRISE_LICENSE }}" \
             --build-arg InstallLLHLSPlugin=true \
             -t antmedia-llhls:test .
 
