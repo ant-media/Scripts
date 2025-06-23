@@ -111,6 +111,9 @@ update_nginx_config() {
 # Function to install Nginx
 install_nginx() {
   echo "Installing Nginx..."
+  sudo apt install curl ca-certificates lsb-release -y
+  echo "deb http://nginx.org/packages/`lsb_release -d | awk '{print $2}' | tr '[:upper:]' '[:lower:]'` `lsb_release -cs` nginx" | sudo tee /etc/apt/sources.list.d/nginx.list
+  curl -fsSL https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
   sudo apt-get update
   sudo apt-get install -y nginx
 }
