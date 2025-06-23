@@ -1,0 +1,47 @@
+name: Test LL-HLS Plugin Installation
+
+on: [push]
+
+env:
+  DEBUG: true
+
+jobs:
+  test-llhls:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download LL-HLS plugin zip
+        run: |
+          curl -L -o low-latency-hls-plugin.zip ${{ secrets.LLHLS_PLUGIN_URL }}
+
+      - name: Build Docker Image with LL-HLS Plugin
+        run: |
+          docker build -f docker/Dockerfile_Process \
+            --build-arg LicenseKey="${{ secrets.ENTERPRISE_LICENSE }}" \
+            --build-arg InstallLLHLSPlugin=true \
+            -t antmedia-llhls:test .
+
+      - name: Run Container and Validate LL-HLS Installation
+        run: |
+          docker run -d -p 5080:5080 --name antmedia-llhls antmedia-llhls:test
+          sleep 30
+
+          echo "Checking if LL-HLS plugin is installed..."
+          docker run -d -p 5080:5080 --name antmedia-llhls antmedia-llhls:test
+          sleep 30
+
+          echo "Searching for low-latency-hls.jar under /usr/local/antmedia/webapps/"
+          FOUND=$(docker exec antmedia-llhls find /usr/local/antmedia/webapps/ -type f -name "low-latency-hls.jar" || true)
+
+          if [ -n "$FOUND" ]; then
+            echo "$FOUND"
+          else
+            exit 1
+          fi
+          echo "LL-HLS Plugin installed successfully."
