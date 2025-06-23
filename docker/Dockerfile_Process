@@ -137,19 +137,24 @@ ADD ./${LLHLSPluginZip} /home/
 RUN touch /.dockerenv
 
 RUN if [ "$InstallLLHLSPlugin" = "true" ] && [ ! -f "/home/${LLHLSPluginZip}" ]; then \
-      echo "LLHLS Plugin ZIP file not found at /home/${LLHLSPluginZip}. Aborting."; \
+      echo "ERROR: LL-HLS Plugin ZIP file not found at /home/${LLHLSPluginZip}. Aborting."; \
+      echo "Please ensure '${LLHLSPluginZip}' is in the same directory as the Dockerfile."; \
       exit 1; \
     fi
 
 RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
+        echo "Installing LL-HLS Plugin..."; \
         cd /home && \
         unzip ${LLHLSPluginZip} && \
         cd low-latency-hls-plugin && \
-        chmod +x install_low-latency-hls-plugin.sh && \
         bash -x install_low-latency-hls-plugin.sh && \
         cd /home && \
-        rm -rf ${LLHLSPluginZip} low-latency-hls-plugin; \
+        rm -rf ${LLHLSPluginZip} low-latency-hls-plugin && \
+        echo "LL-HLS Plugin installation completed successfully."; \
+    else \
+        echo "LL-HLS Plugin installation skipped (InstallLLHLSPlugin=${InstallLLHLSPlugin})"; \
     fi
+
 
 RUN rm -f /.dockerenv
 
