@@ -29,22 +29,51 @@ then
   fi 
   ## Instance ID
   export INSTANCE_ID=`curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id`
-
-  ## Add Initial User with curl
-  RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "JamesBond", "password": "'$INSTANCE_ID'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
-
-  echo ${RESULT} | grep --quiet ":true"  
-
-  if [ ! $1 ]; then
-    echo ${RESULT} | grep --quiet ":true"
-    if [ $? = 1 ]; then
-      echo "Cannot create initial user"
-      echo "sleep 3 ; /usr/local/antmedia/conf/init.sh"  | at now
-      exit $OUT
-    else
-      echo ${RESULT} | grep --quiet ":true"
+  
+  #check if first login
+  
+  RESULT=`curl -s -X GET -H "Content-Type: application/json" http://localhost:5080/rest/v2/first-login-status`
+  echo ${RESULT} | grep --quiet ":false" 
+  
+  #if the above commands returns 0, it means server is already initialized
+  if [ $? = 0 ]; then
+    echo "First login is not true"
+    touch $INITIALIZED
+    exit 0
+  else 
+  	TAG_VALUE=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/auto-managed-ams)
+  	if [ "$TAG_VALUE" = "true" ]; then
+  	     #get username and password from tags
+  	     USERNAME=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/web-panel-login-email)
+  	     #password is the md5 of the instance id
+  	     PASSWORD=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/web-panel-login-password)
+  	     
+  	else
+  		USERNAME="JamesBond"
+  	    PASSWORD=$(echo -n $INSTANCE_ID | md5sum | awk '{print $1}' )
+  	    
     fi
+  
+  
+     ## Add Initial User with curl
+    RESULT=`curl -s -X POST -H "Content-Type: application/json" -d '{"email": "'$USERNAME'", "password": "'$PASSWORD'", "scope": "system", "userType": "ADMIN"}' http://localhost:5080/rest/v2/users/initial`
 
+
+    echo ${RESULT} | grep --quiet ":true"  
+
+    if [ ! $1 ]; then
+      echo ${RESULT} | grep --quiet ":true"
+      if [ $? = 1 ]; then
+        echo "Cannot create initial user"
+        echo "sleep 3 ; /usr/local/antmedia/conf/init.sh"  | at now
+        exit $OUT
+      else
+        echo ${RESULT} | grep --quiet ":true"
+      fi
+
+    fi
+    touch $INITIALIZED
+  
   fi
-  touch $INITIALIZED
+
 fi
