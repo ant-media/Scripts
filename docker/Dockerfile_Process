@@ -44,7 +44,7 @@ ARG LLHLSPluginZip=low-latency-hls-plugin.zip
 ENV UseSupervisor=${UseSupervisor}
 
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables
+RUN apt-get update && apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables alien
 
 ADD ./${AntMediaServer} /home
 
