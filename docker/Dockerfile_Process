@@ -155,7 +155,6 @@ RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
         echo "LL-HLS Plugin installation skipped (InstallLLHLSPlugin=${InstallLLHLSPlugin})"; \
     fi
 
-
 RUN rm -f /.dockerenv
 
 ENTRYPOINT [ "sh", "-c", "if [ \"$UseSupervisor\" = \"true\" ]; then exec /usr/bin/supervisord -c /etc/supervisor/supervisord.conf; else exec /usr/local/antmedia/start.sh \"$@\"; fi", "--" ]
