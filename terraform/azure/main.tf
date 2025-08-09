@@ -1,6 +1,6 @@
 resource "azurerm_resource_group" "rg" {
   location = var.resource_group_location
-  name     = var.rg_name
+  name     = "community" // or "enterprise" based on your needs
 }
 
 resource "azurerm_virtual_network" "antmedia-marketplace" {
@@ -52,8 +52,8 @@ resource "azurerm_linux_virtual_machine" "antmedia-marketplace" {
 
   source_image_reference {
     publisher = "Canonical"
-    offer     = "ubuntu-24_04-lts"
-    sku       = "server"
+    offer     = "0001-com-ubuntu-server-jammy"
+    sku       = "22_04-lts-gen2"
     version   = "latest"
   }
 }
@@ -138,9 +138,6 @@ resource "null_resource" "ams-marketplace-setup_enterprise" {
       private_key = file(var.privatekeypath)
     }
     inline = [
-      "echo 'APT::Get::Assume-Yes \"true\";' | sudo tee /etc/apt/apt.conf.d/90assumeyes",
-      "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections",
-      "echo 'systemd restart services' | sudo tee /etc/needrestart/conf.d/override.conf",
       "sudo sed -i 's/#\\$nrconf{kernelhints} = -1;/\\$nrconf{kernelhints} = -1;/g'  /etc/needrestart/needrestart.conf",
       "echo 'NEEDRESTART_SUSPEND=1' >> /etc/environment",
       "source /etc/environment",
@@ -170,6 +167,7 @@ resource "null_resource" "ams-marketplace-setup_community" {
       private_key = file(var.privatekeypath)
     }
     inline = [
+      "export DEBIAN_FRONTEND=noninteractive",
       "echo 'APT::Get::Assume-Yes \"true\";' | sudo tee /etc/apt/apt.conf.d/90assumeyes",
       "echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections",
       "echo 'systemd restart services' | sudo tee /etc/needrestart/conf.d/override.conf",
@@ -201,9 +199,29 @@ resource "null_resource" "ams-marketplace-setup_community" {
 }
 
 
-resource "null_resource" "stop_vm" {
+resource "null_resource" "stop_and_generalize_vm" {
   provisioner "local-exec" {
-    command = "az vm deallocate --name ${azurerm_linux_virtual_machine.antmedia-marketplace.name} --resource-group ${azurerm_resource_group.rg.name}"
+    command = <<-EOT
+      echo "VM'i durduruyor..."
+      az vm deallocate --name ${azurerm_linux_virtual_machine.antmedia-marketplace.name} --resource-group ${azurerm_resource_group.rg.name}
+      
+      echo "VM'in durmasını bekliyor..."
+      az vm wait --name ${azurerm_linux_virtual_machine.antmedia-marketplace.name} --resource-group ${azurerm_resource_group.rg.name} --deallocated
+      
+      echo "VM'i generalize ediyor..."
+      az vm generalize --resource-group ${azurerm_resource_group.rg.name} --name ${azurerm_linux_virtual_machine.antmedia-marketplace.name}
+      
+      echo "Generalize durumunu kontrol ediyor..."
+      while true; do
+        STATUS=$(az vm get-instance-view --name ${azurerm_linux_virtual_machine.antmedia-marketplace.name} --resource-group ${azurerm_resource_group.rg.name} --query "instanceView.statuses[?code=='OSState/generalized']" --output tsv)
+        if [ ! -z "$STATUS" ]; then
+          echo "VM başarıyla generalize edildi."
+          break
+        fi
+        echo "Generalize işlemi devam ediyor, bekleniyor..."
+        sleep 10
+      done
+    EOT
   }
 
   depends_on = [
@@ -212,24 +230,27 @@ resource "null_resource" "stop_vm" {
     azurerm_public_ip.antmedia-marketplace,
     null_resource.ams-marketplace-setup_community,
     null_resource.ams-marketplace-setup_enterprise
-
   ]
 }
 
+resource "azurerm_image" "antmedia-marketplace" {
+  name                = "antmedia-marketplace-image-${azurerm_resource_group.rg.name}-${var.ams_version}"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  hyper_v_generation  = "V2" 
 
-resource "null_resource" "generalize_vm" {
-  provisioner "local-exec" {
-    command = "az vm generalize --resource-group ${azurerm_resource_group.rg.name} --name ${azurerm_linux_virtual_machine.antmedia-marketplace.name}"
-  }
+  source_virtual_machine_id = azurerm_linux_virtual_machine.antmedia-marketplace.id
 
   depends_on = [
-    null_resource.stop_vm
+    null_resource.stop_and_generalize_vm,
+    null_resource.ams-marketplace-setup_community,
+    null_resource.ams-marketplace-setup_enterprise
   ]
 }
 
-
+# Shared Image Gallery
 resource "azurerm_shared_image_gallery" "antmedia-marketplace" {
-  name                = "antmedia_image_gallery_${azurerm_resource_group.rg.name}_${var.ams_version}"
+  name                = "${azurerm_resource_group.rg.name}_image_gallery"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   description         = "Shared images and things."
@@ -237,9 +258,11 @@ resource "azurerm_shared_image_gallery" "antmedia-marketplace" {
   tags = {
     Marketplace = "Ant Media Server"
   }
-  depends_on = [null_resource.generalize_vm]
+  
+  depends_on = [azurerm_image.antmedia-marketplace]
 }
 
+# Shared Image Definition
 resource "azurerm_shared_image" "antmedia-marketplace" {
   name                = var.ams_version
   gallery_name        = azurerm_shared_image_gallery.antmedia-marketplace.name
@@ -248,31 +271,35 @@ resource "azurerm_shared_image" "antmedia-marketplace" {
   os_type             = "Linux"
   hyper_v_generation  = "V2"
 
-
   identifier {
     publisher = "antmedia"
     offer     = "Ubuntu"
     sku       = "Ubuntu"
   }
-  depends_on = [null_resource.generalize_vm]
+  
+  depends_on = [azurerm_shared_image_gallery.antmedia-marketplace]
 }
 
+# Shared Image Version - Managed Image'i kullan
 resource "azurerm_shared_image_version" "antmedia-marketplace" {
   name                = var.ams_version
   gallery_name        = azurerm_shared_image_gallery.antmedia-marketplace.name
   image_name          = azurerm_shared_image.antmedia-marketplace.name
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  managed_image_id    = azurerm_linux_virtual_machine.antmedia-marketplace.id
   
+  # VM ID yerine Managed Image ID kullan
+  managed_image_id    = azurerm_image.antmedia-marketplace.id
 
   target_region {
     name                   = azurerm_resource_group.rg.location
     regional_replica_count = 5
     storage_account_type   = "Standard_LRS"
   }
-  depends_on = [null_resource.generalize_vm]
+  
+  depends_on = [
+    azurerm_shared_image.antmedia-marketplace,
+    azurerm_image.antmedia-marketplace
+  ]
 }
-
-
 
