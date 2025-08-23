@@ -23,7 +23,7 @@
 # --build-arg UseSupervisor='true'
 #
 
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 ARG AntMediaServer
 ARG LicenseKey
