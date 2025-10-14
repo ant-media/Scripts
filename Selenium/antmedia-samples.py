@@ -79,7 +79,7 @@ icon_emoji = ":x:"
 user_id = 'U01UMD36SQ0'
 
 options = Options()
-options.add_argument('--headless')
+options.add_argument('--headless=new')
 options.add_argument("--window-size=1920,1080");
 options.add_argument("--use-fake-ui-for-media-stream")
 options.add_argument("--use-fake-device-for-media-stream")
