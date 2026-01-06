@@ -35,8 +35,7 @@ ARG BranchName=master
 ENV UseSupervisor=${UseSupervisor}
 
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
-RUN apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables jq
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables jq
 
 ADD ./${AntMediaServer} /home
 
