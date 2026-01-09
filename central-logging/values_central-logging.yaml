@@ -185,6 +185,8 @@ prometheusRule:
 #       severity: critical
 
 TENANT_EMAIL: ""
+USERNAME: ""
+PASSWORD: ""
 
 dashboards:
   enabled: false
@@ -456,9 +458,10 @@ config:
         http_password     {{ .Values.PASSWORD | quote }}
         URI               /loki/api/v1/push
         tls               Off
-        labels            job=antmedia,tenant={{ .Values.TENANT_EMAIL }}
-        label_keys $instance
+        labels            job=antmedia,tenant={{ .Values.TENANT_EMAIL | quote }}
+        label_keys        $instance
         line_format       json
+
 # Debugging0
 #    [OUTPUT]
 #        Name         stdout
