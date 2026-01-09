@@ -5,6 +5,7 @@ set -e
 ########################################
 # 0) Ask the user for the tenant email
 ########################################
+# Tenant (email)
 while true; do
     read -rp "Please enter your license email address (this will be used as the tenant): " TENANT_EMAIL
     if [[ -n "$TENANT_EMAIL" ]]; then
@@ -14,7 +15,27 @@ while true; do
     fi
 done
 
-echo "Tenant set to: $TENANT_EMAIL"
+# Username
+while true; do
+    read -rp "Please enter the username provided by Ant Media: " USERNAME
+    if [[ -n "$USERNAME" ]]; then
+        break
+    else
+        echo "Username cannot be empty!"
+    fi
+done
+
+# Password
+while true; do
+    read -rsp "Please enter the password provided by Ant Media: " PASSWORD
+    echo
+    if [[ -n "$PASSWORD" ]]; then
+        break
+    else
+        echo "Password cannot be empty!"
+    fi
+done
+
 
 
 
@@ -60,7 +81,9 @@ sudo bash -c 'cat > /etc/fluent-bit/fluent-bit.conf << "EOF"
     Name              loki
     Match             ams
     Host              log.antmedia.io
-    Port              3100
+    Port              80
+    http_user         ${USERNAME}
+    http_password     ${PASSWORD}
     URI               /loki/api/v1/push
     tls               Off
     labels            job=antmedia,tenant=${TENANT_EMAIL},instance=${HOSTNAME},source_ip=${HOST_IP}
