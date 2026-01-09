@@ -451,7 +451,9 @@ config:
         Name              loki
         Match             kube.*
         Host              log.antmedia.io
-        Port              3100
+        Port              80
+        http_user         {{ .Values.USERNAME | quote }}
+        http_password     {{ .Values.PASSWORD | quote }}
         URI               /loki/api/v1/push
         tls               Off
         labels            job=antmedia,tenant={{ .Values.TENANT_EMAIL }}
