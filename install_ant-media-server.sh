@@ -25,6 +25,8 @@ RED='\033[0;31m'
 NC='\033[0m' 
 #version that is being installed. It's get filled below
 VERSION= 
+PRIVATE_IP=$(hostname -I | awk '{print $1}')
+PUBLIC_IP=$(curl -s http://checkip.amazonaws.com)
 
 update_script () {
   SCRIPT_NAME="$0"
@@ -575,3 +577,25 @@ else
   echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
 fi
 
+echo ""
+echo "============================================================"
+echo "✅ Ant Media Server installation completed successfully!"
+echo "============================================================"
+echo ""
+echo "🌐 Access Ant Media Server Web Panel:"
+echo ""
+echo "🔹 Public IP:"
+echo "   http://$PUBLIC_IP:5080"
+echo ""
+echo "🔹 Private IP:"
+echo "   http://$PRIVATE_IP:5080"
+echo ""
+echo "📘 Documentation:"
+echo "   https://docs.antmedia.io/"
+echo ""
+echo "🆘 Support:"
+echo "   support@antmedia.io"
+echo ""
+echo "============================================================"
+echo "🎉 Happy Streaming with Ant Media Server!"
+echo "============================================================"
