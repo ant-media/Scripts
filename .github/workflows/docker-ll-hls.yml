@@ -33,9 +33,6 @@ jobs:
           sleep 30
 
           echo "Checking if LL-HLS plugin is installed..."
-          docker run -d -p 5080:5080 --name antmedia-llhls antmedia-llhls:test
-          sleep 30
-
           echo "Searching for low-latency-hls.jar under /usr/local/antmedia/webapps/"
           FOUND=$(docker exec antmedia-llhls find /usr/local/antmedia/webapps/ -type f -name "low-latency-hls.jar" || true)
 
