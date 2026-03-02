@@ -25,7 +25,7 @@
 # * InstallLLHLSPlugin: Set this variable to 'true' to enable LL-HLS plugin to Ant Media Server.
 # --build-arg InstallLLHLSPlugin='true'
 #
-# * LLHLSPluginZip: If the LL-HLS plugin is in the same folder as the Dockerfile, no path is needed. Otherwise, you must provide the path manually.
+# * LLHLSPluginZip: Name of the LL-HLS plugin zip file. It must be in the build context (e.g. repo root when using: docker build -f docker/Dockerfile_Process .).
 # --build-arg LLHLSPluginZip='low-latency-hls-plugin.zip'
 #
 
@@ -44,18 +44,20 @@ ARG LLHLSPluginZip=low-latency-hls-plugin.zip
 ENV UseSupervisor=${UseSupervisor}
 
 #Running update and install makes the builder not to use cache which resolves some updates
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables jq
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl wget iproute2 cron logrotate dnsutils iptables jq unzip
 
-ADD ./${AntMediaServer} /home
+COPY . /build_context
 
-RUN cd home \
+RUN mkdir -p /home && if [ -n "${AntMediaServer}" ]; then cp "/build_context/${AntMediaServer}" /home/; fi
+
+RUN cd /home \
     && pwd \
     && wget https://raw.githubusercontent.com/ant-media/Scripts/${BranchName}/install_ant-media-server.sh \
     && chmod 755 install_ant-media-server.sh
 
 RUN cd /home \
     && pwd \
-    && if [ -n "$AntMediaServer" ]; then \
+    && if [ -n "${AntMediaServer}" ]; then \
            ./install_ant-media-server.sh -i ${AntMediaServer} -s false; \
        elif [ -n "$LicenseKey" ]; then \
            ./install_ant-media-server.sh -l ${LicenseKey} -s false; \
@@ -132,20 +134,21 @@ RUN if [ "true" = "$UseSupervisor" ]; then \
 ##############################################################################
 
 
-ADD ./${LLHLSPluginZip} /home/
+RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
+        if [ ! -f "/build_context/${LLHLSPluginZip}" ]; then \
+          echo "ERROR: LL-HLS Plugin ZIP file not found at /build_context/${LLHLSPluginZip}. Aborting."; \
+          echo "Please ensure '${LLHLSPluginZip}' is in the build context."; \
+          exit 1; \
+        fi; \
+        cp "/build_context/${LLHLSPluginZip}" /home/; \
+    fi
 
 RUN touch /.dockerenv
-
-RUN if [ "$InstallLLHLSPlugin" = "true" ] && [ ! -f "/home/${LLHLSPluginZip}" ]; then \
-      echo "ERROR: LL-HLS Plugin ZIP file not found at /home/${LLHLSPluginZip}. Aborting."; \
-      echo "Please ensure '${LLHLSPluginZip}' is in the same directory as the Dockerfile."; \
-      exit 1; \
-    fi
 
 RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
         echo "Installing LL-HLS Plugin..."; \
         cd /home && \
-        unzip ${LLHLSPluginZip} && \
+        unzip -o ${LLHLSPluginZip} && \
         cd low-latency-hls-plugin && \
         bash -x install_low-latency-hls-plugin.sh && \
         cd /home && \
@@ -154,6 +157,8 @@ RUN if [ "$InstallLLHLSPlugin" = "true" ]; then \
     else \
         echo "LL-HLS Plugin installation skipped (InstallLLHLSPlugin=${InstallLLHLSPlugin})"; \
     fi
+
+RUN rm -rf /build_context
 
 RUN rm -f /.dockerenv
 
