@@ -412,6 +412,9 @@ else
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
+    
+    #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
+    $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-17-openjdk-headless tzdata-java

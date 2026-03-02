@@ -5,6 +5,8 @@ runs:
     - name: Checkout repository
       uses: actions/checkout@v3
     - name: Install Ant Media Server
+      env:
+        JAVA_TOOL_OPTIONS: "-XX:-UseContainerSupport -Djava.awt.headless=true"
       shell: bash
       run: |
         echo "💡 The ${{ github.repository }} repository has been cloned to the runner."

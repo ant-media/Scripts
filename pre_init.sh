@@ -34,24 +34,21 @@ then
         pushd $AMS_INSTALL_LOCATION
         sudo ./enable_ssl.sh -d $FQDN -s false > /usr/local/antmedia/enable_ssl.log 
         popd
+
+        DB_URL=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/db-url)
+        sudo echo $DB_URL >> /usr/local/antmedia/change_server_mode.log
+        if [ -n "$DB_URL" ]; then
+            echo "DB URL is set to $DB_URL" >> /usr/local/antmedia/change_server_mode.log
+            pushd $AMS_INSTALL_LOCATION
+            WORKING_DIR=$(pwd)
+            source $WORKING_DIR/conf/functions.sh
+            change_server_mode cluster "$DB_URL" >> /usr/local/antmedia/change_server_mode.log 
+            popd
+        else
+            echo "DB URL is not set, using default" >> /usr/local/antmedia/change_server_mode.log
+        fi
     else
         echo "This instance is not auto-managed"
       
     fi
-    
-    
-    DB_URL=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance/db-url)
-    sudo echo $DB_URL >> /usr/local/antmedia/change_server_mode.log
-    if [ -n "$DB_URL" ]; then
-        echo "DB URL is set to $DB_URL" >> /usr/local/antmedia/change_server_mode.log
-        pushd $AMS_INSTALL_LOCATION
-        WORKING_DIR=$(pwd)
-        source $WORKING_DIR/conf/functions.sh
-        change_server_mode cluster "$DB_URL" >> /usr/local/antmedia/change_server_mode.log 
-        popd
-    else
-        echo "DB URL is not set, using default" >> /usr/local/antmedia/change_server_mode.log
-    fi
-    
-   
 fi
