@@ -52,8 +52,12 @@ sudo apt-get install fluent-bit -qq -y
 
 HOST_IP=$(curl -s ifconfig.me)
 
-sudo bash -c "echo HOST_IP=\"$HOST_IP\" > /etc/default/fluent-bit"
-sudo bash -c "echo TENANT_EMAIL=\"$TENANT_EMAIL\" >> /etc/default/fluent-bit"
+sudo bash -c "cat > /etc/default/fluent-bit <<EOF
+USERNAME=\"$USERNAME\"
+PASSWORD=\"$PASSWORD\"
+HOST_IP=\"$HOST_IP\"
+TENANT_EMAIL=\"$TENANT_EMAIL\"
+EOF"
 
 
 sudo bash -c 'cat > /etc/fluent-bit/fluent-bit.conf << "EOF"
@@ -83,7 +87,7 @@ sudo bash -c 'cat > /etc/fluent-bit/fluent-bit.conf << "EOF"
     Host              log.antmedia.io
     Port              80
     http_user         ${USERNAME}
-    http_password     ${PASSWORD}
+    http_passwd       ${PASSWORD}
     URI               /loki/api/v1/push
     tls               Off
     labels            job=antmedia,tenant=${TENANT_EMAIL},instance=${HOSTNAME},source_ip=${HOST_IP}
