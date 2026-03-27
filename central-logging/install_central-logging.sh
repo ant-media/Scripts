@@ -50,7 +50,7 @@ sudo apt-get update -qq
 sudo apt-get install fluent-bit -qq -y
 
 
-HOST_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4 || hostname -I | awk '{print $1}')
+HOST_IP=$(curl -s ifconfig.me)
 
 sudo bash -c "echo HOST_IP=\"$HOST_IP\" > /etc/default/fluent-bit"
 sudo bash -c "echo TENANT_EMAIL=\"$TENANT_EMAIL\" >> /etc/default/fluent-bit"
