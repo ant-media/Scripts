@@ -27,7 +27,7 @@ For standalone instances, the centralized logging agent is installed via a shell
 **Step 1:** Download or copy the installation script to the instance:
 
 ```bash
-curl -O https://example.com/install-central-logging.sh
+curl -O https://raw.githubusercontent.com/ant-media/Scripts/refs/heads/master/central-logging/install_central-logging.sh
 chmod +x install-central-logging.sh
 ```
 
