@@ -22,7 +22,7 @@ jobs:
 
       - name: Read snapshot version from pom.xml
         run: |
-          SNAPSHOT_VERSION=$(xmllint --xpath "string(/project/parent/version)" ant-media-pom.xml)
+          SNAPSHOT_VERSION=$(xmllint --xpath "string(/project/parent/version)" pom.xml)
 
           if [ -z "$SNAPSHOT_VERSION" ]; then
             echo "Could not determine snapshot version from pom.xml"
