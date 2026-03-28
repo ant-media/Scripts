@@ -10,11 +10,6 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v4
 
-      - name: Install XML tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libxml2-utils
-
       - name: Download Ant Media Server pom.xml
         run: |
           wget -O ant-media-pom.xml \
