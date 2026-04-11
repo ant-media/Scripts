@@ -1,0 +1,45 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ant-media-gateway
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: origin-http
+    port: 80
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: origin-https
+    port: 443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: antmedia-cert
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: edge-http
+    port: 5080
+    protocol: HTTP
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: edge-https
+    port: 5443
+    protocol: HTTPS
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - name: antmedia-cert
+    allowedRoutes:
+      namespaces:
+        from: Same
+  - name: rtmp-tcp
+    port: 1935
+    protocol: TCP
+    allowedRoutes:
+      namespaces:
+        from: Same
