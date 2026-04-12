@@ -1,9 +1,34 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: ant-media-envoy-infra
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        annotations:
+          loadbalancer.openstack.org/proxy-protocol: "v2"
+        externalTrafficPolicy: Local
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: ant-media-gateway
 spec:
   gatewayClassName: eg
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: ant-media-envoy-infra
   listeners:
   - name: origin-http
     port: 80
@@ -43,3 +68,23 @@ spec:
     allowedRoutes:
       namespaces:
         from: Same
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: ant-media-xff-policy
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: ant-media-gateway
+  proxyProtocol:
+    optional: false
+  clientIPDetection:
+    xForwardedFor:
+      trustedCIDRs:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 100.64.0.0/10
+      - fc00::/7
