@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: antmedia-certificate
+spec:
+  secretName: antmedia-cert 
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: test.antmedia.cloud
+  dnsNames:
+  - test.antmedia.cloud
+
+
