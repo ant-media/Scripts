@@ -34,7 +34,7 @@ chmod +x install_central-logging.sh
 **Step 2:** Execute the script:
 
 ```bash
-sudo ./install-central-logging.sh
+sudo ./install_central-logging.sh
 ```
 
 **Step 3:** During execution, you will be prompted to enter:
