@@ -595,7 +595,7 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
-            bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+            bash /usr/local/antmedia/change_server_mode.sh cluster mongodb://${DBInstance.PrivateIp}
             apt-get update 
             sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
@@ -670,7 +670,7 @@ Resources:
           Fn::Base64: !Sub |
             #!/bin/bash
             touch /usr/local/antmedia/conf/initialized
-            bash /usr/local/antmedia/change_server_mode.sh cluster ${DBInstance.PrivateIp}
+            bash /usr/local/antmedia/change_server_mode.sh cluster mongodb://${DBInstance.PrivateIp}
             sudo apt-get update 
             sudo apt-get -y install python3-pip
             mkdir -p /opt/aws/bin
