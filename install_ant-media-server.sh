@@ -52,7 +52,7 @@ usage() {
   echo "  -s -> Install Ant Media Server as a service. It can accept true or false. Optional. Default value is true"
   echo "  -d -> Install Ant Media Server on other Linux operating systems. Default value is false"
   echo "  -u -> Update Ant Media Server new installation script. Default value is false"
-  echo "  -l -> Activate the license."
+  echo "  -l -> Install Ant Media Enterprise version with the specified license. If omitted, the script will install the Community Edition. Optional."
 
   echo ""
   echo "Sample usage:"
@@ -417,12 +417,26 @@ else
     
     #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
     $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
+
+    # Install Enterprise version dependencies
+    if [ -n "$LICENSE_KEY" ]; then
+      # avahi-daemon and avahi-utils are required for NDI discovery
+      $SUDO apt install avahi-daemon avahi-utils -y
+    fi
+    
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-17-openjdk-headless tzdata-java
     $SUDO rm -rf /usr/lib/jvm/java-17-openjdk-amd64
     JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
     $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-17-openjdk-amd64
+
+    # Install Enterprise version dependencies
+    if [ -n "$LICENSE_KEY" ]; then
+      # avahi and avahi-tools are required for NDI discovery
+      $SUDO yum -y install avahi avahi-tools
+    fi
+
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-17-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
