@@ -409,8 +409,8 @@ elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
   echo "JAVA_HOME : $JAVA_HOME"
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 
-else
-  # with 2.8 we start to use java17 	
+elif [ "$(printf '%s\n' "2.8" "$VERSION" | sort -V | head -n1)" = "2.8" ] && [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" != "3.1" ]; then
+  # AMS 2.8 and later, up to 3.1, use Java 17.
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
     $SUDO apt-get install openjdk-17-jre-headless -y
@@ -429,6 +429,27 @@ else
   export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
   echo "JAVA_HOME : $JAVA_HOME"
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-17*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+
+elif [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" = "3.1" ]; then
+  # AMS 3.1 and later require Java 21.
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-21-jre-headless -y
+
+    #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
+    $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
+    check
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
+    $SUDO yum -y install java-21-openjdk-headless tzdata-java
+    $SUDO rm -rf /usr/lib/jvm/java-21-openjdk-amd64
+    JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
+    $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-21-openjdk-amd64
+  fi
+  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-21-openjdk-amd64/" >>~/.bashrc
+  source ~/.bashrc
+  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
+  echo "JAVA_HOME : $JAVA_HOME"
+  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-21*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
 	
 fi
 
