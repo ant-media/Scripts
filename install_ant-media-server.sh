@@ -158,6 +158,39 @@ restore_settings() {
     echo "Settings are not restored. Please send the log of this console to support@antmedia.io"
   fi
 }
+
+restore_plugins() {
+  if [ -f "$BACKUP_DIR/plugins/DRM-Plugin-bundle.jar" ]; then
+    $SUDO mkdir -p "$AMS_BASE/plugins"
+    $SUDO cp -p "$BACKUP_DIR/plugins/DRM-Plugin-bundle.jar" "$AMS_BASE/plugins/"
+    echo "Restored DRM-Plugin-bundle.jar"
+  fi
+  if [ -d "$BACKUP_DIR/webapps" ]; then
+    for app in "$BACKUP_DIR/webapps"/*; do
+      [ -d "$app" ] || continue
+      appname=$(basename "$app")
+      src="$app/WEB-INF/lib/low-latency-hls.jar"
+      dest_app="$AMS_BASE/webapps/$appname"
+      dest_lib="$dest_app/WEB-INF/lib"
+      # Only restore into apps that exist on the new install
+      if [ -f "$src" ] && [ -d "$dest_app" ]; then
+        $SUDO mkdir -p "$dest_lib"
+        $SUDO cp -p "$src" "$dest_lib/"
+        echo "Restored low-latency-hls.jar to $appname"
+      fi
+    done
+  fi
+  if [ -f "$BACKUP_DIR/plugins/media-push.jar" ]; then
+    $SUDO mkdir -p "$AMS_BASE/plugins"
+    $SUDO cp -p "$BACKUP_DIR/plugins/media-push.jar" "$AMS_BASE/plugins/"
+    echo "Restored media-push.jar"
+  elif [ -f "$BACKUP_DIR/plugins/media-push-plugin.jar" ]; then
+    $SUDO mkdir -p "$AMS_BASE/plugins"
+    $SUDO cp -p "$BACKUP_DIR/plugins/media-push-plugin.jar" "$AMS_BASE/plugins/"
+    echo "Restored media-push-plugin.jar"
+  fi
+}
+
 #Get the linux distribution
 distro () {
   os_release="/etc/os-release"
@@ -578,6 +611,7 @@ if [ "$?" -eq "0" ]; then
   if [ "$SAVE_SETTINGS" == "true" ]; then
     sleep 5
     restore_settings
+    restore_plugins
     check
     $SUDO chown -R antmedia:antmedia $AMS_BASE/
     check
