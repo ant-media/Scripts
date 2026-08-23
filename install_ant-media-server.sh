@@ -180,6 +180,15 @@ restore_plugins() {
       fi
     done
   fi
+  if [ -f "$BACKUP_DIR/plugins/media-push.jar" ]; then
+    $SUDO mkdir -p "$AMS_BASE/plugins"
+    $SUDO cp -p "$BACKUP_DIR/plugins/media-push.jar" "$AMS_BASE/plugins/"
+    echo "Restored media-push.jar"
+  elif [ -f "$BACKUP_DIR/plugins/media-push-plugin.jar" ]; then
+    $SUDO mkdir -p "$AMS_BASE/plugins"
+    $SUDO cp -p "$BACKUP_DIR/plugins/media-push-plugin.jar" "$AMS_BASE/plugins/"
+    echo "Restored media-push-plugin.jar"
+  fi
 }
 
 #Get the linux distribution
