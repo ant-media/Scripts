@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  clusterIP: None  
+  selector:
+    app: mongo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-config
+data:
+  mongod.conf: |
+    net:
+      bindIp: 0.0.0.0
+      port: 27017
+    replication:
+      replSetName: rs0
+    storage:
+      dbPath: /data/db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+  labels:
+    app: mongo
+spec:
+  serviceName: mongo  
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mongo
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongo
+        image: mongo:8
+        ports:
+        - containerPort: 27017
+          name: mongo
+        volumeMounts:
+        - name: mongo-data
+          mountPath: /data/db
+        command:
+          - "mongod"
+          - "--replSet"
+          - "rs0"
+          - "--bind_ip"
+          - "0.0.0.0"
+          - "--port"
+          - "27017"
+          - "--dbpath"
+          - "/data/db"
+  volumeClaimTemplates:
+  - metadata:
+      name: mongo-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi 
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo-init
+spec:
+  template:
+    spec:
+      containers:
+      - name: mongo-init
+        image: mongo:8
+        command:
+        - bash
+        - "-c"
+        - |
+          sleep 30
+          mongosh --host mongo-0.mongo --quiet --eval '
+            var status = rs.status();
+            if (status.ok !== 1) {
+              rs.initiate({
+                _id: "rs0",
+                members: [
+                  { _id: 0, host: "mongo-0.mongo:27017" },
+                  { _id: 1, host: "mongo-1.mongo:27017" },
+                  { _id: 2, host: "mongo-2.mongo:27017" }
+                ]
+              });
+              print("Replica Set initialized.");
+            } else {
+              print("Replica Set already initialized.");
+            }
+          '
+      restartPolicy: OnFailure
+
