@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-configmap
+data:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+  logstash.conf: |
+    # all input will come from filebeat, no local logs
+    input {
+      kafka {
+        bootstrap_servers => "kafka:9092"
+        client_id => "logstash"
+        group_id => "logstash"
+        consumer_threads => 3
+        topics => ["ams-instance-stats","ams-webrtc-stats","kafka-webrtc-tester-stats"]
+        codec => "json"
+        tags => ["log", "kafka_source"]
+        type => "log"
+      }
+    }
+    filter {
+    }
+    output {
+      elasticsearch {
+         hosts => ["elasticsearch:9200"] 
+         index => "logstash-%{[type]}-%{+YYYY.MM.dd}"
+      }
+      stdout { codec => rubydebug }
+    }
