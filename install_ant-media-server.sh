@@ -231,6 +231,85 @@ check_enterprise_file() {
   exit 1 
 }
 
+# Ant Media Server's service file hardcodes /usr/lib/jvm/java-<major>-openjdk-<arch>
+# as JAVA_HOME, so the link we create below has to follow the same naming.
+JVM_ARCH="amd64"
+if [ "$ARCH" == "aarch64" ]; then
+  JVM_ARCH="arm64"
+fi
+
+# Prints the installation directory of the given OpenJDK major version.
+# The current alternatives selection is deliberately ignored: on an upgrade it still
+# points to the JDK of the previously installed Ant Media Server version.
+detect_java_home() {
+  local major="$1"
+  local dir
+  local found=""
+
+  for dir in $(find /usr/lib/jvm/ -mindepth 1 -maxdepth 1 -type d 2> /dev/null | sort -V); do
+    if [ -x "$dir/bin/java" ] && "$dir/bin/java" -version 2>&1 | head -1 | grep -qE "\"$major(\.|\")"; then
+      found="$dir"
+    fi
+  done
+
+  echo "$found"
+}
+
+# Installs the OpenJDK major version required by the release being installed,
+# makes it the system default and exports JAVA_HOME.
+setup_java() {
+  local major="$1"
+  local link="/usr/lib/jvm/java-${major}-openjdk-${JVM_ARCH}"
+
+  if [ "$OTHER_DISTRO" == "true" ]; then
+    export JAVA_HOME="$CUSTOM_JVM"
+    echo "JAVA_HOME : $JAVA_HOME"
+    return 0
+  fi
+
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
+    $SUDO apt-get update -y
+    $SUDO apt-get install openjdk-${major}-jre-headless -y
+    check
+  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
+    $SUDO yum -y install java-${major}-openjdk-headless tzdata-java
+  fi
+
+  JAVA_HOME="$(detect_java_home "$major")"
+
+  if [ -z "$JAVA_HOME" ]; then
+    echo -e "${RED}Ant Media Server $VERSION requires OpenJDK $major but no OpenJDK $major installation was found under /usr/lib/jvm.${NC}"
+    exit 1
+  fi
+
+  # Recreate the link unconditionally. Upgrading from a release that ran on an older
+  # JDK leaves it behind pointing to that JDK.
+  if [ "$JAVA_HOME" != "$link" ]; then
+    $SUDO rm -rf "$link"
+    $SUDO ln -sfn "$JAVA_HOME" "$link"
+    check
+  fi
+
+  # Not every distribution registers the JDK as an alternative, so a failure here
+  # must not abort the installation.
+  $SUDO update-alternatives --set java "$JAVA_HOME/bin/java" > /dev/null 2>&1 ||
+    $SUDO alternatives --set java "$JAVA_HOME/bin/java" > /dev/null 2>&1 ||
+    echo "OpenJDK $major could not be set as the system wide default java."
+
+  export JAVA_HOME
+  sed -i '/^export JAVA_HOME=/d' ~/.bashrc 2> /dev/null
+  echo "export JAVA_HOME=$JAVA_HOME" >> ~/.bashrc
+  echo "JAVA_HOME : $JAVA_HOME"
+}
+
+# Installed here to speed up setting up the SSL, especially for the AWS auto-managed solution
+install_ssl_packages() {
+  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
+    $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
+    check
+  fi
+}
+
 #Just checks if the latest ioperation is successfull
 check() {
   OUT=$?
@@ -395,62 +474,18 @@ elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
   fi
  
 elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
-  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-    $SUDO apt-get update -y
-    $SUDO apt-get install openjdk-11-jre-headless -y
-    check
-  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install java-11-openjdk-headless tzdata-java
-    ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
-  fi 
-  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
-  source ~/.bashrc
-  export JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/
-  echo "JAVA_HOME : $JAVA_HOME"
-  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-11*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+  setup_java 11
 
 elif [ "$(printf '%s\n' "2.8" "$VERSION" | sort -V | head -n1)" = "2.8" ] && [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" != "3.1" ]; then
   # AMS 2.8 and later, up to 3.1, use Java 17.
-  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-    $SUDO apt-get update -y
-    $SUDO apt-get install openjdk-17-jre-headless -y
-    
-    #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
-    $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
-    check
-  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install java-17-openjdk-headless tzdata-java
-    $SUDO rm -rf /usr/lib/jvm/java-17-openjdk-amd64
-    JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
-    $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-17-openjdk-amd64
-  fi 
-  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-17-openjdk-amd64/" >>~/.bashrc
-  source ~/.bashrc
-  export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64/
-  echo "JAVA_HOME : $JAVA_HOME"
-  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-17*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+  setup_java 17
+  install_ssl_packages
 
 elif [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" = "3.1" ]; then
   # AMS 3.1 and later require Java 21.
-  if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-    $SUDO apt-get update -y
-    $SUDO apt-get install openjdk-21-jre-headless -y
+  setup_java 21
+  install_ssl_packages
 
-    #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
-    $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
-    check
-  elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install java-21-openjdk-headless tzdata-java
-    $SUDO rm -rf /usr/lib/jvm/java-21-openjdk-amd64
-    JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
-    $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-21-openjdk-amd64
-  fi
-  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-21-openjdk-amd64/" >>~/.bashrc
-  source ~/.bashrc
-  export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
-  echo "JAVA_HOME : $JAVA_HOME"
-  find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-21*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
-	
 fi
 
 if ! [ -d $AMS_BASE ]; then
@@ -466,8 +501,10 @@ fi
 
 
 # use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file
-$SUDO mkdir -p $JAVA_HOME/lib/amd64
-$SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
+if [ -n "$JAVA_HOME" ]; then
+  $SUDO mkdir -p $JAVA_HOME/lib/amd64
+  $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
+fi
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
@@ -480,12 +517,12 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
   else
     $SUDO chmod 644 $AMS_BASE/antmedia.service
     $SUDO cp -p $AMS_BASE/antmedia.service /etc/systemd/system/
-    if [ "$OTHER_DISTRO" == "true" ]; then
-      sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$CUSTOM_JVM#g" $SERVICE_FILE
-    fi
-    if [ "aarch64" == $ARCH ]; then
-      $SUDO update-java-alternatives -s java-1.11.*-openjdk-arm64
-      sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$DEFAULT_JAVA_ARM#g" $SERVICE_FILE
+    # The shipped unit hardcodes a /usr/lib/jvm/java-<major>-openjdk-<arch> path, which
+    # a previous installation may have linked to a different JDK. Pin the unit to the
+    # JDK that was resolved for this release instead of relying on that link.
+    if [ -n "$JAVA_HOME" ]; then
+      $SUDO sed -i "s#=JAVA_HOME=.*#=JAVA_HOME=${JAVA_HOME%/}#g" $SERVICE_FILE
+      check
     fi
     $SUDO echo 'antmedia ALL=(ALL) NOPASSWD: /bin/bash enable_ssl.sh*' > /etc/sudoers.d/antmedia
     $SUDO systemctl daemon-reload
