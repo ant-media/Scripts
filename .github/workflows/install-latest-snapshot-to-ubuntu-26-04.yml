@@ -1,0 +1,83 @@
+name: Install Latest Snapshot to Ubuntu 26.04
+on: [push]
+
+jobs:
+  Install-Ubuntu-26-04:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Download Ant Media Server pom.xml
+        run: |
+          wget -O ant-media-pom.xml \
+            https://raw.githubusercontent.com/ant-media/Ant-Media-Server/master/pom.xml
+
+      - name: Read snapshot version from pom.xml
+        run: |
+          SNAPSHOT_VERSION=$(awk '
+          /<parent>/,/<\/parent>/ {
+            if ($0 ~ /<version>.*-SNAPSHOT<\/version>/) {
+              gsub(/.*<version>/, "")
+              gsub(/<\/version>.*/, "")
+              print
+              exit
+            }
+          }
+          ' ant-media-pom.xml)
+
+          if [ -z "$SNAPSHOT_VERSION" ]; then
+            echo "Could not determine snapshot version from pom.xml"
+            exit 1
+          fi
+
+          echo "SNAPSHOT_VERSION=$SNAPSHOT_VERSION" >> $GITHUB_ENV
+          echo "Using snapshot version: $SNAPSHOT_VERSION"
+
+      - name: Download snapshot metadata
+        run: |
+          wget -O maven-metadata.xml \
+            "https://central.sonatype.com/repository/maven-snapshots/io/antmedia/ant-media-server/${SNAPSHOT_VERSION}/maven-metadata.xml"
+
+      - name: Resolve real snapshot artifact version
+        run: |
+          TIMESTAMP=$(grep -oPm1 '(?<=<timestamp>)[^<]+' maven-metadata.xml)
+          BUILD_NUMBER=$(grep -oPm1 '(?<=<buildNumber>)[^<]+' maven-metadata.xml)
+
+          if [ -z "$TIMESTAMP" ] || [ -z "$BUILD_NUMBER" ]; then
+            echo "Could not determine snapshot timestamp/build number"
+            exit 1
+          fi
+
+          BASE_VERSION=${SNAPSHOT_VERSION%-SNAPSHOT}
+          REAL_SNAPSHOT_VERSION="${BASE_VERSION}-${TIMESTAMP}-${BUILD_NUMBER}"
+
+          echo "REAL_SNAPSHOT_VERSION=$REAL_SNAPSHOT_VERSION" >> $GITHUB_ENV
+          echo "Resolved snapshot version: $REAL_SNAPSHOT_VERSION"
+
+      - name: Download Ant Media Server snapshot zip
+        run: |
+          wget -O ant-media-server-community.zip \
+            "https://central.sonatype.com/repository/maven-snapshots/io/antmedia/ant-media-server/${SNAPSHOT_VERSION}/ant-media-server-${REAL_SNAPSHOT_VERSION}-community.zip"
+
+      - name: Install Ant Media Server
+        run: ./install_ant-media-server.sh -i ant-media-server-community.zip
+
+      - name: Check service status
+        run: sudo service antmedia status
+
+      - name: Wait for startup
+        run: sleep 30
+
+      - name: Show Ant Media logs
+        run: cat /usr/local/antmedia/log/ant-media-server.log
+
+      - name: Verify LiveApp started
+        run: |
+          if [ "$(grep -c 'LiveApp started' /usr/local/antmedia/log/ant-media-server.log)" -eq 0 ]; then
+            echo "LiveApp started log does not exist. Check the logs above"
+            exit 1
+          fi
+
+      - name: Show Ant Media error log
+        run: cat /usr/local/antmedia/log/antmedia-error.log
