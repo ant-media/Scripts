@@ -1,0 +1,312 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: AntMedia Multitenant
+      folder: AntMedia Alerts
+      interval: 1m
+      rules:
+        - uid: antmedia-db-query-gt-20s
+          title: AntMedia DB Average Query Time > 20s
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: cflfl4jfwlpfkd
+              model:
+                datasource:
+                    type: prometheus
+                    uid: cflfl4jfwlpfkd
+                editorMode: code
+                expr: max by (job, instance, user) (ams_dbaveragequerytimems{job=~".+",instance=~".+",user=~".+"}) / 1000
+                instant: false
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                settings:
+                    mode: dropNN
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: $B > 20
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: math
+          dashboardUid: antmedia-multitenant-pushgateway
+          panelId: 7
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            __dashboardUid__: antmedia-multitenant-pushgateway
+            __panelId__: "7"
+            description: Tenant {{ $labels.user }} on {{ $labels.instance }} exceeded 20s DB query time.
+            summary: DB average query time is above 20 seconds
+          labels:
+            service: antmedia
+            severity: critical
+            source: prometheus-pushgateway
+          isPaused: false
+        - uid: antmedia-cpu-load-gt-50
+          title: AntMedia CPU Load > 50
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: cflfl4jfwlpfkd
+              model:
+                datasource:
+                    type: prometheus
+                    uid: cflfl4jfwlpfkd
+                editorMode: code
+                expr: max by (job, instance, user) (ams_cpuusage_processcpuload{job=~".+",instance=~".+",user=~".+"})
+                instant: false
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                settings:
+                    mode: dropNN
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: $B > 50
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: math
+          dashboardUid: antmedia-multitenant-pushgateway
+          panelId: 5
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            __dashboardUid__: antmedia-multitenant-pushgateway
+            __panelId__: "5"
+            description: Tenant {{ $labels.user }} on {{ $labels.instance }} exceeded CPU load 50.
+            summary: CPU load is above 50
+          labels:
+            service: antmedia
+            severity: warning
+            source: prometheus-pushgateway
+          isPaused: false
+        - uid: antmedia-system-load-gt-20
+          title: AntMedia System Load Average (1m) > 20
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: cflfl4jfwlpfkd
+              model:
+                datasource:
+                    type: prometheus
+                    uid: cflfl4jfwlpfkd
+                editorMode: code
+                expr: max by (job, instance, user) (ams_cpuusage_systemloadaveragelastminute{job=~".+",instance=~".+",user=~".+"})
+                instant: false
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                settings:
+                    mode: dropNN
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: $B > 20
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: math
+          dashboardUid: antmedia-multitenant-pushgateway
+          panelId: 6
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            __dashboardUid__: antmedia-multitenant-pushgateway
+            __panelId__: "6"
+            description: Tenant {{ $labels.user }} on {{ $labels.instance }} exceeded load average 20.
+            summary: System load average is above 20
+          labels:
+            service: antmedia
+            severity: warning
+            source: prometheus-pushgateway
+          isPaused: false
+        - uid: antmedia-memory-free-lt-20
+          title: AntMedia System Memory Free < 20%
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: cflfl4jfwlpfkd
+              model:
+                datasource:
+                    type: prometheus
+                    uid: cflfl4jfwlpfkd
+                editorMode: code
+                expr: 100 * max by (job, instance, user) (ams_systemmemoryinfo_availablememory{job=~".+",instance=~".+",user=~".+"}) / max by (job, instance, user) (ams_systemmemoryinfo_totalmemory{job=~".+",instance=~".+",user=~".+"})
+                instant: false
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                settings:
+                    mode: dropNN
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: $B < 20
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: math
+          dashboardUid: antmedia-multitenant-pushgateway
+          panelId: 12
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            __dashboardUid__: antmedia-multitenant-pushgateway
+            __panelId__: "12"
+            description: Tenant {{ $labels.user }} on {{ $labels.instance }} dropped below 20% free memory.
+            summary: System memory free percentage is below 20%
+          labels:
+            service: antmedia
+            severity: critical
+            source: prometheus-pushgateway
+          isPaused: false
+        - uid: antmedia-disk-free-lt-20
+          title: AntMedia Disk Free < 20%
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 300
+                to: 0
+              datasourceUid: cflfl4jfwlpfkd
+              model:
+                datasource:
+                    type: prometheus
+                    uid: cflfl4jfwlpfkd
+                editorMode: code
+                expr: 100 * max by (job, instance, user) (ams_filesysteminfo_freespace{job=~".+",instance=~".+",user=~".+"}) / max by (job, instance, user) (ams_filesysteminfo_totalspace{job=~".+",instance=~".+",user=~".+"})
+                instant: false
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: true
+                refId: A
+            - refId: B
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                reducer: last
+                refId: B
+                settings:
+                    mode: dropNN
+                type: reduce
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: $B < 20
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: math
+          dashboardUid: antmedia-multitenant-pushgateway
+          panelId: 13
+          noDataState: NoData
+          execErrState: Error
+          for: 2m
+          annotations:
+            __dashboardUid__: antmedia-multitenant-pushgateway
+            __panelId__: "13"
+            description: Tenant {{ $labels.user }} on {{ $labels.instance }} dropped below 20% free disk.
+            summary: Disk free percentage is below 20%
+          labels:
+            service: antmedia
+            severity: critical
+            source: prometheus-pushgateway
+          isPaused: false
