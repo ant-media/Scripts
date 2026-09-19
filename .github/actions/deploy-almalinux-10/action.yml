@@ -1,4 +1,4 @@
-name: Deploy on AlmaLinux
+name: Deploy on AlmaLinux 10
 runs:
   using: composite
   steps:

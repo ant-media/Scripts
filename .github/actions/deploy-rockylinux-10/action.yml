@@ -1,4 +1,4 @@
-
+name: Deploy on Rocky Linux 10
 name: Deploy on RockyLinux
 runs:
   using: composite
