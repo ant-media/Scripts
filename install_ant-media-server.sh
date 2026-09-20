@@ -243,14 +243,21 @@ fi
 # points to the JDK of the previously installed Ant Media Server version.
 detect_java_home() {
   local major="$1"
-  local dir
+  local dir java_version
   local found=""
 
-  for dir in $(find /usr/lib/jvm/ -mindepth 1 -maxdepth 1 -type d 2> /dev/null | sort -V); do
-    if [ -x "$dir/bin/java" ] && "$dir/bin/java" -version 2>&1 | head -1 | grep -qE "\"$major(\.|\")"; then
+  while IFS= read -r dir; do
+    [ -x "$dir/bin/java" ] || continue
+    # Container/JVM warnings may precede the version line. Read the complete
+    # output and require Java itself to succeed before accepting the candidate.
+    if ! java_version=$("$dir/bin/java" -version 2>&1); then
+      printf 'Could not run %s/bin/java -version:\n%s\n' "$dir" "$java_version" >&2
+      continue
+    fi
+    if grep -qE "^(openjdk|java) version \"$major(\\.|\")" <<< "$java_version"; then
       found="$dir"
     fi
-  done
+  done < <(find /usr/lib/jvm/ -mindepth 1 -maxdepth 1 -type d 2> /dev/null | sort -V)
 
   echo "$found"
 }
@@ -269,10 +276,12 @@ setup_java() {
 
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
+    check
     $SUDO apt-get install openjdk-${major}-jre-headless -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-${major}-openjdk-headless tzdata-java
+    check
   fi
 
   JAVA_HOME="$(detect_java_home "$major")"
