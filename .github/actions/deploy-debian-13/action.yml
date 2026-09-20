@@ -1,4 +1,4 @@
-name: Deploy on Debian 11
+name: Deploy on Debian 13
 runs:
   using: composite
   steps:

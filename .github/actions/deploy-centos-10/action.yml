@@ -1,4 +1,4 @@
-name: Deploy on AlmaLinux
+name: Deploy on CentOS Stream 10
 runs:
   using: composite
   steps:
@@ -11,7 +11,15 @@ runs:
       run: |
         echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
         yum -y install wget which findutils which crontabs unzip
-        curl -L -o ant-media-server-community.zip https://github.com/ant-media/Ant-Media-Server/releases/download/ams-v2.11.3/ant-media-server-community-2.11.3.zip
+        set -euo pipefail
+        release_json=$(curl -fsSL --retry 3 https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest)
+        download_url=$(printf '%s\n' "$release_json" | grep '"browser_download_url"' | cut -d '"' -f 4 | grep -E '/ant-media-server-community-[^/]+\.zip$')
+        if [[ -z "$download_url" || "$download_url" == *$'\n'* ]]; then
+          echo "Expected exactly one Community ZIP in the latest Ant Media Server release."
+          exit 1
+        fi
+        echo "Downloading latest Ant Media Server release: $download_url"
+        curl -fL --retry 3 -o ant-media-server-community.zip "$download_url"
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
         sleep 30

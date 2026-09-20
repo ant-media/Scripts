@@ -163,7 +163,7 @@ distro () {
   os_release="/etc/os-release"
   if [ -f "$os_release" ]; then
     . $os_release
-    msg="We are supporting Ubuntu 20.04, Ubuntu 22.04, Ubuntu 24.04, Ubuntu 26.04, Centos 9, RockyLinux 9 and AlmaLinux 9"
+    msg="We are supporting Ubuntu 20.04, Ubuntu 22.04, Ubuntu 24.04, Ubuntu 26.04, CentOS Stream 9/10, RockyLinux 9/10, AlmaLinux 9/10 and Debian 12/13"
     if [ "$OTHER_DISTRO" == "true" ]; then
       echo -e """\n- OpenJDK 11 (openjdk-11-jdk)\n- De-archiver (unzip)\n- Commons Daemon (jsvc)\n- Apache Portable Runtime Library (libapr1)\n- SSL Development Files (libssl-dev)\n- Video Acceleration (VA) API (libva-drm2)\n- Video Acceleration (VA) API - X11 runtime (libva-x11-2)\n- Video Decode and Presentation API Library (libvdpau-dev)\n- Crystal HD Video Decoder Library (libcrystalhd-dev)\n"""
       read -p 'Are you sure that the above packages are installed?  Y/N ' CUSTOM_PACKAGES
@@ -184,7 +184,7 @@ distro () {
         exit 1
       fi
 
-      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 26.04 ]] && [[ $VERSION_ID != 8* ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 11 ]]; then
+      if [[ $VERSION_ID != 20.04 ]] && [[ $VERSION_ID != 22.04 ]] && [[ $VERSION_ID != 24.04 ]] && [[ $VERSION_ID != 26.04 ]] && [[ $VERSION_ID != 10 ]] && [[ $VERSION_ID != 10.* ]] && [[ $VERSION_ID != 9* ]] && [[ $VERSION_ID != 12 ]] && [[ $VERSION_ID != 13 ]]; then
          echo $msg
          exit 1
             fi
@@ -200,8 +200,8 @@ check_version() {
       echo -e "${RED}You can install AMS v2.6 or higher on Ubuntu 22.04${NC}"
       exit 1
   fi
-  if [ "$VERSION_ID" = "9" ]; then
-      echo -e "${RED}You can install AMS v2.6 or higher on Centos/AlmaLinux/RockyLinux 9${NC}"
+  if [[ "$VERSION_ID" == 9 || "$VERSION_ID" == 9.* || "$VERSION_ID" == 10 || "$VERSION_ID" == 10.* ]]; then
+      echo -e "${RED}You can install AMS v2.6 or higher on CentOS/AlmaLinux/RockyLinux 9/10${NC}"
       exit 1
   fi
 }
@@ -414,15 +414,6 @@ elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] |
   $SUDO yum -y install unzip zip libva libvdpau
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
-  OS_VERSION=$(echo $VERSION_ID | cut -d. -f1)
-
-  if [ "$OS_VERSION" == "8" ]; then
-     if [[ "$(printf '%s\n' "$VERSION" "2.12.0" | sort -V | head -n1)" == "2.12.0" ]]; then
-       echo -e "${RED}AMS version 2.12.0 and above (including version $VERSION) is not supported on $ID 8 distributions.${NC}"
-       exit 1
-     fi
-  fi
-
   if [ "$(printf '%s\n' "$REQUIRED_VERSION" "$VERSION" | sort -V | head -n1)" != "$REQUIRED_VERSION" ]; then
     check_version
     $SUDO yum -y install libcrystalhd
