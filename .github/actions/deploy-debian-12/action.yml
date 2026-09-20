@@ -7,8 +7,22 @@ runs:
     - name: Install Ant Media Server
       shell: bash
       run: |
+        set -euo pipefail
         apt-get update
         apt-get -y install wget findutils unzip curl
+        # Oracle publishes this Debian package for amd64 only.
+        test "$(dpkg --print-architecture)" = "amd64"
+        curl -fL --retry 3 -o /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+        apt-get -y install /tmp/jdk-21_linux-x64_bin.deb
+        oracle_java_home=/usr/lib/jvm/jdk-21-oracle-x64
+        test -x "$oracle_java_home/bin/java"
+        java_version=$("$oracle_java_home/bin/java" -version 2>&1)
+        printf '%s\n' "$java_version"
+        grep -qE '^java version "21(\.|")' <<< "$java_version"
+        # AMS hardcodes the OpenJDK directory name even when Oracle JDK is used.
+        ln -sfnT "$oracle_java_home" /usr/lib/jvm/java-21-openjdk-amd64
+        export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+        export PATH="$JAVA_HOME/bin:$PATH"
         curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
