@@ -57,8 +57,8 @@ collect_failure_report() {
   tar_status=$?
   if [ "$tar_status" -eq 0 ]; then
     "${diagnostic_sudo[@]}" rm -rf -- "$report_dir"
-    echo "Installation failed (exit $exit_code). Diagnostic archive: $archive" >&2
-    echo "Please email this archive to contact@antmedia.io." >&2
+    printf '\033[0;31m%s\033[0m\n' "Installation failed (exit $exit_code). Diagnostic archive: $archive" >&2
+    printf '\033[0;31m%s\033[0m\n' "Please email this archive to contact@antmedia.io." >&2
   else
     echo "Could not finish the diagnostic archive. Collected files: $report_dir" >&2
     echo "Please contact contact@antmedia.io and include these files." >&2
@@ -314,7 +314,7 @@ check_enterprise_file() {
 check() {
   local OUT=$?
   if [ $OUT -ne 0 ]; then
-    echo "Installation failed near line ${BASH_LINENO[0]} (exit $OUT). A diagnostic report will be collected" >&2
+    printf '\033[0;31m%s\033[0m\n' "Installation failed near line ${BASH_LINENO[0]} (exit $OUT). A diagnostic report will be collected" >&2
     exit $OUT
   fi
 }
