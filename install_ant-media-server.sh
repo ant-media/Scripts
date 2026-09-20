@@ -82,18 +82,26 @@ disk_usage(){
 restore_settings() {
   webapps=("LiveApp" "WebRTC*" "root")
 
+  local restore_deadline=$((SECONDS + 120))
   for i in ${webapps[*]}; do
         while [ ! -d $AMS_BASE/webapps/$i/WEB-INF/ ]; do
+                if (( SECONDS >= restore_deadline )); then
+                  echo "Timed out waiting for application directories during settings restore." >&2
+                  startup_failed
+                fi
                 sleep 1
         done
         if [ -d $BACKUP_DIR/webapps/$i/ ]; then
           cp -p -r $BACKUP_DIR/webapps/$i/WEB-INF/red5-web.properties $AMS_BASE/webapps/$i/WEB-INF/red5-web.properties
+          check
           if [ -d $BACKUP_DIR/webapps/$i/streams/ ]; then
             if [ -L $BACKUP_DIR/webapps/$i/streams ]; then
               ii=`echo $BACKUP_DIR/webapps/$i/streams | cut -d "/" -f 6`
               ln -sf $(readlink -f $BACKUP_DIR/webapps/$i/streams) $AMS_BASE/webapps/$ii/streams
+              check
             else
               cp -p -r $BACKUP_DIR/webapps/$i/streams/ $AMS_BASE/webapps/$i/
+              check
             fi
           fi
         fi
@@ -104,11 +112,15 @@ restore_settings() {
   if [ ! -z "$diff_webapps" ]; then
     for custom_app in $diff_webapps; do
       mkdir $AMS_BASE/webapps/$custom_app
+      check
       unzip $AMS_BASE/StreamApp*.war -d $AMS_BASE/webapps/$custom_app
+      check
       sleep 2
       cp -p $BACKUP_DIR/webapps/$custom_app/WEB-INF/red5-web.properties $AMS_BASE/webapps/$custom_app/WEB-INF/red5-web.properties
+      check
       if [ -d $BACKUP_DIR/webapps/$custom_app/streams/ ]; then
         cp -p -r $BACKUP_DIR/webapps/$custom_app/streams/ $AMS_BASE/webapps/$custom_app/
+        check
       fi
     done
   fi
@@ -117,18 +129,22 @@ restore_settings() {
   find $BACKUP_DIR/ -type f -iname "*.db" -exec cp -p {} $AMS_BASE/ \;
   #jee-container holds beans. SSL restoring and cluster restorign require coping
   cp -p "$BACKUP_DIR/conf/"{red5.properties,jee-container.xml} "$AMS_BASE/conf"
+  check
   
   #tokenGenerator has been removed in 2.6 so remove the tokenGeneraator class from the jee-container in 2.6 and later version
   TOKEN_GENERATOR_REMOVED_VERSION=2.6
   if [ "$(printf '%s\n' "$TOKEN_GENERATOR_REMOVED_VERSION" "$VERSION" | sort -V | head -n1)" == "$TOKEN_GENERATOR_REMOVED_VERSION" ]; then
   	#remove token generator from jee-container.xml
   	$SUDO sed -i '/<bean[[:space:]]*id="tokenGenerator"[[:space:]]*class="io.antmedia.filter.TokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+    check
 	$SUDO sed -i '/<property[[:space:]]*name="tokenGenerator"[[:space:]]*ref="tokenGenerator"[[:space:]]*\/>/d' $AMS_BASE/conf/jee-container.xml
+	check
   fi
 
   #SSL Restore
   if [ $(grep -o -E '<!-- https start -->|<!-- https end -->' $BACKUP_DIR/conf/jee-container.xml  | wc -l) == "2" ]; then
     cp -p $BACKUP_DIR/conf/{chain.pem,privkey.pem,fullchain.pem,truststore.jks,keystore.jks} $AMS_BASE/conf/
+    check
   fi
 
   if [ $(grep 'nativeLogLevel=' $AMS_BASE/conf/red5.properties | wc -l) == "0" ]; then
@@ -142,6 +158,7 @@ restore_settings() {
 
   if [ $(grep 'SSLCertificateChainFile' $AMS_BASE/conf/jee-container.xml | wc -l) == "0" ]; then
     $SUDO sed -i '/<entry key="SSLCertificateFile.*/a <entry key="SSLCertificateChainFile" value="${http.ssl_certificate_chain_file}" />' $AMS_BASE/conf/jee-container.xml
+    check
   fi
 
   # This is a fix in upgrading versions that uses Http11Nio2Protocol
@@ -149,6 +166,7 @@ restore_settings() {
   # Sep 25, 21 - mekya
   if [ $(grep 'Http11AprProtocol' $AMS_BASE/conf/jee-container.xml | wc -l) != "0" ]; then
     $sudo sed -i 's/org.apache.coyote.http11.Http11AprProtocol/org.apache.coyote.http11.Http11Nio2Protocol/g' $AMS_BASE/conf/jee-container.xml
+    check
   fi
 
 
@@ -176,6 +194,7 @@ distro () {
       read -p "Enter JVM Path (default: $DEFAULT_JAVA): " CUSTOM_JVM
       if [ -z "$CUSTOM_JVM" ]; then
         $SUDO apt-get update && $SUDO apt-get install coreutils
+        check
         CUSTOM_JVM=$DEFAULT_JAVA
       fi
     elif [ "$ID" == "ubuntu" ] || [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ] || [ "$ID" == "debian" ]; then
@@ -233,11 +252,59 @@ check_enterprise_file() {
 
 #Just checks if the latest ioperation is successfull
 check() {
-  OUT=$?
+  local OUT=$?
   if [ $OUT -ne 0 ]; then
-    echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
+    echo "Installation failed near line ${BASH_LINENO[0]} (exit $OUT). Please send the console log to support@antmedia.io" >&2
     exit $OUT
   fi
+}
+
+# Print diagnostics without hiding the original failure.
+startup_failed() {
+  echo "Ant Media Server failed to become ready." >&2
+  if command -v systemctl >/dev/null 2>&1; then
+    $SUDO systemctl status antmedia --no-pager --full >&2 || true
+    $SUDO journalctl -u antmedia -n 50 --no-pager >&2 || true
+  else
+    $SUDO service antmedia status >&2 || true
+  fi
+  $SUDO tail -n 50 "$LOG_DIRECTORY/antmedia-error.log" >&2 || true
+  exit 1
+}
+
+service_running() {
+  if command -v systemctl >/dev/null 2>&1; then
+    $SUDO systemctl is-active --quiet antmedia || return 1
+    local pid
+    pid=$($SUDO systemctl show antmedia --property=MainPID --value) || return 1
+    [[ "$pid" =~ ^[1-9][0-9]*$ ]] || return 1
+    $SUDO kill -0 "$pid" 2>/dev/null
+  else
+    $SUDO service antmedia status >/dev/null 2>&1
+  fi
+}
+
+# Require three consecutive ready checks, with a bounded startup wait.
+wait_for_server() {
+  local port url code consecutive=0 deadline=$((SECONDS + 120))
+  port=$(sed -n 's/^[[:space:]]*http.port[[:space:]]*=[[:space:]]*//p' "$AMS_BASE/conf/red5.properties" | tail -n 1 | tr -d '\r[:space:]')
+  port=${port:-5080}
+  PANEL_PORT=$port
+  url="http://127.0.0.1:$port/"
+  echo "Waiting for Ant Media Server at $url (up to 120 seconds)..."
+  while (( SECONDS < deadline )); do
+    code=$(curl --noproxy '*' --silent --output /dev/null --write-out '%{http_code}' --connect-timeout 2 --max-time 3 "$url") || code=000
+    if service_running && [[ "$code" =~ ^[23][0-9][0-9]$ ]]; then
+      consecutive=$((consecutive + 1))
+      if (( consecutive >= 3 )); then
+        return 0
+      fi
+    else
+      consecutive=0
+    fi
+    sleep 2
+  done
+  startup_failed
 }
 
 # Start
@@ -267,10 +334,12 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     #Added curl package for the minimal OS installations.
     $SUDO apt-get update
+    check
     $SUDO apt-get install jq curl -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install jq curl
+    check
   fi
   if [ -z "${LICENSE_KEY}" ]; then
     echo "Downloading the latest version of Ant Media Server Community Edition."
@@ -316,8 +385,11 @@ REQUIRED_VERSION="2.6"
 
 if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
   $SUDO apt-get update -y
-  $SUDO apt-get install unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  check
+  $SUDO apt-get install curl unzip zip libva-drm2 libva-x11-2 libvdpau-dev -y
+  check
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
+  check
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
     
   # If the version is lower than 2.6 and the architecture is x86_64, install the libcrystalhd-dev package. 
@@ -332,8 +404,11 @@ if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
   fi
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
   $SUDO yum -y install epel-release
-  $SUDO yum -y install unzip zip libva libvdpau
+  check
+  $SUDO yum -y install curl unzip zip libva libvdpau
+  check
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
+  check
   VERSION=$(unzip -p /tmp/ant-media-server/ant-media-server.jar | grep -a "Implementation-Version"|cut -d' ' -f2 | tr -d '\r')
   OS_VERSION=$(echo $VERSION_ID | cut -d. -f1)
 
@@ -372,12 +447,14 @@ check
 if [[ $VERSION == 2.1\.+.* || $VERSION == 2.0* || $VERSION == 1.* ]]; then
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get install openjdk-8-jre -y
+    check
     $SUDO apt purge openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO apt install openjfx=8u161-b12-1ubuntu2 libopenjfx-java=8u161-b12-1ubuntu2 libopenjfx-jni=8u161-b12-1ubuntu2 -y
     $SUDO apt-mark hold openjfx libopenjfx-java libopenjfx-jni -y
     $SUDO update-java-alternatives -s java-1.8.0-openjdk-amd64
   elif [ "$ID" == "centos" ]; then
     $SUDO yum -y install java-1.8.0-openjdk
+    check
     if [ ! -L /usr/lib/jvm/java-8-openjdk-amd64 ]; then
      ln -s /usr/lib/jvm/java-1.8.* /usr/lib/jvm/java-8-openjdk-amd64
     fi
@@ -390,6 +467,7 @@ elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
 	
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
+    check
     $SUDO apt-get install openjdk-11-jdk -y
     check
   fi
@@ -397,10 +475,12 @@ elif [[ $VERSION == 2.4* || $VERSION == 2.3* || $VERSION == 2.2* ]]; then
 elif [[ $VERSION == 2.5* || $VERSION == 2.6* || $VERSION == 2.7* ]]; then
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
+    check
     $SUDO apt-get install openjdk-11-jre-headless -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-11-openjdk-headless tzdata-java
+    check
     ln -s $(readlink -f $(which java) | rev | cut -d "/" -f3- | rev) /usr/lib/jvm/java-11-openjdk-amd64
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-11-openjdk-amd64/" >>~/.bashrc
@@ -413,16 +493,20 @@ elif [ "$(printf '%s\n' "2.8" "$VERSION" | sort -V | head -n1)" = "2.8" ] && [ "
   # AMS 2.8 and later, up to 3.1, use Java 17.
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
+    check
     $SUDO apt-get install openjdk-17-jre-headless -y
+    check
     
     #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
     $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-17-openjdk-headless tzdata-java
+    check
     $SUDO rm -rf /usr/lib/jvm/java-17-openjdk-amd64
     JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
     $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-17-openjdk-amd64
+    check
   fi 
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-17-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
@@ -434,16 +518,20 @@ elif [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" = "3.1" ]; then
   # AMS 3.1 and later require Java 21.
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
     $SUDO apt-get update -y
+    check
     $SUDO apt-get install openjdk-21-jre-headless -y
+    check
 
     #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
     $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
     $SUDO yum -y install java-21-openjdk-headless tzdata-java
+    check
     $SUDO rm -rf /usr/lib/jvm/java-21-openjdk-amd64
     JAVA_PATH=$($SUDO alternatives --display java | grep 'link currently points to' | awk '{print $5}' | awk -F'/bin/java' '{print $1}')
     $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-21-openjdk-amd64
+    check
   fi
   echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-21-openjdk-amd64/" >>~/.bashrc
   source ~/.bashrc
@@ -467,19 +555,25 @@ fi
 
 # use ln because of the jcvr bug: https://stackoverflow.com/questions/25868313/jscv-cannot-locate-jvm-library-file
 $SUDO mkdir -p $JAVA_HOME/lib/amd64
+check
 $SUDO ln -sfn $JAVA_HOME/lib/server $JAVA_HOME/lib/amd64/
+check
 
 
 if [ "$INSTALL_SERVICE" == "true" ]; then
 
   if ! [ -x "$(command -v systemctl)" ]; then
     $SUDO cp $AMS_BASE/antmedia /etc/init.d
+    check
     $SUDO update-rc.d antmedia defaults
+    check
     $SUDO update-rc.d antmedia enable
     check
   else
     $SUDO chmod 644 $AMS_BASE/antmedia.service
+    check
     $SUDO cp -p $AMS_BASE/antmedia.service /etc/systemd/system/
+    check
     if [ "$OTHER_DISTRO" == "true" ]; then
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$CUSTOM_JVM#g" $SERVICE_FILE
     fi
@@ -487,8 +581,10 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
       $SUDO update-java-alternatives -s java-1.11.*-openjdk-arm64
       sed -i "s#=JAVA_HOME.*#=JAVA_HOME=$DEFAULT_JAVA_ARM#g" $SERVICE_FILE
     fi
-    $SUDO echo 'antmedia ALL=(ALL) NOPASSWD: /bin/bash enable_ssl.sh*' > /etc/sudoers.d/antmedia
+    echo 'antmedia ALL=(ALL) NOPASSWD: /bin/bash enable_ssl.sh*' | $SUDO tee /etc/sudoers.d/antmedia > /dev/null
+    check
     $SUDO systemctl daemon-reload
+    check
     $SUDO systemctl enable antmedia
     check
   fi
@@ -501,6 +597,7 @@ then
     $SUDO rm -rf $LOG_DIRECTORY
     #create log
     $SUDO mkdir $LOG_DIRECTORY
+    check
 fi
 
 # create a logrotate config file
@@ -565,8 +662,7 @@ check
 if [ "$INSTALL_SERVICE" == "true" ]; then
   $SUDO service antmedia stop &
   wait $!
-  $SUDO service antmedia start
-  check
+  $SUDO service antmedia start || startup_failed
 fi
 
 # set the license key
@@ -583,8 +679,7 @@ if [ "$?" -eq "0" ]; then
     check
 
     if [ "$INSTALL_SERVICE" == "true" ]; then
-      $SUDO service antmedia restart
-      check
+      $SUDO service antmedia restart || startup_failed
     fi
   fi
 
@@ -592,10 +687,12 @@ if [ "$?" -eq "0" ]; then
      echo "Ant Media Server is installed. You have the whole control and manage to run the start.sh in the $AMS_BASE"
      echo "because you prefer to not have the service installation. Type $0 -h for usage info "
   else
+     wait_for_server
      echo "Ant Media Server is installed and started."
   fi
 else
-  echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io"
+  echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io" >&2
+  exit 1
 fi
 
 echo ""
@@ -603,14 +700,16 @@ echo "============================================================"
 echo "✅ Ant Media Server installation completed successfully!"
 echo "============================================================"
 echo ""
+if [ "$INSTALL_SERVICE" == "true" ]; then
 echo "🌐 Access Ant Media Server Web Panel:"
 echo ""
 echo "🔹 Public IP:"
-echo "   http://$PUBLIC_IP:5080"
+echo "   http://$PUBLIC_IP:$PANEL_PORT"
 echo ""
 echo "🔹 Private IP:"
-echo "   http://$PRIVATE_IP:5080"
+echo "   http://$PRIVATE_IP:$PANEL_PORT"
 echo ""
+fi
 echo "📘 Documentation:"
 echo "   https://docs.antmedia.io/"
 echo ""
