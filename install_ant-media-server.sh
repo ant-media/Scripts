@@ -391,7 +391,8 @@ if [ -z "$ANT_MEDIA_SERVER_ZIP_FILE" ]; then
     $SUDO apt-get install jq curl -y
     check
   elif [ "$ID" == "centos" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rocky" ] || [ "$ID" == "rhel" ]; then
-    $SUDO yum -y install jq curl
+    # Replace curl-minimal with the full curl package when necessary.
+    $SUDO yum -y --allowerasing install jq curl
     check
   fi
   if [ -z "${LICENSE_KEY}" ]; then
@@ -458,7 +459,8 @@ if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
 elif [ "$ID" == "centos" ] || [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ] || [ "$ID" == "rhel" ]; then
   $SUDO yum -y install epel-release
   check
-  $SUDO yum -y install curl unzip zip libva libvdpau
+  # Minimal RPM images ship curl-minimal, which conflicts with full curl.
+  $SUDO yum -y --allowerasing install curl unzip zip libva libvdpau
   check
   $SUDO unzip -o $ANT_MEDIA_SERVER_ZIP_FILE "ant-media-server/ant-media-server.jar" -d /tmp/
   check
