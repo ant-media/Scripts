@@ -16,8 +16,14 @@ runs:
         # Minimal Debian images may lack the directory used by JDK alternatives.
         mkdir -p /usr/share/binfmts
         apt-get -y install /tmp/jdk-21_linux-x64_bin.deb
-        oracle_java_home=/usr/lib/jvm/jdk-21-oracle-x64
-        test -x "$oracle_java_home/bin/java"
+        # Discover the versioned installation path from the installed package.
+        oracle_java_bin=$(dpkg-query -L jdk-21 | awk '/\/bin\/java$/ { print }')
+        if [[ -z "$oracle_java_bin" || "$oracle_java_bin" == *$'\n'* || ! -x "$oracle_java_bin" ]]; then
+          echo "Could not find exactly one executable Java binary in the jdk-21 package."
+          exit 1
+        fi
+        oracle_java_home=$(dirname "$(dirname "$oracle_java_bin")")
+        echo "Oracle JAVA_HOME: $oracle_java_home"
         java_version=$("$oracle_java_home/bin/java" -version 2>&1)
         printf '%s\n' "$java_version"
         grep -qE '^java version "21(\.|")' <<< "$java_version"
