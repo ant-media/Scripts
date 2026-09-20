@@ -346,6 +346,7 @@ detect_java_home() {
 setup_java() {
   local major="$1"
   local selected_debian_home=""
+  local rpm_home candidate java_version
   local link="/usr/lib/jvm/java-${major}-openjdk-${JVM_ARCH}"
 
   if [ "$OTHER_DISTRO" == "true" ]; then
@@ -395,6 +396,26 @@ setup_java() {
   $SUDO update-alternatives --set java "$JAVA_HOME/bin/java" > /dev/null 2>&1 ||
     $SUDO alternatives --set java "$JAVA_HOME/bin/java" > /dev/null 2>&1 ||
     echo "OpenJDK $major could not be set as the system wide default java."
+
+  # RPM updates maintain these major-version links when the versioned directory changes.
+  if [[ "$ID" == "centos" || "$ID" == "almalinux" || "$ID" == "rocky" || "$ID" == "rhel" ]]; then
+    rpm_home=""
+    for candidate in "/usr/lib/jvm/jre-${major}-openjdk" "/usr/lib/jvm/jre-${major}-openjdk.${ARCH}"; do
+      [ -L "$candidate" ] && [ -x "$candidate/bin/java" ] || continue
+      java_version=$("$candidate/bin/java" -version 2>&1) || continue
+      if grep -qE "^(openjdk|java) version \"$major(\\.|\")" <<< "$java_version"; then
+        rpm_home="$candidate"
+        break
+      fi
+    done
+    if [ -z "$rpm_home" ]; then
+      echo "No working RPM-managed Java $major link was found under /usr/lib/jvm." >&2
+      exit 1
+    fi
+    JAVA_HOME="$rpm_home"
+    $SUDO ln -sfnT "$JAVA_HOME" "$link"
+    check
+  fi
 
   export JAVA_HOME
   sed -i '/^export JAVA_HOME=/d' ~/.bashrc 2> /dev/null
@@ -726,9 +747,7 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
     check
     $SUDO cp -p $AMS_BASE/antmedia.service /etc/systemd/system/
     check
-    # The shipped unit hardcodes a /usr/lib/jvm/java-<major>-openjdk-<arch> path, which
-    # a previous installation may have linked to a different JDK. Pin the unit to the
-    # JDK that was resolved for this release instead of relying on that link.
+    # Use the selected JAVA_HOME, preserving RPM-managed links across package updates.
     if [ -n "$JAVA_HOME" ]; then
       $SUDO sed -i "s#=JAVA_HOME=.*#=JAVA_HOME=${JAVA_HOME%/}#g" $SERVICE_FILE
       check
