@@ -10,6 +10,66 @@
 # -r : restore settings
 # -i : ant media server zip file
 
+# Keep failure reports beside the caller's working directory, even after cd.
+INSTALL_WORKING_DIRECTORY="$PWD"
+
+collect_failure_report() {
+  local exit_code=$1 report_dir archive tar_status
+  local -a diagnostic_sudo=()
+  trap - EXIT
+  if [ "$exit_code" -eq 0 ]; then
+    return 0
+  fi
+
+  # Diagnostics must never replace the installer's original exit status.
+  if command -v sudo >/dev/null 2>&1; then
+    diagnostic_sudo=(sudo -n)
+  fi
+  report_dir=$(mktemp -d "$INSTALL_WORKING_DIRECTORY/antmedia-install-failure-$(date +%Y%m%d-%H%M%S)-XXXXXX") || {
+    echo "Cannot create diagnostics in $INSTALL_WORKING_DIRECTORY. Please contact contact@antmedia.io (installer exit $exit_code)." >&2
+    exit "$exit_code"
+  }
+  archive="$report_dir.tar.gz"
+  (
+    umask 077
+    printf 'Installer exit code: %s\nCollected at: %s\n' "$exit_code" "$(date -u)" > "$report_dir/installation.txt"
+    {
+      cat /etc/os-release
+      uname -a
+      command -v lscpu >/dev/null 2>&1 && lscpu
+      free -h
+      df -h
+      java -version
+    } > "$report_dir/system-info.txt" 2>&1
+    if command -v systemctl >/dev/null 2>&1; then
+      timeout 20 "${diagnostic_sudo[@]}" systemctl status antmedia --no-pager --full > "$report_dir/service-status.txt" 2>&1
+      timeout 20 "${diagnostic_sudo[@]}" journalctl -u antmedia -n 500 --no-pager > "$report_dir/service-journal.txt" 2>&1
+    else
+      timeout 20 "${diagnostic_sudo[@]}" service antmedia status > "$report_dir/service-status.txt" 2>&1
+    fi
+    if [ -d "${LOG_DIRECTORY:-/var/log/antmedia}" ]; then
+      timeout 60 "${diagnostic_sudo[@]}" cp -a "${LOG_DIRECTORY:-/var/log/antmedia}" "$report_dir/logs" > "$report_dir/log-collection.txt" 2>&1
+    else
+      echo "Ant Media log directory does not exist yet." > "$report_dir/log-collection.txt"
+    fi
+    "${diagnostic_sudo[@]}" tar -czf - -C "$report_dir" . > "$archive"
+  )
+  tar_status=$?
+  if [ "$tar_status" -eq 0 ]; then
+    "${diagnostic_sudo[@]}" rm -rf -- "$report_dir"
+    echo "Installation failed (exit $exit_code). Diagnostic archive: $archive" >&2
+    echo "Please email this archive to contact@antmedia.io." >&2
+  else
+    echo "Could not finish the diagnostic archive. Collected files: $report_dir" >&2
+    echo "Please contact contact@antmedia.io and include these files." >&2
+  fi
+  exit "$exit_code"
+}
+
+trap 'collect_failure_report "$?"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 AMS_BASE=/usr/local/antmedia
 BACKUP_DIR="/usr/local/antmedia-backup-"$(date +"%Y-%m-%d_%H-%M-%S")
 SAVE_SETTINGS=false
@@ -173,7 +233,7 @@ restore_settings() {
   if [ $? -eq "0" ]; then
     echo "Settings are restored."
   else
-    echo "Settings are not restored. Please send the log of this console to support@antmedia.io"
+    echo "Settings are not restored. Please send the diagnostic report to contact@antmedia.io"
   fi
 }
 #Get the linux distribution
@@ -254,7 +314,7 @@ check_enterprise_file() {
 check() {
   local OUT=$?
   if [ $OUT -ne 0 ]; then
-    echo "Installation failed near line ${BASH_LINENO[0]} (exit $OUT). Please send the console log to support@antmedia.io" >&2
+    echo "Installation failed near line ${BASH_LINENO[0]} (exit $OUT). A diagnostic report will be collected" >&2
     exit $OUT
   fi
 }
@@ -262,13 +322,6 @@ check() {
 # Print diagnostics without hiding the original failure.
 startup_failed() {
   echo "Ant Media Server failed to become ready." >&2
-  if command -v systemctl >/dev/null 2>&1; then
-    $SUDO systemctl status antmedia --no-pager --full >&2 || true
-    $SUDO journalctl -u antmedia -n 50 --no-pager >&2 || true
-  else
-    $SUDO service antmedia status >&2 || true
-  fi
-  $SUDO tail -n 50 "$LOG_DIRECTORY/antmedia-error.log" >&2 || true
   exit 1
 }
 
@@ -691,7 +744,7 @@ if [ "$?" -eq "0" ]; then
      echo "Ant Media Server is installed and started."
   fi
 else
-  echo "There is a problem in installing the ant media server. Please send the log of this console to support@antmedia.io" >&2
+  echo "There is a problem in installing the ant media server. Please send the diagnostic report to contact@antmedia.io" >&2
   exit 1
 fi
 
