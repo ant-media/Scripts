@@ -380,11 +380,13 @@ setup_java() {
     exit 1
   fi
 
-  # Recreate the link unconditionally. Upgrading from a release that ran on an older
-  # JDK leaves it behind pointing to that JDK.
-  if [ "$JAVA_HOME" != "$link" ]; then
-    $SUDO rm -rf "$link"
-    $SUDO ln -sfn "$JAVA_HOME" "$link"
+  # Preserve an existing directory before replacing it with the Java link.
+  if [ "$(readlink -f "$link")" != "$(readlink -f "$JAVA_HOME")" ]; then
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+      $SUDO mv -T --backup=numbered "$link" "${link}.backup"
+      check
+    fi
+    $SUDO ln -sfnT "$JAVA_HOME" "$link"
     check
   fi
 
@@ -493,6 +495,9 @@ setup_debian_java21() {
     (cd "$download_dir" && printf '%s  jdk.deb\n' "$(awk '{print $1}' jdk.sha256)" | sha256sum -c -)
     check
     $SUDO mkdir -p /usr/share/binfmts
+    check
+    # APT reads local packages as _apt, including when invoked by root.
+    chmod 755 "$download_dir" && chmod 644 "$download_dir/jdk.deb"
     check
     $SUDO apt-get install -y "$download_dir/jdk.deb"
     check
