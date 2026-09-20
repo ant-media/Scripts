@@ -360,6 +360,61 @@ wait_for_server() {
   startup_failed
 }
 
+# Reuse a working Java 21 on Debian before attempting package installation.
+setup_debian_java21() {
+  local candidate output package_candidate download_dir java_bin
+  DEBIAN_JAVA_HOME=""
+  for candidate in "${JAVA_HOME:-}" /usr/lib/jvm/*; do
+    [ -x "$candidate/bin/java" ] || continue
+    output=$("$candidate/bin/java" -version 2>&1) || continue
+    if grep -qE '^(openjdk|java) version "21(\.|")' <<< "$output"; then
+      DEBIAN_JAVA_HOME=$(readlink -f "$candidate")
+      return 0
+    fi
+  done
+
+  if [ "$VERSION_ID" == "12" ] && [ "$ARCH" == "aarch64" ]; then
+    echo "Java 21 was not found. Automatic Java 21 installation on Debian 12 ARM64 is not supported yet. Install Java 21 manually and rerun this script." >&2
+    exit 1
+  fi
+
+  $SUDO apt-get update -y
+  check
+  package_candidate=$(LC_ALL=C apt-cache policy openjdk-21-jre-headless | awk '/Candidate:/ {print $2}')
+  if [ -n "$package_candidate" ] && [ "$package_candidate" != "(none)" ]; then
+    $SUDO apt-get install openjdk-21-jre-headless -y
+    check
+    DEBIAN_JAVA_HOME="/usr/lib/jvm/java-21-openjdk-${JVM_DEBIAN_ARCH}"
+  elif [ "$ARCH" == "x86_64" ]; then
+    download_dir=$(mktemp -d)
+    check
+    curl -fL --retry 3 -o "$download_dir/jdk.deb" https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+    check
+    curl -fL --retry 3 -o "$download_dir/jdk.sha256" https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb.sha256
+    check
+    (cd "$download_dir" && printf '%s  jdk.deb\n' "$(awk '{print $1}' jdk.sha256)" | sha256sum -c -)
+    check
+    $SUDO mkdir -p /usr/share/binfmts
+    check
+    $SUDO apt-get install -y "$download_dir/jdk.deb"
+    check
+    java_bin=$(dpkg-query -L jdk-21 | awk '/\/bin\/java$/ {print}')
+    if [ -z "$java_bin" ] || [[ "$java_bin" == *$'\n'* ]] || [ ! -x "$java_bin" ]; then
+      echo "Could not locate the installed Oracle Java 21 executable." >&2
+      exit 1
+    fi
+    DEBIAN_JAVA_HOME=$(dirname "$(dirname "$java_bin")")
+    rm -rf -- "$download_dir"
+  else
+    echo "Java 21 is unavailable from the configured repositories for $ARCH. Install Java 21 manually and rerun this script." >&2
+    exit 1
+  fi
+  output=$("$DEBIAN_JAVA_HOME/bin/java" -version 2>&1)
+  check
+  grep -qE '^(openjdk|java) version "21(\.|")' <<< "$output"
+  check
+}
+
 # Start
 
 while getopts 'i:s:r:d:l:hu' option
@@ -563,10 +618,16 @@ elif [ "$(printf '%s\n' "2.8" "$VERSION" | sort -V | head -n1)" = "2.8" ] && [ "
 elif [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" = "3.1" ]; then
   # AMS 3.1 and later require Java 21.
   if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-    $SUDO apt-get update -y
-    check
-    $SUDO apt-get install openjdk-21-jre-headless -y
-    check
+    if [ "$ID" == "debian" ]; then
+      JVM_DEBIAN_ARCH=$(dpkg --print-architecture)
+      check
+      setup_debian_java21
+    else
+      $SUDO apt-get update -y
+      check
+      $SUDO apt-get install openjdk-21-jre-headless -y
+      check
+    fi
 
     #install packages for SSL to speed up setting up the SSL especially for AWS auto-managed solution
     $SUDO apt-get install cron certbot python3-certbot-dns-route53 jq dnsutils iptables -qq -y
@@ -579,11 +640,23 @@ elif [ "$(printf '%s\n' "3.1" "$VERSION" | sort -V | head -n1)" = "3.1" ]; then
     $SUDO ln -sf $JAVA_PATH /usr/lib/jvm/java-21-openjdk-amd64
     check
   fi
-  echo "export JAVA_HOME=\/usr\/lib\/jvm\/java-21-openjdk-amd64/" >>~/.bashrc
+  echo "export JAVA_HOME=${DEBIAN_JAVA_HOME:-/usr/lib/jvm/java-21-openjdk-amd64/}" >>~/.bashrc
   source ~/.bashrc
   export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64/
+  if [ -n "$DEBIAN_JAVA_HOME" ]; then
+    export JAVA_HOME="$DEBIAN_JAVA_HOME"
+    java_service_home="/usr/lib/jvm/java-21-openjdk-${JVM_DEBIAN_ARCH}"
+    if [ "$(readlink -f "$java_service_home")" != "$JAVA_HOME" ]; then
+      $SUDO ln -sfnT "$JAVA_HOME" "$java_service_home"
+      check
+    fi
+    $SUDO update-alternatives --set java "$JAVA_HOME/bin/java"
+    check
+  fi
   echo "JAVA_HOME : $JAVA_HOME"
+  if [ "$ID" != "debian" ]; then
   find /usr/lib/jvm/ -maxdepth 1 -type d -iname "java-21*" | head -1 | xargs -i update-alternatives --set java {}/bin/java
+  fi
 	
 fi
 
