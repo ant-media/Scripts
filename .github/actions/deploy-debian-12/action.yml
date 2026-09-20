@@ -13,6 +13,8 @@ runs:
         # Oracle publishes this Debian package for amd64 only.
         test "$(dpkg --print-architecture)" = "amd64"
         curl -fL --retry 3 -o /tmp/jdk-21_linux-x64_bin.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb
+        # Minimal Debian images may lack the directory used by JDK alternatives.
+        mkdir -p /usr/share/binfmts
         apt-get -y install /tmp/jdk-21_linux-x64_bin.deb
         oracle_java_home=/usr/lib/jvm/jdk-21-oracle-x64
         test -x "$oracle_java_home/bin/java"
