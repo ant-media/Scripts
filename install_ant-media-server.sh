@@ -703,15 +703,16 @@ check
 $SUDO chown -R antmedia:antmedia $LOG_DIRECTORY
 check
 
+# Set the license key before starting the service.
+if [ -n "${LICENSE_KEY}" ]; then
+  $SUDO sed -i "s/server.licence_key=.*/server.licence_key=${LICENSE_KEY}/" "$AMS_BASE/conf/red5.properties"
+  check
+fi
+
 if [ "$INSTALL_SERVICE" == "true" ]; then
   $SUDO service antmedia stop &
   wait $!
   $SUDO service antmedia start || startup_failed
-fi
-
-# set the license key
-if [ -n "${LICENSE_KEY}" ]; then
-  sed -i $SED_COMPATIBILITY 's/server.licence_key=.*/server.licence_key='$LICENSE_KEY'/' $AMS_BASE/conf/red5.properties
 fi
 
 if [ "$?" -eq "0" ]; then
