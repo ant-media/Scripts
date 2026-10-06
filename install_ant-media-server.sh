@@ -497,7 +497,7 @@ wait_for_server() {
   port=$(sed -n 's/^[[:space:]]*http.port[[:space:]]*=[[:space:]]*//p' "$AMS_BASE/conf/red5.properties" | tail -n 1 | tr -d '\r[:space:]')
   port=${port:-5080}
   PANEL_PORT=$port
-  url="http://127.0.0.1:$port/"
+  url="http://127.0.0.1:$port/rest/v2/liveness"
   echo "Waiting for Ant Media Server at $url (up to 120 seconds)..."
   while (( SECONDS < deadline )); do
     code=$(curl --noproxy '*' --silent --output /dev/null --write-out '%{http_code}' --connect-timeout 2 --max-time 3 "$url") || code=000
