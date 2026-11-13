@@ -785,7 +785,7 @@ if [ "$INSTALL_SERVICE" == "true" ]; then
       $SUDO sed -i "s#=JAVA_HOME=.*#=JAVA_HOME=${JAVA_HOME%/}#g" $SERVICE_FILE
       check
     fi
-    echo 'antmedia ALL=(ALL) NOPASSWD: /bin/bash enable_ssl.sh*' | $SUDO tee /etc/sudoers.d/antmedia > /dev/null
+    $SUDO rm -rf /etc/sudoers.d/antmedia
     check
     $SUDO systemctl daemon-reload
     check
