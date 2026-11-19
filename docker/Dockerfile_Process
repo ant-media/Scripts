@@ -32,6 +32,8 @@ ARG MediaPushVersion
 ARG UseSupervisor=false
 ARG BranchName=master
 
+ENV ANT_MEDIA_SERVER_HOME=/usr/local/antmedia
+ENV LD_LIBRARY_PATH=${ANT_MEDIA_SERVER_HOME}/lib/native-linux-x86_64:${ANT_MEDIA_SERVER_HOME}/lib/native
 ENV UseSupervisor=${UseSupervisor}
 
 #Running update and install makes the builder not to use cache which resolves some updates
