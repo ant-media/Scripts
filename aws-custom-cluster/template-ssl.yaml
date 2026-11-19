@@ -1,0 +1,1082 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Description: Ant Media Server - Self-Hosted Solution
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  InstanceType:
+    Description: Ant Media Server Edge EC2 instance type
+    Type: String
+    Default: c5.xlarge
+    AllowedValues:
+      - t2.large
+      - t2.xlarge
+      - t2.2xlarge
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - m4.16xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - m5.4xlarge
+      - m5.12xlarge
+      - m5.24xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - c5.large
+      - c5.xlarge
+      - c5.2xlarge
+      - c5.4xlarge
+      - c5.9xlarge
+      - c5.12xlarge
+      - c5.18xlarge
+      - c5.24xlarge
+      - c5d.large
+      - c5d.xlarge
+      - c5d.2xlarge
+      - c5d.4xlarge
+      - c5d.9xlarge
+      - c5d.18xlarge
+      - c5n.large
+      - c5n.xlarge
+      - c5n.2xlarge
+      - c5n.4xlarge
+      - c5n.9xlarge
+      - c5n.18xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+
+Resources:
+
+  DescribeImagesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeImages
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: ec2:DescribeImages
+                Effect: Allow
+                Resource: "*"
+  AMSGetLatestAMI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.11
+      Handler: index.handler
+      Role: !Sub ${DescribeImagesRole.Arn}
+      Timeout: 60
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import json
+          import traceback
+
+          def handler(event, context):
+            try:
+              response = boto3.client('ec2').describe_images(
+                  Filters=[
+                    {'Name': 'product-code', 'Values': [event['ResourceProperties']['ProductId']]},
+                    {'Name': 'name', 'Values': [event['ResourceProperties']['Name']]},
+                    {'Name': 'architecture', 'Values': [event['ResourceProperties']['Architecture']]},
+                    {'Name': 'root-device-type', 'Values': ['ebs']},
+                  ],
+              )
+
+              amis = sorted(response['Images'],
+                            key=lambda x: x['CreationDate'],
+                            reverse=True)
+              id = amis[0]['ImageId']
+
+              cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, id)
+            except:
+              traceback.print_last()
+              cfnresponse.send(event, context, cfnresponse.FAIL, {}, "ok")
+  ACMCertificateImportFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+
+          def lambda_handler(event, context):
+              try:
+                  acm_client = boto3.client('acm')
+                  response = acm_client.import_certificate(
+                      Certificate=event['ResourceProperties']['CertificateBody'],
+                      PrivateKey=event['ResourceProperties']['PrivateKey'],
+                      CertificateChain=event['ResourceProperties']['CertificateChain']
+                  )
+                  certificate_arn = response['CertificateArn']
+                  cfnresponse.send(event, context, cfnresponse.SUCCESS, {'CertificateArn': certificate_arn})
+              except Exception as e:
+                  print("Error:", e)
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {})
+
+      Handler: index.lambda_handler
+      Role: !Sub '${AcmCertificateImportLambdaExecutionRole.Arn}'
+      Runtime: python3.11
+  AcmCertificateImportLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: ['sts:AssumeRole']
+      ManagedPolicyArns: [!Sub 'arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole']
+      Policies:
+        - PolicyName: main
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: Acm
+                Effect: Allow
+                Action:
+                  - 'acm:AddTagsToCertificate'
+                  - 'acm:ImportCertificate'
+                Resource: '*'
+
+  CertificateImportCustomResource:
+    Type: Custom::ACMCertificateImport
+    Properties:
+      ServiceToken: !GetAtt ACMCertificateImportFunction.Arn
+      CertificateBody: |
+---CertificateBody---
+      PrivateKey: |
+---PrivateKey---
+      CertificateChain: |
+---CertificaChain---
+  AntMediaAmi:
+    Type: Custom::FindAMI
+    Properties:
+      ServiceToken: !Sub ${AMSGetLatestAMI.Arn}
+      ProductId: "4wh7rhpic3wfwamyp5905tsbt"
+      Name: "AntMedia-AWS-Marketplace-EE-*"
+      Architecture: "x86_64"
+      
+  AntMediaVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-VPC
+
+  OriginZone:
+    Type: AWS::EC2::Subnet
+    DependsOn: AntMediaVPC
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: 
+        Fn::Select: 
+          - 0
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Origin-Subnet
+
+  EdgeZone:
+    Type: AWS::EC2::Subnet
+    DependsOn: AntMediaVPC
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: 
+        Fn::Select: 
+          - 1
+          - Fn::GetAZs: ""
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Edge-Subnet
+
+  DefaultGateway:
+    Type: AWS::EC2::InternetGateway
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref DefaultGateway
+      VpcId: !Ref AntMediaVPC
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref AntMediaVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AntMedia-Route-Table
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      GatewayId: !Ref DefaultGateway
+      DestinationCidrBlock: 0.0.0.0/0
+
+  SubnetRouteTableAssociationOrigin:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref OriginZone
+
+  SubnetRouteTableAssociationEdge:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref EdgeZone
+
+  ELBSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupDescription: Allows access
+        VpcId: !Ref AntMediaVPC
+        SecurityGroupIngress:
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 80
+            ToPort: 80
+            Description: Allow 80. Port for Origin Instances 
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 443
+            ToPort: 443
+            Description: Allow 443. Port for Origin Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5080
+            ToPort: 5080
+            Description: Allow 5080. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 5443
+            ToPort: 5443
+            Description: Allow 5443. Port for Edge Instances
+          - CidrIp: 0.0.0.0/0
+            IpProtocol: tcp
+            FromPort: 4444
+            ToPort: 4444
+            Description: Allow 4444. Port for accessing Dashboard          
+
+  ApplicationLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancingV2::LoadBalancer'
+    Properties:
+      Subnets:
+      - !Ref OriginZone
+      - !Ref EdgeZone
+      SecurityGroups:
+        - !GetAtt [ ELBSecurityGroup, GroupId ]
+
+  ALBTargetGroupOrigin:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 5080
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref AntMediaVPC
+      TargetGroupAttributes:
+        - Key: stickiness.enabled
+          Value: 'true'
+        - Key: stickiness.type
+          Value: lb_cookie
+        - Key: stickiness.lb_cookie.duration_seconds
+          Value: '30'
+        - Key: deregistration_delay.timeout_seconds
+          Value: 0
+
+  ALBTargetGroupLambda:
+    Type: 'AWS::ElasticLoadBalancingV2::TargetGroup'
+    Properties:
+    #  Name: ALBTargetGroupLambda
+      TargetType: lambda
+      Targets:
+        - Id: !GetAtt LambdaFunctionTrigger.Arn
+
+  ALBListener443:
+    Type: 'AWS::ElasticLoadBalancingV2::Listener'
+    Properties:
+      Certificates:
+        - CertificateArn: !GetAtt CertificateImportCustomResource.CertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupOrigin
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: '443'
+      Protocol: HTTPS
+
+  ALBListenerRuleWithPath:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroupLambda
+      Conditions:
+        - Field: path-pattern
+          Values: [ "*" ]
+      ListenerArn: !Ref ALBListener443
+      Priority: 1
+
+  RedisServerlessCache:
+    Type: AWS::ElastiCache::ServerlessCache
+    Properties:
+      DailySnapshotTime: "03:00"
+      Description: "Ant Media Server - Redis Serverless Cache"
+      Engine: "Redis"
+      SecurityGroupIds: 
+        - !GetAtt "InstanceSecurityGroup.GroupId"
+      ServerlessCacheName: !Sub ${AWS::StackName}-ServerlessRedis
+      SubnetIds: 
+        - !Ref OriginZone
+        - !Ref EdgeZone
+      Tags: 
+        - Key: Name
+          Value: RedisCache
+
+  OriginGroup:
+      Type: 'AWS::AutoScaling::AutoScalingGroup'
+      DependsOn:
+      - LaunchTemplateOrigin
+      Properties:
+        VPCZoneIdentifier: 
+          - !Ref OriginZone
+        LaunchTemplate:
+          LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+          Version: !GetAtt 'LaunchTemplateOrigin.LatestVersionNumber'
+        MinSize: 0
+        MaxSize: 100
+        DesiredCapacity: 0
+        TargetGroupARNs:
+          - !Ref ALBTargetGroupOrigin 
+        Tags:
+        - Key: Name
+          Value: Ant-Media-Server
+          PropagateAtLaunch: 'true'
+
+  LaunchTemplateOrigin:
+    Type: 'AWS::EC2::LaunchTemplate'
+    Properties:
+      LaunchTemplateName: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+      LaunchTemplateData:
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref KeyName
+        ImageId: !Ref AntMediaAmi
+        SecurityGroupIds:
+          - !GetAtt "InstanceSecurityGroup.GroupId"
+        BlockDeviceMappings:
+          - DeviceName: /dev/sda1
+            Ebs:
+              VolumeSize: 10
+              VolumeType: gp2
+              DeleteOnTermination: true
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            sudo apt-get update -y
+            sudo apt-get install stunnel python3-pip -y
+            sudo tee /etc/stunnel/stunnel.conf > /dev/null <<EOF
+            fips = no
+            setuid = root
+            setgid = root
+            pid = /var/run/stunnel.pid
+            debug = 7
+            options = NO_SSLv2
+            options = NO_SSLv3
+            [redis-cli]
+            client = yes
+            accept = 127.0.0.1:6379
+            connect = ${RedisServerlessCache.Endpoint.Address}:6379
+            EOF
+            sudo systemctl enable stunnel4
+            sudo stunnel /etc/stunnel/stunnel.conf
+            touch /usr/local/antmedia/conf/initialized
+            bash /usr/local/antmedia/change_server_mode.sh cluster redis://localhost:6379
+            mkdir -p /opt/aws/bin
+            sudo pip3 install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-py3-latest.tar.gz
+            sudo ln -s /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup
+            /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource OriginGroup --region ${AWS::Region}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: OriginInstance
+      TagSpecifications:
+        - ResourceType: launch-template
+          Tags:
+            - Key: Name
+              Value: !Sub ${AWS::StackName}-AntMedia-LaunchTemplateOrigin
+  OriginCPUPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref OriginGroup
+      Cooldown: 120
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 50
+
+  InstanceSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Enable SSH access and HTTP access on the configured port
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5080'
+          ToPort: '5080'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '1935'
+          ToPort: '1935'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: udp
+          FromPort: '50000'
+          ToPort: '60000'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '5443'
+          ToPort: '5443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '6379'
+          ToPort: '6379'
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref AntMediaVPC
+
+  LambdaSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupName: "Lambda Security Group"
+      GroupDescription: "Lambda Traffic"
+      VpcId: !Ref AntMediaVPC
+      SecurityGroupEgress:
+      - IpProtocol: "-1"
+        CidrIp: "0.0.0.0/0"
+
+  ApiGatewayApiKey:
+    Type: 'AWS::ApiGateway::ApiKey'
+    DependsOn: ApiGatewayStage
+    Properties:
+      Name: AMSAPIKey
+      Enabled: false
+      StageKeys:
+        - RestApiId: !Ref ApiGatewayRestApi
+          StageName: 'v1'
+
+  ApiGatewayUsagePlan:
+    Type: 'AWS::ApiGateway::UsagePlan'
+    DependsOn: ApiGatewayApiKey
+    Properties:
+      ApiStages:
+        - ApiId: !Ref ApiGatewayRestApi
+          Stage: !Ref ApiGatewayStage
+      Description: Usage plan for API Key
+      Quota:
+        Limit: 10000
+        Period: MONTH
+      Throttle:
+        BurstLimit: 500
+        RateLimit: 1000
+      UsagePlanName: MyUsagePlan
+
+  ApiUsagePlanKey:
+    Type: 'AWS::ApiGateway::UsagePlanKey'
+    DependsOn: ApiGatewayUsagePlan
+    Properties:
+      KeyId: !Ref ApiGatewayApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref ApiGatewayUsagePlan
+
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      ApiKeySourceType: HEADER
+      Description: An API Gateway with a Lambda Integration
+      EndpointConfiguration:
+        Types:
+          - EDGE
+      Name: Ant Media Server Api Gateway
+
+  ApiGatewayCreateResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt ApiGatewayRestApi.RootResourceId
+      PathPart: 'create'
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        ConnectionType: INTERNET
+        Credentials: !GetAtt ApiGatewayIamRole.Arn
+        IntegrationHttpMethod: POST
+        TimeoutInMillis: 29000
+        Type: AWS
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaCreateFunction.Arn}/invocations'
+        IntegrationResponses:
+          - StatusCode: 200
+        RequestTemplates:
+          application/json: |
+            ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+            ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+            #set($allParams = $input.params())
+            {
+            "body" : $input.json('$'),
+            "params" : {
+            #foreach($type in $allParams.keySet())
+                #set($params = $allParams.get($type))
+            "$type" : {
+                #foreach($paramName in $params.keySet())
+                "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                    #if($foreach.hasNext),#end
+                #end
+            }
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "stageVariables" : {
+            #foreach($key in $stageVariables.keySet())
+            "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                #if($foreach.hasNext),#end
+            #end
+            },
+            "context" : {
+                "accountId" : "$context.identity.accountId",
+                "apiId" : "$context.apiId",
+                "apiKey" : "$context.identity.apiKey",
+                "authorizerPrincipalId" : "$context.authorizer.principalId",
+                "caller" : "$context.identity.caller",
+                "cognitoAuthenticationProvider" : "$context.identity.cognitoAuthenticationProvider",
+                "cognitoAuthenticationType" : "$context.identity.cognitoAuthenticationType",
+                "cognitoIdentityId" : "$context.identity.cognitoIdentityId",
+                "cognitoIdentityPoolId" : "$context.identity.cognitoIdentityPoolId",
+                "httpMethod" : "$context.httpMethod",
+                "stage" : "$context.stage",
+                "sourceIp" : "$context.identity.sourceIp",
+                "user" : "$context.identity.user",
+                "userAgent" : "$context.identity.userAgent",
+                "userArn" : "$context.identity.userArn",
+                "requestId" : "$context.requestId",
+                "resourceId" : "$context.resourceId",
+                "resourcePath" : "$context.resourcePath"
+                }
+            }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: 'Empty'
+      RequestParameters:
+        method.request.querystring.name: false
+      OperationName: 'lambda'
+      ResourceId: !Ref ApiGatewayCreateResource
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref ApiGatewayRestApi
+      Schema: {}
+
+  ApiGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    DependsOn: ApiGatewayDeployment
+    Properties:
+      DeploymentId: !Ref ApiGatewayDeployment
+      Description: Lambda API Stage v1
+      RestApiId: !Ref ApiGatewayRestApi
+      StageName: 'v1'
+
+  ApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ApiGatewayCreateMethod
+    Properties:
+      Description: Lambda API Deployment
+      RestApiId: !Ref ApiGatewayRestApi
+
+  ApiGatewayIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource:
+                  - !GetAtt LambdaCreateFunction.Arn
+  LambdaCreateFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3, os
+
+          def lambda_handler(event, context):
+              listener_arn = os.environ['LISTENER_ARN']
+              origin_asg = os.environ['ORIGIN_ASG']
+              new_desired_capacity = 1
+              autoscaling_client = boto3.client('autoscaling')
+              ec2_client = boto3.client('ec2')
+              elb_client = boto3.client('elbv2')
+
+              # Find Auto Scaling Group names with specific prefixes
+              asg_names = autoscaling_client.describe_auto_scaling_groups()
+              asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
+                                 origin_asg in group['AutoScalingGroupName']]
+              asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
+
+              autoscaling_client = boto3.client('autoscaling')
+              response = autoscaling_client.update_auto_scaling_group(
+                  AutoScalingGroupName=asg_origin_group_names,
+                  DesiredCapacity=new_desired_capacity
+              )
+
+              listener_response = elb_client.describe_rules(
+                  ListenerArn=listener_arn
+              )
+
+              for rule in listener_response['Rules']:
+                  if 'Priority' in rule and rule['Priority'] != 'default':
+                      lambda_rule = rule['RuleArn']
+
+              delete_response = elb_client.delete_rule(
+                  RuleArn=lambda_rule
+              )
+
+              return {
+                  'statusCode': 200,
+                  'body': 'Lambda function executed successfully!'
+              }
+
+        
+      Description: AWS Lambda function
+      Handler: "index.lambda_handler"  
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      Environment:
+        Variables:
+          LISTENER_ARN: !Ref ALBListener443
+          ORIGIN_ASG: !Sub "${AWS::StackName}-OriginGroup"
+
+  # Lambda Function trigger by Cloudwatch
+  LambdaFunctionTrigger:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import os
+
+          def lambda_handler(event, context):
+              headers = event.get('headers', {})
+              host = headers.get('host', '')
+              path = event.get('path', '')
+              full_url = f"https://{host}{path}"
+          #   request = event['queryStringParameters']
+          #    api_key = request.get('api_key', None)
+              api_url = os.environ['API_URL'] + "v1/create"
+          #   api_key = os.environ['API_KEY']
+              print (api_url)
+              
+          #    response = requests.get(api_url, headers={'x-api-key': api_key})
+
+              javascript_code = """
+              // success callback
+              var onSuccess = function(response) {
+                  var errorDivs = document.getElementsByClassName("hcaptcha-error");
+                  if (errorDivs.length) {
+                      errorDivs[0].className = "";
+                  }
+                  var errorMsgs = document.getElementsByClassName("hcaptcha-error-message");
+                  if (errorMsgs.length) {
+                      errorMsgs[0].parentNode.removeChild(errorMsgs[0]);
+                  }
+              
+                  var logEl = document.querySelector(".hcaptcha-success");
+                  if (!logEl) {
+                      logEl = document.createElement("div");
+                      logEl.className = "hcaptcha-success";
+                      document.body.appendChild(logEl);
+                  }
+                  logEl.innerHTML = "This page will be automatically redirected soon...";
+              
+                  fetch(api, {
+                      method: 'GET',
+                      headers: {
+                          'Content-Type': 'application/json',
+                      },
+                      mode: 'no-cors' 
+                  })
+                  .then(response => {
+                      console.log('Request successfully sent.');
+                      console.log(api);
+                      console.log(api_key)
+                  })
+                  .catch(error => {
+                      console.error('Error:', error);
+                  });
+              
+              };
+              
+              var onExpire = function(response) {
+                  var logEl = document.querySelector(".hcaptcha-success");
+                  if (!logEl) {
+                      logEl = document.createElement("div");
+                      logEl.className = "hcaptcha-success";
+                      document.body.appendChild(logEl);
+                  }
+                  logEl.innerHTML = "Token expired.";
+              };
+              """
+              
+          #    if response.status_code == 200:
+              html_content = f"""
+              <!DOCTYPE html>
+              <html lang="en">
+              <head>
+                  <meta charset="UTF-8">
+                  <title>Ant Media Server will be starting</title>
+                  <script src="https://js.hcaptcha.com/1/api.js?reportapi=https%3A%2F%2Faccounts.hcaptcha.com&custom=False" type="text/javascript" async defer></script>
+              </head>
+              <body style="text-align:center">
+                  <h1>Get Ready!</h1>
+                  <h2>Ant Media Server will be starting</h2>
+                  <div class="sample-form">
+                  <form id="hcaptcha-demo-form" method="POST">
+                  
+                  <div class="hcaptcha-error">
+                  <div class="hcaptcha-success"></div>
+                  <div id="hcaptcha-demo" class="h-captcha" data-sitekey="98c57914-7095-465f-98fe-dbcedf5cbd46" data-callback="onSuccess" data-expired-callback="onExpire"></div>
+                  <script>var api = "{api_url}"; {javascript_code}</script>
+                  </div>
+                  <script>
+                      var url = "{full_url}";
+
+                      function checkAndForward(url) {{
+                          setTimeout(function () {{
+                              fetch(url)
+                              .then(response => {{
+                                  if (response.status == 200) {{
+                                      console.log("Redirecting to " + url);
+                                      window.location = url;
+                                  }}
+                                  else {{
+                                      console.log("Waiting for the server to be ready");
+                                      checkAndForward(url);
+                                  }}
+                              }})
+                              .catch(error => {{
+                                  console.log("Waiting for the server to be ready");
+                                  console.log(error);
+                                  checkAndForward(url);
+                              }});
+                          }}, 30000);
+                      }}
+                      checkAndForward(url);
+                  </script>
+              </body>
+              </html>
+              """
+
+          #    else:
+          #        html_content = "Waiting for the server to be ready"
+
+              response = {
+                  "statusCode": 200,
+                  "headers": {
+                      "Content-Type": "text/html",
+                  },
+                  "body": html_content
+              }
+
+              return response
+
+      Handler: "index.lambda_handler"
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          API_URL: !Sub "https://${ApiGatewayRestApi}.execute-api.${AWS::Region}.amazonaws.com/"
+          #TARGETGROUP_ARN: !Ref ALBTargetGroupLambda
+
+
+
+  LambdaCloudwatchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3, os
+
+          def lambda_handler(event, context):
+              listener_arn = os.environ['LISTENER_ARN']
+              origin_asg = os.environ['ORIGIN_ASG']
+              target_group_arn = os.environ['TARGETGROUP_ARN']
+              autoscaling_client = boto3.client('autoscaling')
+              elb_client = boto3.client('elbv2')
+              asg_names = autoscaling_client.describe_auto_scaling_groups()
+              asg_origin_name = [group for group in asg_names['AutoScalingGroups'] if
+                                 origin_asg in group['AutoScalingGroupName']]
+              asg_origin_group_names = [group['AutoScalingGroupName'] for group in asg_origin_name][0]
+
+              origin_calculate_total_instance = autoscaling_client.describe_auto_scaling_groups(AutoScalingGroupNames=[asg_origin_group_names])
+              origin_current_capacity = len(origin_calculate_total_instance['AutoScalingGroups'][0]['Instances'])
+
+              if origin_current_capacity >= 1:
+                  origin_response = autoscaling_client.update_auto_scaling_group(
+                      AutoScalingGroupName=asg_origin_group_names,
+                      MinSize=0,
+                      DesiredCapacity=0
+                  )
+                  
+                  create_rule = elb_client.create_rule(
+                      Actions=[
+                          {
+                              'Type': 'forward',
+                              'TargetGroupArn': target_group_arn
+                          }
+                      ],
+                      Conditions=[
+                          {
+                              'Field': 'path-pattern',
+                              'Values': ['*']
+                          }
+                      ],
+                      ListenerArn=listener_arn,
+                      Priority=1
+                  )
+
+                  print(origin_response)
+
+                  return {
+                      'statusCode': 200,
+                      'body': 'Auto Scaling Group updated successfully!'
+                  }
+              else:
+                  return {
+                      'statusCode': 200,
+                      'body': 'Auto Scaling Group does not require update.'
+                  }
+      #FunctionName: InstanceDeleteFunction
+      Handler: "index.lambda_handler"
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 128
+      Environment:
+        Variables:
+          ORIGIN_ASG: !Sub "${AWS::StackName}-OriginGroup"
+          LISTENER_ARN: !Ref ALBListener443 
+          TARGETGROUP_ARN: !Ref ALBTargetGroupLambda
+  LambdaGetApiKey:
+    Type: AWS::Lambda::Function
+    DependsOn: ApiGatewayApiKey
+    Properties:
+      Code:
+        ZipFile: |
+          import boto3
+          import cfnresponse
+          import traceback
+
+          def lambda_handler(event, context):
+              try:
+                  api_key_name = "AMSAPIKey"
+                  
+                  client = boto3.client('apigateway')
+
+                  response = client.get_api_keys(
+                      nameQuery=api_key_name,
+                      includeValues=True
+                  )
+                  
+                  if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                      api_key_value = response['items'][0]['value']
+                      print("API Key Value:", api_key_value)
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, {"APIKeyValue": api_key_value})
+                      return {"APIKeyValue": api_key_value}  
+                  else:
+                      cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": "Failed to retrieve API key"})
+                      return {"Error": "Failed to retrieve API key"}  
+              except Exception as e:
+                  traceback.print_exc()
+                  cfnresponse.send(event, context, cfnresponse.FAILED, {"Error": str(e)})
+                  return {"Error": str(e)}  
+        #Environment:
+        #  Variables:
+        #    API_KEY_NAME: !Sub "${AWS::StackName}-OriginGroup"                      
+      Description: AWS Lambda function
+      Handler: "index.lambda_handler"  
+      MemorySize: 256
+      Role: !GetAtt LambdaIamRole.Arn
+      Runtime: python3.12 
+      Timeout: 60
+
+  LambdaApiValue:
+    Type: Custom::LambdaApiKey
+    DependsOn: LambdaGetApiKey
+    Properties:
+      ServiceToken: !Sub "${LambdaGetApiKey.Arn}"
+
+  # General IAM Role for Lambda Functions
+  LambdaIamRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "MyLambdaExecutionRole-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "lambda.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "EC2FullAccessPolicy1"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ec2:RunInstances"
+                  - "ec2:CreateTags"
+                  - "ec2:DescribeInstances"
+                  - "autoscaling:UpdateAutoScalingGroup"
+                  - "autoscaling:DescribeAutoScalingGroups"
+                  - "ec2:CreateNetworkInterface"
+                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DeleteNetworkInterface"
+                  - "elasticloadbalancing:DescribeRules"
+                  - "elasticloadbalancing:DeleteRule"
+                  - "elasticloadbalancing:DescribeTargetGroups"
+                  - "elasticloadbalancing:CreateRule"
+                  - "apigateway:GET"
+                  - "acm:DescribeCertificate"
+                Resource: "*"
+        - PolicyName: "CloudWatchLogsPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                Resource: "*"
+      Path: '/'
+
+  # Lambda Resource Based Policy for Cloudwatch
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref LambdaCloudwatchFunction
+      Principal: lambda.alarms.cloudwatch.amazonaws.com
+      SourceArn: !GetAtt AutoScalingGroupScaleDownAlarm.Arn
+
+  ELBLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt LambdaFunctionTrigger.Arn
+      Action: lambda:InvokeFunction
+      Principal: elasticloadbalancing.amazonaws.com
+
+  # Cloudwatch rule to set 0 in Autoscale
+  AutoScalingGroupScaleDownAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      AlarmName: AutoScalingGroupScaleDownAlarm
+      ComparisonOperator: LessThanOrEqualToThreshold
+      EvaluationPeriods: 3
+      MetricName: CPUUtilization 
+      Namespace: AWS/EC2
+      Period: 120  
+      Statistic: Average
+      Threshold: 10
+      ActionsEnabled: true
+      AlarmActions:
+        - !GetAtt LambdaCloudwatchFunction.Arn
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref OriginGroup
+Outputs:
+  EndPoint:
+    Description: Load Balancer Address of Ant Media Server
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - ApplicationLoadBalancer
+          - DNSName
+#  ApiKey:
+#    Description: API Key
+#    Value: !GetAtt LambdaApiValue.APIKeyValue
