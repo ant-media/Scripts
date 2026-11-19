@@ -1,0 +1,75 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ant-media-server-origin
+spec:
+  parentRefs:
+  - name: ant-media-gateway
+    sectionName: origin-http
+  - name: ant-media-gateway
+    sectionName: origin-https
+  hostnames:
+  - test.antmedia.cloud
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: ant-media-server-origin
+      port: 5080
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: ant-media-origin-session-affinity
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: ant-media-server-origin
+  loadBalancer:
+    type: ConsistentHash
+    consistentHash:
+      type: Cookie
+      cookie:
+        name: "route"
+        ttl: 48h
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: ant-media-server-edge
+spec:
+  parentRefs:
+  - name: ant-media-gateway
+    sectionName: edge-http
+  - name: ant-media-gateway
+    sectionName: edge-https
+  hostnames:
+  - test.antmedia.cloud 
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:
+    - name: ant-media-server-edge
+      port: 5080
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: BackendTrafficPolicy
+metadata:
+  name: ant-media-edge-session-affinity
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: ant-media-server-edge
+  loadBalancer:
+    type: ConsistentHash
+    consistentHash:
+      type: Cookie
+      cookie:
+        name: "route"
+        ttl: 48h
