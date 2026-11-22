@@ -9,6 +9,8 @@ runs:
       run: |
         apt-get update
         apt-get -y install wget findutils unzip curl ca-certificates
+        # The installer creates the service JVM link in this directory.
+        mkdir -p /usr/lib/jvm
     - name: Set up Java 21
       uses: actions/setup-java@v6
       with:
