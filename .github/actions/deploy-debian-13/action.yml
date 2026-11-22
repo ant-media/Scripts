@@ -4,11 +4,22 @@ runs:
   steps:
     - name: Checkout repository
       uses: actions/checkout@v3
-    - name: Install Ant Media Server
+    - name: Install prerequisites
       shell: bash
       run: |
         apt-get update
-        apt-get -y install wget findutils unzip curl
+        apt-get -y install wget findutils unzip curl ca-certificates
+    - name: Set up Java 21
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: '21'
+        check-latest: true
+    - name: Install Ant Media Server
+      shell: bash
+      run: |
+        set -euo pipefail
+        java -version
         curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
