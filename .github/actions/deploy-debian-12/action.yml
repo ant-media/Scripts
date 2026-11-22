@@ -19,10 +19,17 @@ runs:
         check-latest: true
     - name: Install Ant Media Server
       shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         set -euo pipefail
         java -version
-        curl -L -o ant-media-server-community.zip $(curl -s https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest | grep "browser_download_url" | cut -d '"' -f 4)
+        release_url=$(curl -fsSL --retry 3 \
+          -H "Authorization: Bearer $GH_TOKEN" \
+          https://api.github.com/repos/ant-media/Ant-Media-Server/releases/latest \
+          | grep "browser_download_url" | cut -d '"' -f 4)
+        test -n "$release_url"
+        curl -fL --retry 3 -o ant-media-server-community.zip "$release_url"
         bash ./install_ant-media-server.sh -i ant-media-server-community.zip -s false
         /usr/local/antmedia/antmedia start
         sleep 40
