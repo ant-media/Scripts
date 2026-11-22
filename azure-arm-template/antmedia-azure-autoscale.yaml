@@ -617,7 +617,7 @@
                         "adminUsername": "[parameters('InstanceUsername')]",
                         "adminPassword": "[parameters('InstancePassword')]",
                         "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
-                        "customData": "[base64('#!/bin/bash\nsudo sed -i \"/org.apache.catalina.valves.RemoteIpValve/d\" /usr/local/antmedia/conf/jee-container.xml\n/usr/local/antmedia/change_server_mode.sh cluster 10.0.1.99')]"
+                        "customData": "[base64('#!/bin/bash\nsudo sed -i \"/org.apache.catalina.valves.RemoteIpValve/d\" /usr/local/antmedia/conf/jee-container.xml\n/usr/local/antmedia/change_server_mode.sh cluster mongodb://10.0.1.99:27017')]"
                     },
                     "storageProfile": {
                         "osDisk": {
@@ -754,7 +754,7 @@
                         "adminUsername": "[parameters('InstanceUsername')]",
                         "adminPassword": "[parameters('InstancePassword')]",
                         "linuxConfiguration": "[if(equals(parameters('authenticationType'), 'password'), null(), variables('linuxConfiguration'))]",
-                        "customData": "[base64('#!/bin/bash\nsudo sed -i \"/org.apache.catalina.valves.RemoteIpValve/d\" /usr/local/antmedia/conf/jee-container.xml\n/usr/local/antmedia/change_server_mode.sh cluster 10.0.1.99')]"
+                        "customData": "[base64('#!/bin/bash\nsudo sed -i \"/org.apache.catalina.valves.RemoteIpValve/d\" /usr/local/antmedia/conf/jee-container.xml\n/usr/local/antmedia/change_server_mode.sh cluster mongodb://10.0.1.99:27017')]"
                     },
                     "storageProfile": {
                         "osDisk": {
